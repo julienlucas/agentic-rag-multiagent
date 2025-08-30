@@ -1,6 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { useState } from 'react';
 
 const trainedModels = [
   {
@@ -43,6 +45,12 @@ interface ModelsProps {
 }
 
 export const Models = ({ onSelectModel }: ModelsProps) => {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredModels = trainedModels.filter(model =>
+    model.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'ready':
@@ -77,7 +85,7 @@ export const Models = ({ onSelectModel }: ModelsProps) => {
       </div>
 
       <div className="flex justify-end mb-6">
-        <Button 
+        <Button
           onClick={() => {/* Navigate to training */}}
           className="flex items-center gap-2"
         >
@@ -86,8 +94,19 @@ export const Models = ({ onSelectModel }: ModelsProps) => {
         </Button>
       </div>
 
+      {/* Search */}
+      <div className="mb-6">
+        <Input
+          type="text"
+          placeholder="Rechercher un modèle..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="max-w-md"
+        />
+      </div>
+
       <div className="space-y-4">
-        {trainedModels.map((model) => (
+        {filteredModels.map((model) => (
           <Card key={model.id} className="overflow-hidden">
             <CardContent className="p-6">
               <div className="flex items-start gap-4">
@@ -121,7 +140,7 @@ export const Models = ({ onSelectModel }: ModelsProps) => {
                   <p className="text-sm text-muted-foreground mb-4">
                     Créé il y a {model.createdAt} • {model.trainingImages} photos d'entraînement
                   </p>
-                  
+
                   {/* Actions */}
                   <div className="flex gap-2">
                     <Button
