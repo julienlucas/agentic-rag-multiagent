@@ -76,77 +76,75 @@ export const Models = ({ onSelectModel }: ModelsProps) => {
         <p className="text-muted-foreground">Gérez vos modèles entraînés</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="flex justify-end mb-6">
+        <Button 
+          onClick={() => {/* Navigate to training */}}
+          className="flex items-center gap-2"
+        >
+          <span className="text-lg">+</span>
+          Nouveau modèle
+        </Button>
+      </div>
+
+      <div className="space-y-4">
         {trainedModels.map((model) => (
           <Card key={model.id} className="overflow-hidden">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">{model.name}</CardTitle>
-                <Badge variant={getStatusColor(model.status) as any}>
-                  {getStatusText(model.status)}
-                </Badge>
-              </div>
-              <div className="text-sm text-muted-foreground">
-                Créé il y a {model.createdAt} • {model.trainingImages} photos
-              </div>
-            </CardHeader>
-            
-            <CardContent className="space-y-4">
-              {/* Sample Images */}
-              {model.sampleImages.length > 0 ? (
-                <div>
-                  <p className="text-sm font-medium text-foreground mb-2">Photos d'entraînement</p>
-                  <div className="grid grid-cols-4 gap-2">
-                    {model.sampleImages.map((image, index) => (
-                      <div key={index} className="aspect-square rounded bg-muted overflow-hidden">
-                        <div className="w-full h-full bg-gradient-to-br from-muted to-accent flex items-center justify-center">
-                          <span className="text-xs text-muted-foreground">{index + 1}</span>
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                {/* Sample Images */}
+                <div className="flex-shrink-0">
+                  {model.sampleImages.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-1 w-20">
+                      {model.sampleImages.slice(0, 4).map((image, index) => (
+                        <div key={index} className="aspect-square rounded bg-muted overflow-hidden">
+                          <div className="w-full h-full bg-gradient-to-br from-muted to-accent flex items-center justify-center">
+                            <span className="text-xs text-muted-foreground">{index + 1}</span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="w-20 h-20 rounded bg-muted flex items-center justify-center">
+                      <span className="text-xs text-muted-foreground">—</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Model Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-lg font-semibold text-foreground">{model.name}</h3>
+                    <Badge variant={getStatusColor(model.status) as any}>
+                      {getStatusText(model.status)}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Créé il y a {model.createdAt} • {model.trainingImages} photos d'entraînement
+                  </p>
+                  
+                  {/* Actions */}
+                  <div className="flex gap-2">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      disabled={model.status !== 'ready'}
+                      onClick={() => onSelectModel(model.id)}
+                    >
+                      Générer des images
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={model.status !== 'ready'}
+                    >
+                      Détails
+                    </Button>
                   </div>
                 </div>
-              ) : (
-                <div className="text-center py-4">
-                  <p className="text-sm text-muted-foreground">Entraînement en cours...</p>
-                </div>
-              )}
-
-              {/* Actions */}
-              <div className="flex gap-2">
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="flex-1"
-                  disabled={model.status !== 'ready'}
-                  onClick={() => onSelectModel(model.id)}
-                >
-                  Générer des images
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={model.status !== 'ready'}
-                >
-                  Détails
-                </Button>
               </div>
             </CardContent>
           </Card>
         ))}
-
-        {/* Add New Model Card */}
-        <Card className="border-dashed border-2 border-upload-border hover:border-primary transition-colors cursor-pointer">
-          <CardContent className="flex flex-col items-center justify-center h-full min-h-[300px] p-6">
-            <div className="h-12 w-12 rounded-full bg-upload-zone flex items-center justify-center mb-4">
-              <span className="text-2xl">+</span>
-            </div>
-            <h3 className="font-medium text-foreground mb-2">Nouveau modèle</h3>
-            <p className="text-sm text-muted-foreground text-center">
-              Entraînez un nouveau modèle avec vos photos
-            </p>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

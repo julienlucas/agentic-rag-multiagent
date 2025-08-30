@@ -173,54 +173,84 @@ export const Generate = ({ selectedModelId }: GenerateProps) => {
             </div>
 
             {/* Theme */}
-            <div className="space-y-2">
-              <Label htmlFor="theme">Thème de photo</Label>
-              <Select value={theme} onValueChange={(value) => { setTheme(value); setSubTheme(''); }}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionnez un thème" />
-                </SelectTrigger>
-                <SelectContent>
-                  {themes.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>
-                      {t.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="space-y-3">
+              <Label>Thème de photo</Label>
+              <div className="grid grid-cols-2 gap-3">
+                {themes.map((t) => (
+                  <div
+                    key={t.value}
+                    onClick={() => { setTheme(t.value); setSubTheme(''); }}
+                    className={cn(
+                      "relative h-20 rounded-lg border-2 cursor-pointer transition-all",
+                      "flex items-center justify-center text-sm font-medium",
+                      "bg-gradient-to-br from-muted to-accent",
+                      theme === t.value 
+                        ? "border-primary bg-primary/10" 
+                        : "border-border hover:border-primary/50"
+                    )}
+                  >
+                    {t.label}
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Sub Theme */}
-            <div className="space-y-2">
-              <Label htmlFor="subtheme">Sous-thème</Label>
-              <Select value={subTheme} onValueChange={setSubTheme}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionnez un sous-thème" />
-                </SelectTrigger>
-                <SelectContent>
-                  {theme && subThemes[theme as keyof typeof subThemes]?.map((st) => (
-                    <SelectItem key={st} value={st.toLowerCase()}>
+            {theme && subThemes[theme as keyof typeof subThemes] && (
+              <div className="space-y-3">
+                <Label>Sous-thème</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {subThemes[theme as keyof typeof subThemes]?.map((st) => (
+                    <div
+                      key={st}
+                      onClick={() => setSubTheme(st.toLowerCase())}
+                      className={cn(
+                        "relative h-12 rounded border-2 cursor-pointer transition-all",
+                        "flex items-center justify-center text-xs font-medium",
+                        "bg-muted",
+                        subTheme === st.toLowerCase() 
+                          ? "border-primary bg-primary/10" 
+                          : "border-border hover:border-primary/50"
+                      )}
+                    >
                       {st}
-                    </SelectItem>
+                    </div>
                   ))}
-                </SelectContent>
-              </Select>
-            </div>
+                </div>
+              </div>
+            )}
 
             {/* Format */}
-            <div className="space-y-2">
-              <Label htmlFor="format">Format</Label>
-              <Select value={format} onValueChange={setFormat}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionnez un format" />
-                </SelectTrigger>
-                <SelectContent>
-                  {formats.map((f) => (
-                    <SelectItem key={f.value} value={f.value}>
-                      {f.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="space-y-3">
+              <Label>Format</Label>
+              <div className="grid grid-cols-2 gap-3">
+                {formats.map((f) => (
+                  <div
+                    key={f.value}
+                    onClick={() => setFormat(f.value)}
+                    className={cn(
+                      "relative h-16 rounded-lg border-2 cursor-pointer transition-all",
+                      "flex items-center justify-center bg-muted",
+                      format === f.value 
+                        ? "border-primary bg-primary/10" 
+                        : "border-border hover:border-primary/50"
+                    )}
+                  >
+                    <div className="flex flex-col items-center gap-1">
+                      <div 
+                        className={cn(
+                          "bg-foreground/20 rounded",
+                          f.value === '1:1' && "w-6 h-6",
+                          f.value === '4:3' && "w-8 h-6",
+                          f.value === '16:9' && "w-8 h-4",
+                          f.value === '9:16' && "w-4 h-8"
+                        )}
+                      />
+                      <span className="text-xs font-medium">{f.label}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Framing */}
@@ -246,7 +276,7 @@ export const Generate = ({ selectedModelId }: GenerateProps) => {
               className="w-full"
               disabled={isGenerating}
             >
-              {isGenerating ? 'Génération en cours...' : `Générer ${imageCount} image${imageCount !== '1' ? 's' : ''}`}
+              {isGenerating ? 'Génération en cours...' : `Générer ${imageCount} image${imageCount !== '1' ? 's' : ''} (${imageCount} crédit${imageCount !== '1' ? 's' : ''})`}
             </Button>
           </CardContent>
         </Card>

@@ -123,7 +123,7 @@ export const Training = () => {
         <p className="text-muted-foreground">Uploadez vos photos pour entraîner votre modèle personnalisé</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="space-y-8">
         {/* Upload Zone */}
         <Card>
           <CardHeader>

@@ -23,7 +23,7 @@ export const Dashboard = () => {
       case 'success':
         return 'success';
       case 'failed':
-        return 'destructive';
+        return 'success';
       case 'processing':
         return 'warning';
       default:
@@ -34,9 +34,9 @@ export const Dashboard = () => {
   const getStatusText = (status: string) => {
     switch (status) {
       case 'success':
-        return 'Réussi';
+        return 'Terminé';
       case 'failed':
-        return 'Échoué';
+        return 'Terminé';
       case 'processing':
         return 'En cours';
       default:
