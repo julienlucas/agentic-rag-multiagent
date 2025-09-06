@@ -1,15 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Moon, Sun } from 'lucide-react';
+import { Moon, Sun, CheckCircle } from 'lucide-react';
 import { useState } from 'react';
+import { RecentGenerations } from '@/components/ui/recent-generations';
+import { RecentImages } from '@/components/ui/recent-images';
 
 const recentPredictions = [
-  { id: '1', title: 'Photo Business - Plan buste', status: 'success', createdAt: '2 days ago' },
-  { id: '2', title: 'Photo Harcourt - Serré', status: 'failed', createdAt: '2 days ago' },
-  { id: '3', title: 'Photo Youtuber - Américain', status: 'success', createdAt: '3 days ago' },
-  { id: '4', title: 'Photo Instagram - Plein pied', status: 'success', createdAt: '3 days ago' },
-  { id: '5', title: 'Photo Super-héro - Taille', status: 'processing', createdAt: '4 days ago' },
+  { id: '1', theme: 'Business', framing: 'Plan buste', createdAt: '2 days ago', image: '/api/placeholder/400/600' },
+  { id: '2', theme: 'Harcourt', framing: 'Serré', createdAt: '2 days ago', image: '/api/placeholder/400/500' },
+  { id: '3', theme: 'Youtuber', framing: 'Américain', createdAt: '3 days ago', image: '/api/placeholder/600/400' },
+  { id: '4', theme: 'Instagram', framing: 'Plein pied', createdAt: '3 days ago', image: '/api/placeholder/300/600' },
+  { id: '5', theme: 'Super-héro', framing: 'Taille', createdAt: '4 days ago', image: '/api/placeholder/500/500' },
 ];
 
 const recentImages = [
@@ -38,38 +39,15 @@ export const Dashboard = () => {
     // Ici on pourrait ajouter la logique pour changer le thème global
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'success':
-        return 'success';
-      case 'failed':
-        return 'success';
-      case 'processing':
-        return 'warning';
-      default:
-        return 'secondary';
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'success':
-        return 'Terminé';
-      case 'failed':
-        return 'Terminé';
-      case 'processing':
-        return 'En cours';
-      default:
-        return status;
-    }
-  };
 
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-foreground mb-2">Dashboard</h2>
-          <p className="text-muted-foreground">Aperçu de vos générations récentes</p>
+          <p className="text-muted-foreground">
+            Aperçu de vos générations récentes
+          </p>
         </div>
 
         <Button
@@ -78,19 +56,83 @@ export const Dashboard = () => {
           onClick={toggleTheme}
           className="h-10 w-10"
         >
-          {isDark ? (
-            <Sun className="h-5 w-5" />
-          ) : (
-            <Moon className="h-5 w-5" />
-          )}
+          {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </Button>
       </div>
 
-      {/* Stats */}
+      {/* Onboarding pour nouveaux utilisateurs */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className={`border-dashed border-2 flex flex-col relative ${true ? '' : 'opacity-50'}`}>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">1. Ajoutez des crédits</CardTitle>
+              {true && (
+                <CheckCircle className="h-5 w-5 text-green-500" />
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="flex-1 flex flex-col">
+            <p className="text-sm text-muted-foreground mb-4">
+              Ajoutez des crédits pour commencer
+            </p>
+            <div className="mt-auto">
+              <Button className="w-full">S'inscrire</Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className={`border-dashed border-2 flex flex-col relative ${false ? '' : 'opacity-50'}`}>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">2. Entraînez un modèle (3min)</CardTitle>
+              {false && (
+                <CheckCircle className="h-5 w-5 text-green-500" />
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="flex-1 flex flex-col">
+            <p className="text-sm text-muted-foreground mb-4">
+              Uploadez 10-20 photos pour entraîner votre modèle personnalisé
+            </p>
+            <div className="mt-auto">
+              <Button variant="outline" className="w-full">
+                Entraîner
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className={`border-dashed border-2 flex flex-col relative ${false ? '' : 'opacity-50'}`}>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">
+                3. Générez des prédictions
+              </CardTitle>
+              {false && (
+                <CheckCircle className="h-5 w-5 text-green-500" />
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="flex-1 flex flex-col">
+            <p className="text-sm text-muted-foreground mb-4">
+              Créez des images professionnelles avec votre modèle entraîné
+            </p>
+            <div className="mt-auto">
+              <Button variant="outline" className="w-full">
+                Générer
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Crédits restants</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Crédits restants
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">50</div>
@@ -99,7 +141,9 @@ export const Dashboard = () => {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Modèles entraînés</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Modèles entraînés
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">2</div>
@@ -108,7 +152,9 @@ export const Dashboard = () => {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Images générées</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Images générées
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">47</div>
@@ -117,58 +163,13 @@ export const Dashboard = () => {
       </div>
 
       {/* Recent Predictions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Prédictions récentes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {recentPredictions.map((prediction) => (
-              <div key={prediction.id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
-                <div className="flex-1">
-                  <p className="font-medium text-foreground">{prediction.title}</p>
-                  <p className="text-sm text-muted-foreground">{prediction.createdAt}</p>
-                </div>
-                <Badge variant={getStatusColor(prediction.status) as any}>
-                  {getStatusText(prediction.status)}
-                </Badge>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <RecentGenerations
+        generations={recentPredictions}
+        title="Prédictions récentes"
+      />
 
       {/* Recent Images */}
-      <Card>
-        <CardHeader>
-          <CardTitle>15 dernières images générées</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="columns-2 sm:columns-1 md:columns-2 lg:columns-3 gap-4">
-            {recentImages.map((image) => (
-              <div key={image.id} className="break-inside-avoid group relative">
-                <div
-                  className={`bg-muted overflow-hidden bg-gradient-to-br from-muted to-accent flex items-center justify-center relative mb-4`}
-                  style={{
-                    aspectRatio: image.aspectRatio === '1:1' ? '1/1' :
-                                 image.aspectRatio === '4:3' ? '4/3' :
-                                 image.aspectRatio === '16:9' ? '16/9' : '9/16'
-                  }}
-                >
-                  <span className="text-xs text-muted-foreground">Image {image.id}</span>
-
-                  {/* Overlay au survol */}
-                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-end justify-end p-3">
-                    <Badge variant="secondary" className="text-xs">
-                      {image.theme}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <RecentImages images={recentImages} />
     </div>
   );
 };

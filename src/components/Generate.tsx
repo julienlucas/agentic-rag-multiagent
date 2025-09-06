@@ -4,26 +4,24 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { RecentGenerations } from "@/components/ui/recent-generations";
+import { RecentImages } from "@/components/ui/recent-images";
 
 const themes = [
-  { value: 'business', label: 'Business' },
-  { value: 'harcourt', label: 'Harcourt style' },
-  { value: 'youtuber', label: 'Youtuber' },
-  { value: 'instagramer', label: 'Instagramer' },
-  { value: 'superhero', label: 'Super-héro' },
-  { value: 'vacation', label: 'Vacances' },
+  { value: 'business', label: 'Business', image: '/horizon.jpg' },
+  { value: 'harcourt', label: 'Harcourt style', image: '/hiver.jpg.jpg' },
+  { value: 'youtuber', label: 'Youtuber', image: '/horizon-cool.jpg' },
+  { value: 'instagramer', label: 'Instagramer', image: '/IMG_2124.jpg' },
+  { value: 'superhero', label: 'Super-héro', image: '/horizon.jpg' },
+  { value: 'vacation', label: 'Vacances', image: '/hiver.jpg.jpg' },
 ];
 
-const subThemes = {
-  business: ['Classique', 'Moderne', 'Créatif'],
-  harcourt: ['Noir et blanc', 'Couleur', 'Vintage'],
-  youtuber: ['Gaming', 'Lifestyle', 'Tech'],
-  instagramer: ['Mode', 'Fitness', 'Travel'],
-  superhero: ['Marvel', 'DC', 'Original'],
-  vacation: ['Plage', 'Montagne', 'Ville'],
-};
+const subThemes = [
+  'Classique', 'Moderne', 'Créatif', 'Noir et blanc', 'Couleur', 'Vintage',
+  'Gaming', 'Lifestyle', 'Tech', 'Mode', 'Fitness', 'Travel',
+  'Marvel', 'DC', 'Original', 'Plage', 'Montagne', 'Ville'
+];
 
 const formats = [
   { value: '1:1', label: 'Carré (1:1)' },
@@ -46,11 +44,29 @@ const models = [
 ];
 
 const recentGenerations = [
-  { id: '1', theme: 'Business', framing: 'Plan buste', status: 'success', createdAt: '2h', image: '/api/placeholder/150/150' },
-  { id: '2', theme: 'Harcourt', framing: 'Serré', status: 'success', createdAt: '4h', image: '/api/placeholder/150/150' },
-  { id: '3', theme: 'Youtuber', framing: 'Américain', status: 'failed', createdAt: '6h', image: null },
-  { id: '4', theme: 'Instagram', framing: 'Plein pied', status: 'success', createdAt: '1j', image: '/api/placeholder/150/150' },
-  { id: '5', theme: 'Super-héro', framing: 'Taille', status: 'processing', createdAt: '1j', image: null },
+  { id: '1', theme: 'Business', framing: 'Plan buste', createdAt: '2h', image: '/api/placeholder/150/150' },
+  { id: '2', theme: 'Harcourt', framing: 'Serré', createdAt: '4h', image: '/api/placeholder/150/150' },
+  { id: '3', theme: 'Youtuber', framing: 'Américain', createdAt: '6h', image: null },
+  { id: '4', theme: 'Instagram', framing: 'Plein pied', createdAt: '1j', image: '/api/placeholder/150/150' },
+  { id: '5', theme: 'Super-héro', framing: 'Taille', createdAt: '1j', image: null },
+];
+
+const recentImages = [
+  { id: '1', url: '/api/placeholder/300/300', alt: 'Generated photo 1', aspectRatio: '1:1', theme: 'Business' },
+  { id: '2', url: '/api/placeholder/400/300', alt: 'Generated photo 2', aspectRatio: '4:3', theme: 'Vacances' },
+  { id: '3', url: '/api/placeholder/480/270', alt: 'Generated photo 3', aspectRatio: '16:9', theme: 'Youtuber' },
+  { id: '4', url: '/api/placeholder/270/480', alt: 'Generated photo 4', aspectRatio: '9:16', theme: 'Portrait' },
+  { id: '5', url: '/api/placeholder/300/300', alt: 'Generated photo 5', aspectRatio: '1:1', theme: 'Sport' },
+  { id: '6', url: '/api/placeholder/400/300', alt: 'Generated photo 6', aspectRatio: '4:3', theme: 'Mode' },
+  { id: '7', url: '/api/placeholder/480/270', alt: 'Generated photo 7', aspectRatio: '16:9', theme: 'Art' },
+  { id: '8', url: '/api/placeholder/270/480', alt: 'Generated photo 8', aspectRatio: '9:16', theme: 'Street' },
+  { id: '9', url: '/api/placeholder/300/300', alt: 'Generated photo 9', aspectRatio: '1:1', theme: 'Corporate' },
+  { id: '10', url: '/api/placeholder/400/300', alt: 'Generated photo 10', aspectRatio: '4:3', theme: 'Nature' },
+  { id: '11', url: '/api/placeholder/480/270', alt: 'Generated photo 11', aspectRatio: '16:9', theme: 'Techno' },
+  { id: '12', url: '/api/placeholder/270/480', alt: 'Generated photo 12', aspectRatio: '9:16', theme: 'Fashion' },
+  { id: '13', url: '/api/placeholder/300/300', alt: 'Generated photo 13', aspectRatio: '1:1', theme: 'Lifestyle' },
+  { id: '14', url: '/api/placeholder/400/300', alt: 'Generated photo 14', aspectRatio: '4:3', theme: 'Travel' },
+  { id: '15', url: '/api/placeholder/480/270', alt: 'Generated photo 15', aspectRatio: '16:9', theme: 'Food' },
 ];
 
 interface GenerateProps {
@@ -69,16 +85,16 @@ export const Generate = ({ selectedModelId }: GenerateProps) => {
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
-    
+
     if (!selectedModel) newErrors.model = 'Sélectionnez un modèle';
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleGenerate = () => {
     if (!validateForm()) return;
-    
+
     setIsGenerating(true);
     // Simulation de génération
     setTimeout(() => {
@@ -87,46 +103,21 @@ export const Generate = ({ selectedModelId }: GenerateProps) => {
     }, 3000);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'success':
-        return 'success';
-      case 'failed':
-        return 'destructive';
-      case 'processing':
-        return 'warning';
-      default:
-        return 'secondary';
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'success':
-        return 'Réussi';
-      case 'failed':
-        return 'Échoué';
-      case 'processing':
-        return 'En cours';
-      default:
-        return status;
-    }
-  };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground mb-2">Générer des images</h2>
-          <p className="text-muted-foreground">Créez vos photos professionnelles personnalisées</p>
-        </div>
-        <div className="text-right">
-          <p className="text-sm text-muted-foreground">Crédits disponibles</p>
-          <p className="text-2xl font-bold text-primary">50</p>
+          <h2 className="text-2xl font-bold text-foreground mb-2">
+            Générer des images
+          </h2>
+          <p className="text-muted-foreground">
+            Créez vos photos professionnelles personnalisées
+          </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="space-y-8">
         {/* Generation Form */}
         <Card>
           <CardHeader>
@@ -137,7 +128,9 @@ export const Generate = ({ selectedModelId }: GenerateProps) => {
             <div className="space-y-2">
               <Label htmlFor="model">Modèle entraîné *</Label>
               <Select value={selectedModel} onValueChange={setSelectedModel}>
-                <SelectTrigger className={errors.model ? "border-destructive" : ""}>
+                <SelectTrigger
+                  className={errors.model ? "border-destructive" : ""}
+                >
                   <SelectValue placeholder="Sélectionnez un modèle" />
                 </SelectTrigger>
                 <SelectContent>
@@ -155,8 +148,12 @@ export const Generate = ({ selectedModelId }: GenerateProps) => {
 
             {/* Image Count */}
             <div className="space-y-3">
-              <Label>Nombre d'images</Label>
-              <RadioGroup value={imageCount} onValueChange={setImageCount} className="flex gap-6">
+              <Label>Nombre d'images à générer</Label>
+              <RadioGroup
+                value={imageCount}
+                onValueChange={setImageCount}
+                className="flex gap-6"
+              >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="1" id="count-1" />
                   <Label htmlFor="count-1">1 image</Label>
@@ -175,75 +172,82 @@ export const Generate = ({ selectedModelId }: GenerateProps) => {
             {/* Theme */}
             <div className="space-y-3">
               <Label>Thème de photo</Label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="flex gap-3 overflow-x-auto pb-2">
                 {themes.map((t) => (
                   <div
                     key={t.value}
-                    onClick={() => { setTheme(t.value); setSubTheme(''); }}
+                    onClick={() => {
+                      setTheme(t.value);
+                      setSubTheme("");
+                    }}
                     className={cn(
-                      "relative h-20 rounded-lg border-2 cursor-pointer transition-all",
-                      "flex items-center justify-center text-sm font-medium",
-                      "bg-gradient-to-br from-muted to-accent",
-                      theme === t.value 
-                        ? "border-primary bg-primary/10" 
+                      "relative w-28 h-28 rounded-lg border-2 cursor-pointer transition-all flex-shrink-0 overflow-hidden",
+                      theme === t.value
+                        ? "border-primary ring-2 ring-primary/20"
                         : "border-border hover:border-primary/50"
                     )}
                   >
-                    {t.label}
+                    <img
+                      src={t.image}
+                      alt={t.label}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      <span className="text-xs font-medium text-white text-center px-2">
+                        {t.label}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Sub Theme */}
-            {theme && subThemes[theme as keyof typeof subThemes] && (
-              <div className="space-y-3">
-                <Label>Sous-thème</Label>
-                <div className="grid grid-cols-3 gap-2">
-                  {subThemes[theme as keyof typeof subThemes]?.map((st) => (
-                    <div
-                      key={st}
-                      onClick={() => setSubTheme(st.toLowerCase())}
-                      className={cn(
-                        "relative h-12 rounded border-2 cursor-pointer transition-all",
-                        "flex items-center justify-center text-xs font-medium",
-                        "bg-muted",
-                        subTheme === st.toLowerCase() 
-                          ? "border-primary bg-primary/10" 
-                          : "border-border hover:border-primary/50"
-                      )}
-                    >
-                      {st}
-                    </div>
-                  ))}
-                </div>
+            <div className="space-y-3">
+              <Label>Sous-thème</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {subThemes.map((st) => (
+                  <div
+                    key={st}
+                    onClick={() => setSubTheme(st.toLowerCase())}
+                    className={cn(
+                      "relative h-12 rounded bg-gray-200 cursor-pointer transition-all",
+                      "flex items-center justify-center text-xs font-medium outline-none",
+                      subTheme === st.toLowerCase()
+                        ? "border-primary bg-primary/30"
+                        : "border-border hover:bg-gray-300"
+                    )}
+                  >
+                    {st}
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
 
             {/* Format */}
             <div className="space-y-3">
               <Label>Format</Label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-4 gap-3">
                 {formats.map((f) => (
                   <div
                     key={f.value}
                     onClick={() => setFormat(f.value)}
                     className={cn(
-                      "relative h-16 rounded-lg border-2 cursor-pointer transition-all",
-                      "flex items-center justify-center bg-muted",
-                      format === f.value 
-                        ? "border-primary bg-primary/10" 
-                        : "border-border hover:border-primary/50"
+                      "relative h-16 rounded-lg bg-gray-200 cursor-pointer transition-all",
+                      "flex items-center justify-center",
+                      format === f.value
+                        ? "border-primary bg-primary/30"
+                        : "border-border hover:bg-gray-300"
                     )}
                   >
                     <div className="flex flex-col items-center gap-1">
-                      <div 
+                      <div
                         className={cn(
                           "bg-foreground/20 rounded",
-                          f.value === '1:1' && "w-6 h-6",
-                          f.value === '4:3' && "w-8 h-6",
-                          f.value === '16:9' && "w-8 h-4",
-                          f.value === '9:16' && "w-4 h-8"
+                          f.value === "1:1" && "w-6 h-6",
+                          f.value === "4:3" && "w-8 h-6",
+                          f.value === "16:9" && "w-8 h-4",
+                          f.value === "9:16" && "w-4 h-8"
                         )}
                       />
                       <span className="text-xs font-medium">{f.label}</span>
@@ -271,52 +275,21 @@ export const Generate = ({ selectedModelId }: GenerateProps) => {
             </div>
 
             {/* Generate Button */}
-            <Button 
-              onClick={handleGenerate} 
-              className="w-full"
+            <Button
+              onClick={handleGenerate}
               disabled={isGenerating}
             >
-              {isGenerating ? 'Génération en cours...' : `Générer ${imageCount} image${imageCount !== '1' ? 's' : ''} (${imageCount} crédit${imageCount !== '1' ? 's' : ''})`}
+              {isGenerating
+                ? "Génération en cours..."
+                : `Générer ${imageCount} image${
+                    imageCount !== "1" ? "s" : ""
+                  } (${imageCount} crédit${imageCount !== "1" ? "s" : ""})`}
             </Button>
           </CardContent>
         </Card>
 
-        {/* Recent Generations */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Générations récentes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentGenerations.map((generation) => (
-                <div key={generation.id} className="flex items-center gap-4 p-3 border border-border rounded-lg">
-                  {generation.image ? (
-                    <div className="w-16 h-16 rounded-lg bg-muted overflow-hidden flex-shrink-0">
-                      <div className="w-full h-full bg-gradient-to-br from-muted to-accent flex items-center justify-center">
-                        <span className="text-xs text-muted-foreground">IMG</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                      <span className="text-xs text-muted-foreground">—</span>
-                    </div>
-                  )}
-                  
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-foreground truncate">
-                      {generation.theme} - {generation.framing}
-                    </p>
-                    <p className="text-sm text-muted-foreground">Il y a {generation.createdAt}</p>
-                  </div>
-                  
-                  <Badge variant={getStatusColor(generation.status) as any}>
-                    {getStatusText(generation.status)}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        {/* Recent Images */}
+        <RecentImages images={recentImages} />
       </div>
     </div>
   );

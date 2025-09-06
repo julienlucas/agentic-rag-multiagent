@@ -19,7 +19,7 @@
     /* Système de couleurs modernes */
     --primary: 224 71% 40%;
     --primary-foreground: 0 0% 98%;
-    
+
     --secondary: 220 14% 96%;
     --secondary-foreground: 224 71% 4%;
 
@@ -32,10 +32,10 @@
     /* États et statuts */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    
+
     --success: 142 76% 36%;
     --success-foreground: 0 0% 98%;
-    
+
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 98%;
 
@@ -45,16 +45,16 @@
     --ring: 224 71% 40%;
 
     --radius: 0.5rem;
-    
+
     /* Zones d'upload et drag&drop */
     --upload-zone: 224 71% 96%;
     --upload-zone-hover: 224 71% 94%;
     --upload-zone-border: 224 71% 85%;
-    
+
     /* États de progression */
     --progress-bg: 220 14% 96%;
     --progress-fill: 224 71% 40%;
-    
+
     /* Navigation */
     --nav-active: 224 71% 40%;
     --nav-inactive: 220 9% 46%;

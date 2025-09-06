@@ -52,21 +52,21 @@ export const Training = () => {
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
-    
+
     if (!age) newErrors.age = 'L\'âge est obligatoire';
     if (!gender) newErrors.gender = 'Le genre est obligatoire';
     if (uploadedFiles.length < 5) newErrors.files = 'Minimum 5 photos requises';
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const startTraining = () => {
     if (!validateForm()) return;
-    
+
     setIsTraining(true);
     setTrainingProgress(0);
-    
+
     // Simulation du training
     const interval = setInterval(() => {
       setTrainingProgress(prev => {
@@ -117,9 +117,9 @@ export const Training = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-bold text-foreground mb-2">Entraînement du modèle</h2>
+        <h2 className="text-2xl font-bold text-foreground mb-2">Entraînement d'un modèle</h2>
         <p className="text-muted-foreground">Uploadez vos photos pour entraîner votre modèle personnalisé</p>
       </div>
 
@@ -180,7 +180,7 @@ export const Training = () => {
               <Label htmlFor="age">Âge *</Label>
               <Input
                 id="age"
-                type="number"
+                type="text"
                 value={age}
                 onChange={(e) => setAge(e.target.value)}
                 className={errors.age ? "border-destructive" : ""}
@@ -189,7 +189,7 @@ export const Training = () => {
                 <p className="text-sm text-destructive">{errors.age}</p>
               )}
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="gender">Genre *</Label>
               <Select value={gender} onValueChange={setGender}>
@@ -207,8 +207,8 @@ export const Training = () => {
               )}
             </div>
 
-            <Button 
-              onClick={startTraining} 
+            <Button
+              onClick={startTraining}
               className="w-full"
               disabled={uploadedFiles.length === 0}
             >
@@ -225,7 +225,7 @@ export const Training = () => {
             <CardTitle>Photos uploadées ({uploadedFiles.length}/20)</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-4">
               {uploadedFiles.map((file) => (
                 <div key={file.id} className="relative group">
                   <img
@@ -235,7 +235,7 @@ export const Training = () => {
                   />
                   <button
                     onClick={() => removeFile(file.id)}
-                    className="absolute -top-2 -right-2 h-6 w-6 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute -top-2 -right-2 h-6 w-6 flex items-center justify-center bg-gray-200 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <X className="h-4 w-4" />
                   </button>
