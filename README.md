@@ -1,73 +1,75 @@
-# Welcome to your Lovable project
+![RAG Agentique multi-agent Header](./static/header.png)
 
-## Project info
+# RAG Agentique multi-agent haute précision sans hallucinations (meilleur que GPT4o et DeepSeek R1)
 
-**URL**: https://lovable.dev/projects/ee58bc00-f99f-451c-b4f1-a4c17b83658d
+Ce système RAG agentique fonctionne avec 3 agents spécialisés et un récupérateur avancé (BM25 + embeddings) garantissant une haute précision dans la recherche de documents.
 
-## How can I edit this code?
 
-There are several ways of editing your application.
+![Image 1](./static/chatgpt-test.png)
+GPT 4o halucine, les stats de tableaux récupérées ne sont pas les bonnes.
 
-**Use Lovable**
+![Image 2](./static/deepseek-test.png)
+DeepSeek R1 s'arrête il n'arrive pas à lire le document en entier.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/ee58bc00-f99f-451c-b4f1-a4c17b83658d) and start prompting.
+## Architecture IA
 
-Changes made via Lovable will be committed automatically to this repo.
+![Projet Overview](./static/project-overview.jpg)
 
-**Use your preferred IDE**
+### 1. **Agent de Recherche**
+Analyse la question utilisateur et cherche.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### 2. **Agent Vérificateur de Pertinence**
+Évalue si le document récupéré répond réellement à la question.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### 3. **Agent Fact Checker**
+Valide et croise les informations trouvées.
 
-Follow these steps:
+### Le système inclut un retriever hybride pour maximiser la pertinence
+- **Algo BM25 + Embeddings** : Recherche texte classique à forte précision lexicale + Recherche sémantique capturant le sens contextuel.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## Stack de modèles
+- 💎 Mistral Large
+- 🧠 Mistral Embbed (pour les embeddings)
+- ⚡ Mistral OCR (plutôt que docling trop lent)
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## Installation
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+1. **Cloner le projet** :
+```bash
+git clone https://github.com/julienlucas/agentic-rag-multi-agent
 ```
 
-**Edit a file directly in GitHub**
+2. **Installer les dépendances** :
+```bash
+python3.12 -m venv venv
+source venv/bin/activate
+poetry install
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+3. **Configuration** :
+Allez sur https://console.mistral.ai pour créer votre clé.
 
-**Use GitHub Codespaces**
+Puis créer un fichier `.env` avec votre clé :
+```bash
+MISTRALAI_API_KEY=votre_clé_api_mistral_ici
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Pour surveiller votre application avec LangSmith (si vous le souhaitez) :
 
-## What technologies are used for this project?
+1. **Créer un compte LangSmith** : Allez sur [smith.langchain.com](https://smith.langchain.com)
 
-This project is built with:
+2. **Obtenir votre clé API** : Dans les paramètres de votre compte
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+3. **Ajouter vos variables d'environnement**
+```bash
+# Configuration LangSmith
+LANGSMITH_API_KEY=votre_cle_api_langsmith_ici
+LANGSMITH_PROJECT=agentic_rag_multi_agent
+```
 
-## How can I deploy this project?
+4. **Lancer l'application** :
+```bash
+poetry run python app.py
+```
 
-Simply open [Lovable](https://lovable.dev/projects/ee58bc00-f99f-451c-b4f1-a4c17b83658d) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+Ajoutez une étoile au repo pour soutenir mon travail. 🙏

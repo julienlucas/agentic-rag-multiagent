@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "multi-agent-docchat"
+version = "0.1.0"
+description = "Multi-agent document chat system"
+authors = ["Julien Lucas <contact@julienlucas.com>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.13"
+chromadb = "^1.0.15"
+django = "^5.2.6"
+dotenv = "^0.9.9"
+langchain = "^0.3.27"
+langchain-community = "^0.3.28"
+langchain-core = "^0.3.75"
+langchain-mistralai = "^0.2.11"
+langchain-text-splitters = "^0.3.9"
+langgraph = "^0.6.6"
+langsmith = "^0.4.19"
+loguru = "^0.7.3"
+mistralai = "^1.9.9"
+numpy = "<2.0.0"
+pydantic = "^2.11.7"
+python-dotenv = "^1.1.1"
+rank-bm25 = "^0.2.2"
+torch = "^2.2.0"
+torchvision = "0.17.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
