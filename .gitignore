@@ -9,7 +9,6 @@ __pycache__/
 temp
 document_cache
 chroma_db
-frontend/dist/
 frontend/node_modules/
 
 # C extensions
@@ -19,14 +18,12 @@ frontend/node_modules/
 .Python
 build/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
 lib/
 lib64/
 parts/
-sdist/
 var/
 wheels/
 share/python-wheels/
