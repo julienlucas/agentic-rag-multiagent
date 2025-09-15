@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { Send, MessageCircle } from "lucide-react";
+import { Send, MessageCircle, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
+import { useTimer } from "@/hooks/useTimer";
 
 interface QuestionInputProps {
   hasDocument: boolean;
@@ -21,8 +22,7 @@ export function QuestionInput({
 }: QuestionInputProps) {
   const [question, setQuestion] = useState("");
   const [hasSubmitted, setHasSubmitted] = useState(false);
-  const [elapsedTime, setElapsedTime] = useState(0);
-  const [startTime, setStartTime] = useState<number | null>(null);
+  const { elapsedTime, finalTime, startTimer } = useTimer(isLoading);
 
   // Pré-charger la question quand elle change (sauf si on vient de soumettre)
   useEffect(() => {
@@ -38,35 +38,12 @@ export function QuestionInput({
     }
   }, [preloadedQuestion]);
 
-  // Timer pour le compteur de temps
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-
-    if (isLoading && startTime) {
-      interval = setInterval(() => {
-        setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
-      }, 1000);
-    }
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isLoading, startTime]);
-
-  // Réinitialiser le timer quand le loading s'arrête
-  useEffect(() => {
-    if (!isLoading) {
-      setElapsedTime(0);
-      setStartTime(null);
-    }
-  }, [isLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!question.trim() || !hasDocument) return;
 
-    setStartTime(Date.now());
-    setElapsedTime(0);
+    startTimer();
     onQuestionSubmit(question);
     setQuestion("");
     setHasSubmitted(true);
@@ -114,6 +91,13 @@ export function QuestionInput({
           <div className="text-left flex items-center gap-2 text-muted-foreground text-sm">
             <div className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin" />
             <span>Temps écoulé: {elapsedTime}s</span>
+          </div>
+        )}
+
+        {!isLoading && finalTime !== null && (
+          <div className="text-left flex items-center gap-2 text-green-600 text-sm">
+            <Check className="w-4 h-4" />
+            <span>Traité en {finalTime}s</span>
           </div>
         )}
       </form>

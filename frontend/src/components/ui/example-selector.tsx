@@ -1,4 +1,5 @@
-import { FileText, Download, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { FileText, Download, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -8,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useTimer } from "@/hooks/useTimer";
 
 interface Example {
   id: string;
@@ -37,11 +39,18 @@ export function ExampleSelector({
   isLoading,
   documentLoaded,
 }: ExampleSelectorProps) {
+  const { elapsedTime, finalTime, startTimer } = useTimer(isLoading);
+
   const handleExampleChange = (value: string) => {
     const example = examples.find((ex) => ex.id === value);
     if (example) {
       onExampleSelect(example);
     }
+  };
+
+  const handleLoadExample = () => {
+    startTimer();
+    onLoadExample();
   };
 
   return (
@@ -98,18 +107,39 @@ export function ExampleSelector({
           </p>
 
           {!documentLoaded && (
-            <Button
-              onClick={onLoadExample}
-              disabled={isLoading}
-              className="w-full"
-            >
-              {isLoading
-                ? "Chargement..."
-                : selectedExample.type === "uploaded"
-                ? "Fichier chargé"
-                : "Charger le fichier"}
-              <Download className="w-4 h-4" />
-            </Button>
+            <div className="space-y-2">
+              <Button
+                onClick={handleLoadExample}
+                disabled={isLoading}
+                className="w-full"
+              >
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Chargement...
+                  </div>
+                ) : selectedExample.type === "uploaded" ? (
+                  "Fichier chargé"
+                ) : (
+                  "Charger le fichier"
+                )}
+                <Download className="w-4 h-4" />
+              </Button>
+
+              {isLoading && (
+                <div className="text-left flex items-center gap-2 text-muted-foreground text-sm">
+                  <div className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin" />
+                  <span>Temps écoulé: {elapsedTime}s</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {!isLoading && finalTime !== null && (
+            <div className="text-left flex items-center gap-2 text-green-600 text-sm">
+              <Check className="w-4 h-4" />
+              <span>Chargé en {finalTime}s</span>
+            </div>
           )}
         </div>
       )}

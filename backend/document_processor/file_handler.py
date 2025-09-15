@@ -17,6 +17,7 @@ class DocumentProcessor:
         self.cache_dir = Path(settings.CACHE_DIR)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.client = Mistral(api_key=settings.MISTRALAI_API_KEY)
+        self.batch_size = 3  # Traiter 3 pages à la fois
 
     def _validate_files(self, files: List) -> None:
         """Valider la taille totale des fichiers téléchargés."""
@@ -87,7 +88,7 @@ class DocumentProcessor:
         return all_chunks
 
     def _process_file(self, file) -> List:
-        """Logique de traitement avec Mistral OCR"""
+        """Logique de traitement avec Mistral OCR par batches de pages"""
         if not file.name.endswith(('.pdf', '.docx', '.txt', '.md')):
             logger.warning(f"Ignorer le type de fichier non supporté: {file.name}")
             return []
@@ -107,18 +108,43 @@ class DocumentProcessor:
         # Encoder le contenu en base64
         file_base64 = base64.b64encode(file_content).decode('utf-8')
 
-        # Appel à Mistral OCR avec le document en base64
+        # Premier appel pour obtenir le nombre total de pages
         response = self.client.ocr.process(
-          model=settings.MODEL_OCR_ID,
-          document={
-            "type": "document_url",
-            "document_url": f"data:application/pdf;base64,{file_base64}"
-          },
-          # include_image_base64=True //Images non extractées
+            model=settings.MODEL_OCR_ID,
+            document={
+                "type": "document_url",
+                "document_url": f"data:application/pdf;base64,{file_base64}"
+            }
         )
 
-        # Extraire le texte markdown de toutes les pages et transform en chunks
-        markdown = "\n\n".join([page.markdown for page in response.pages])
+        total_pages = len(response.pages)
+        logger.info(f"Document avec {total_pages} pages, traitement par batches de {self.batch_size}")
+
+        all_markdown = []
+
+        # Traiter par batches de 3 pages
+        for start_page in range(0, total_pages, self.batch_size):
+            end_page = min(start_page + self.batch_size - 1, total_pages - 1)
+            logger.info(f"Traitement des pages {start_page + 1} à {end_page + 1}")
+
+            batch_response = self.client.ocr.process(
+                model=settings.MODEL_OCR_ID,
+                document={
+                    "type": "document_url",
+                    "document_url": f"data:application/pdf;base64,{file_base64}"
+                },
+                page_range={
+                    "start": start_page,
+                    "end": end_page
+                }
+            )
+
+            # Collecter le markdown des pages du batch
+            batch_markdown = [page.markdown for page in batch_response.pages]
+            all_markdown.extend(batch_markdown)
+
+        # Assembler tout le markdown et créer les chunks
+        markdown = "\n\n".join(all_markdown)
         splitter = MarkdownHeaderTextSplitter(self.headers)
         return splitter.split_text(markdown)
 
