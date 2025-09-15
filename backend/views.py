@@ -116,6 +116,14 @@ def load_file(request):
         # Chemin vers le fichier sur le disque dur
         file_path = os.path.join(settings.EXAMPLES_DIR, file_name)
 
+        # Vérifier que le fichier existe
+        if not os.path.exists(file_path):
+            return JsonResponse({"error": f"Fichier non trouvé: {file_name}"}, status=404)
+
+        # Vérifier que c'est un fichier (pas un dossier)
+        if not os.path.isfile(file_path):
+            return JsonResponse({"error": f"Le chemin n'est pas un fichier: {file_name}"}, status=400)
+
         # Créer un objet fichier pour le processeur
         class FileObject:
             def __init__(self, path):
