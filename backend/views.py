@@ -53,7 +53,10 @@ def process_files(file_objects, session_id, success_message="Fichiers traités a
     retriever_builder = RetrieverBuilder()
 
     chunks = processor.process(file_objects)
+    logger.info(f"Chunks générés: {len(chunks)}")
+
     retriever = retriever_builder.build_hybrid_retriever(chunks)
+    logger.info(f"Retriever créé: {retriever is not None}")
 
     # Mettre à jour la session
     current_hashes = get_file_hashes(file_objects)
@@ -61,6 +64,8 @@ def process_files(file_objects, session_id, success_message="Fichiers traités a
         "file_hashes": current_hashes,
         "retriever": retriever
     })
+
+    logger.info(f"Session {session_id} mise à jour. Retriever: {sessions[session_id]['retriever'] is not None}")
 
     return JsonResponse({
         "message": success_message,
@@ -137,6 +142,13 @@ def process_question(request):
     session_id = data.get('session_id', 'default')
 
     try:
+        # Vérifier que la session existe et a un retriever
+        if session_id not in sessions:
+            return JsonResponse({"error": "Aucun document chargé. Veuillez d'abord charger un document."}, status=400)
+
+        if sessions[session_id]["retriever"] is None:
+            return JsonResponse({"error": "Aucun retriever disponible. Veuillez recharger le document."}, status=400)
+
         workflow = AgentWorkflow()
         result = workflow.full_pipeline(
             question=question,
