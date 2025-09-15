@@ -65,9 +65,13 @@ class VerificationAgent:
             verification = {}
             for line in lines:
                 if ':' in line:
-                    key, value = line.split(':', 1)
-                    key = key.strip().capitalize()
-                    value = value.strip()
+                    parts = line.split(':', 1)
+                    if len(parts) == 2:
+                        key, value = parts
+                        key = key.strip().capitalize()
+                        value = value.strip()
+                    else:
+                        continue
                     if key in {"Supported", "Unsupported claims", "Contradictions", "Relevant", "Additional details"}:
                         if key in {"Unsupported claims", "Contradictions"}:
                             # Convert string list to actual list

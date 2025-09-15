@@ -40,9 +40,14 @@ class RetrieverBuilder:
                 logger.info("Récupérateur de vecteurs créé avec succès.")
 
                 # Combiner les récupérateurs en un récupérateur hybride
+                weights = settings.HYBRID_RETRIEVER_WEIGHTS
+                if len(weights) != 2:
+                    logger.warning(f"Poids incorrects: {weights}, utilisation des poids par défaut")
+                    weights = [0.4, 0.6]
+
                 hybrid_retriever = EnsembleRetriever(
                     retrievers=[bm25, vector_retriever],
-                    weights=settings.HYBRID_RETRIEVER_WEIGHTS
+                    weights=weights
                 )
                 logger.info("Récupérateur hybride créé avec succès.")
                 return hybrid_retriever

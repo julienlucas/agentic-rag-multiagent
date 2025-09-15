@@ -105,30 +105,17 @@ class DocumentProcessor:
 
         logger.info(f"Fichier lu, taille: {len(file_content)} bytes")
 
-        # Vérifier que le fichier n'est pas vide
-        if len(file_content) == 0:
-            logger.warning(f"Fichier vide: {file.name}")
-            return []
-
         # Encoder le contenu en base64
         file_base64 = base64.b64encode(file_content).decode('utf-8')
 
         # Premier appel pour obtenir le nombre total de pages
-        try:
-            response = self.client.ocr.process(
-                model=settings.MODEL_OCR_ID,
-                document={
-                    "type": "document_url",
-                    "document_url": f"data:application/pdf;base64,{file_base64}"
-                }
-            )
-        except Exception as e:
-            logger.error(f"Erreur API Mistral OCR: {e}")
-            return []
-
-        if not hasattr(response, 'pages') or not response.pages:
-            logger.warning(f"Aucune page trouvée dans le document: {file.name}")
-            return []
+        response = self.client.ocr.process(
+            model=settings.MODEL_OCR_ID,
+            document={
+                "type": "document_url",
+                "document_url": f"data:application/pdf;base64,{file_base64}"
+            }
+        )
 
         total_pages = len(response.pages)
         logger.info(f"Document avec {total_pages} pages, traitement par batches de {self.batch_size}")

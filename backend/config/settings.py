@@ -26,7 +26,7 @@ class Settings(BaseSettings):
 
     # Paramètres de récupération
     VECTOR_SEARCH_K: int = 10
-    HYBRID_RETRIEVER_WEIGHTS: list = [0.4, 0.6]
+    HYBRID_RETRIEVER_WEIGHTS: tuple = (0.4, 0.6)
 
     # Paramètres de journalisation
     LOG_LEVEL: str = "INFO"
