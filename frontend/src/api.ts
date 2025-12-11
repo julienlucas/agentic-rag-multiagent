@@ -1,7 +1,9 @@
+const API_BASE_URL = "http://localhost:8000";
+
 class ApiService {
   async loadFile(fileName: string, sessionId: string = "default") {
     try {
-      const response = await fetch("load-file", {
+      const response = await fetch(`${API_BASE_URL}/load-file`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -28,7 +30,7 @@ class ApiService {
     formData.append("file", file);
 
     try {
-      const response = await fetch("upload-file", {
+      const response = await fetch(`${API_BASE_URL}/upload-file`, {
         method: "POST",
         body: formData,
       });
@@ -46,16 +48,26 @@ class ApiService {
     question: string,
     sessionId: string
   ) {
-    const response = await fetch("process-question", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ question, session_id: sessionId }),
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/process-question`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ question, session_id: sessionId }),
+      });
 
-    const data = await response.json();
-    return { data };
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return { data };
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : "Erreur de connexion",
+      };
+    }
   }
 }
 
