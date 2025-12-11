@@ -80,15 +80,28 @@ export const Dashboard = () => {
     }
   };
 
-  const handleFileSelect = (file: File | null) => {
+  const handleFileSelect = async (file: File | null) => {
     setSelectedFile(file);
-    setSelectedExample({
-      title: file.name.replace(/\.[^/.]+$/, "")
-    });
 
     // Si on upload un fichier, on efface la question préchargée de l'exemple
     if (file) {
+      setSelectedExample({
+        title: file.name.replace(/\.[^/.]+$/, ""),
+        type: "uploaded"
+      });
       setPreloadedQuestion("");
+
+      // Upload automatiquement le fichier au backend
+      setIsLoadingExample(true);
+      try {
+        await api.uploadFile(file, sessionId);
+        setDocumentLoaded(true);
+      } catch (error) {
+        console.error("Erreur lors de l'upload du fichier:", error);
+        setDocumentLoaded(false);
+      } finally {
+        setIsLoadingExample(false);
+      }
     } else if (!file && selectedExample) {
       // Si on retire le fichier et qu'un exemple est sélectionné, on recharge sa question
       setPreloadedQuestion(selectedExample.question || "");
@@ -114,8 +127,9 @@ export const Dashboard = () => {
 
     try {
       const response = await api.processQuestion(question, sessionId);
-      if (response.data) {
-
+      if (response.error) {
+        setAnswer(`Erreur lors du traitement de la question: ${response.error}`);
+      } else if (response.data) {
         setAnswer(convertMarkdownToHtml(response.data.draft_answer));
         setVerificationReport(convertMarkdownToHtml(response.data.verification_report));
       }
