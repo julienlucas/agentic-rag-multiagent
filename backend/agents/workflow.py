@@ -3,8 +3,8 @@ from typing import TypedDict, List, Dict
 from .research_agent import ResearchAgent
 from .verification_agent import VerificationAgent
 from .relevance_checker import RelevanceChecker
-from langchain.schema import Document
-from langchain.retrievers import EnsembleRetriever
+from langchain_core.documents import Document
+from langchain_classic.retrievers.ensemble import EnsembleRetriever
 import logging
 
 logger = logging.getLogger(__name__)

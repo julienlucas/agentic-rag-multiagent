@@ -50,7 +50,7 @@ export function QuestionInput({
   };
 
   return (
-    <Card className="border-none">
+    <Card className="border-none shadow-none">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
@@ -70,6 +70,7 @@ export function QuestionInput({
         <Button
           type="submit"
           className="w-full"
+          size="xl"
           disabled={
             !question.trim() || !hasDocument || isLoading || !documentLoaded
           }

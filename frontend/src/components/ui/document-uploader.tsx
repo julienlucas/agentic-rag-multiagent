@@ -58,7 +58,7 @@ export function DocumentUploader({ selectedFile, onUploadFile, isUploading }: Do
         <Card className="p-8 border-2 border-dashed border-border hover:border-primary/50 transition-colors duration-300">
           <div
             className={`upload-zone rounded-lg p-8 text-center cursor-pointer ${
-              isDragActive ? 'drag-active' : ''
+              isDragActive ? "drag-active" : ""
             }`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
@@ -82,9 +82,7 @@ export function DocumentUploader({ selectedFile, onUploadFile, isUploading }: Do
                 <h3 className="text-lg font-semibold text-foreground">
                   Déposez le fichier ici
                 </h3>
-                <p className="text-sm text-muted-foreground">
-                  ou
-                </p>
+                <p className="text-sm text-muted-foreground">ou</p>
                 <Button>
                   <label htmlFor="file-upload" className="cursor-pointer">
                     Cliquez pour télécharger un fichier
@@ -92,7 +90,7 @@ export function DocumentUploader({ selectedFile, onUploadFile, isUploading }: Do
                 </Button>
               </div>
 
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs bg-[#e3fbf3] text-muted-foreground w-fit mx-auto px-4 py-2 rounded-lg">
                 Formats supportés: PDF, DOCX, TXT, MD
               </p>
             </div>
@@ -103,7 +101,9 @@ export function DocumentUploader({ selectedFile, onUploadFile, isUploading }: Do
       {selectedFile && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-medium text-foreground">Fichier sélectionné:</h4>
+            <h4 className="text-sm font-medium text-foreground">
+              Fichier sélectionné:
+            </h4>
             <Button
               variant="ghost"
               size="sm"

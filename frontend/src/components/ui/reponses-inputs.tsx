@@ -16,7 +16,7 @@ export function ResponseInputs({
   return (
     <div className="space-y-6">
       {/* Answer Area */}
-      <Card className="border-none">
+      <Card className="border-none shadow-none">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5" />

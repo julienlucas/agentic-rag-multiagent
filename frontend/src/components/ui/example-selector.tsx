@@ -54,7 +54,7 @@ export function ExampleSelector({
   };
 
   return (
-    <Card className="border-none">
+    <Card className="border-none shadow-none">
       <div className="flex items-center gap-2 mb-2">
         <FileText className="w-5 h-5 text-primary" />
         <h3 className="text-lg font-semibold text-foreground">Exemple</h3>
@@ -112,6 +112,7 @@ export function ExampleSelector({
                 onClick={handleLoadExample}
                 disabled={isLoading}
                 className="w-full"
+                size="xl"
               >
                 {isLoading ? (
                   <div className="flex items-center gap-2">
