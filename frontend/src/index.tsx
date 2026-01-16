@@ -2,8 +2,8 @@ import { DocumentUploader } from "@/components/ui/document-uploader";
 import { ExampleSelector } from "@/components/ui/example-selector";
 import { QuestionInput } from "@/components/ui/question-input";
 import { ResponseInputs } from "@/components/ui/reponses-inputs";
+import ContactForm from "@/components/ui/contact-form";
 import { Card, CardContent, CardTitle, CardHeader, CardDescription } from "@/components/ui/card.tsx";
-import { Button } from "@/components/ui/button";
 import { useState, useCallback, useEffect } from "react";
 import { api } from "./api";
 
@@ -225,7 +225,10 @@ export default function Index() {
           </div>
         </CardContent>
       </Card>
-      <Card className="mt-12 border-none max-w-2xl mx-auto shadow-none">
+      <Card
+        id="contact-form"
+        className="mt-12 border-none max-w-2xl mx-auto shadow-none"
+      >
         <CardContent className="p-0 border-none">
           <CardTitle
             variant="h2"
@@ -233,14 +236,13 @@ export default function Index() {
           >
             Étude de cas
           </CardTitle>
-          <CardTitle variant="h3">....</CardTitle>
-          <CardTitle variant="h3">Le challenge</CardTitle>
-          <p className="mb-4">
-            Créer un système RAG (Retrieval-Augmented Generation) capable de
-            répondre précisément aux questions sur des documents techniques tout
-            en minimisant les hallucinations. Les défis principaux étaient :
-          </p>
-          <ul className="list-disc list-inside mb-4 space-y-2">
+          <CardTitle variant="h3-card" className="mb-0 mt-4">
+            Le challenge
+          </CardTitle>
+          <CardTitle variant="h3" className="font-medium">
+            ....
+          </CardTitle>
+          <ul className="list-disc list-inside mb-4 space-y-4">
             <li>
               <strong>Réduction des hallucinations</strong> : Les modèles LLM
               génèrent souvent des informations non présentes dans les documents
@@ -265,12 +267,8 @@ export default function Index() {
               le texte depuis des documents PDF techniques
             </li>
           </ul>
-          <CardTitle variant="h3">Résultats et évaluation</CardTitle>
-          <p className="mb-4">
-            Le système utilise une approche de transfer learning avec
-            MobileNetV3 Large pour détecter les images générées par IA :
-          </p>
-          <ul className="list-inside mb-4 space-y-2">
+          <CardTitle variant="h3-card">Résultats et évaluation</CardTitle>
+          <ul className="list-inside mb-4 space-y-4">
             <ul className="list-disc list-inside mb-4 space-y-2">
               <li>
                 <strong>Architecture multi-agents</strong> : Orchestration avec
@@ -283,8 +281,11 @@ export default function Index() {
                 d'être retournée
               </li>
               <li>
-                <strong>Récupération hybride</strong> : Combinaison BM25 (40%) +
-                recherche vectorielle (60%) pour une meilleure couverture
+                <strong>Récupération hybride</strong> : Combinaison BM25 +
+                recherche vectorielle{" "}
+                <span>
+                  pour une meilleure couverture et précision des réponses
+                </span>
               </li>
               <li>
                 <strong>Traitement OCR avancé</strong> : Utilisation de Mistral
@@ -299,20 +300,23 @@ export default function Index() {
           </ul>
           <img
             src="/static/langsmith.png"
-            alt="border border-gray-100 rounded-xl w-full"
+            className="w-full h-auto rounded mt-3 border border-gray-100 rounded-sm"
           />
           <CardDescription className="italic text-center text-xs">
             Montoring dans Langsmith
           </CardDescription>
           <p>Et voilà.</p>
-          <CardTitle variant="h3" className="mt-6 text-center">
-            On discute de votre projet?
+          <CardTitle
+            variant="h3"
+            className="mt-12 max-w-xl mx-auto text-center"
+          >
+            On discute de votre projet d'automatisation ou d'application?
           </CardTitle>
-          <div className="flex justify-center">
-            <Button className="mx-auto w-full" size="xl">
-              Me contacter
-            </Button>
-          </div>
+          <CardDescription className="text-center mb-4">
+            Remplissez le formulaire ci-dessous et je vous recontacte dans les
+            24-48 heures.
+          </CardDescription>
+          <ContactForm />
         </CardContent>
       </Card>
     </main>

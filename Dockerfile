@@ -18,15 +18,16 @@ COPY pyproject.toml uv.lock ./
 
 RUN uv sync --frozen --no-install-project
 
-COPY frontend/package.json ./frontend/
+COPY frontend/ ./frontend/
 
 WORKDIR /app/frontend
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 WORKDIR /app
 COPY . .
 
 WORKDIR /app/frontend
+COPY frontend/src/lib/utils.ts ./src/lib/utils.ts
 RUN pnpm run build
 
 WORKDIR /app

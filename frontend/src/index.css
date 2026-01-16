@@ -69,15 +69,15 @@ body {
 p,
 ul li,
 ol li {
-  @apply text-zinc-600 text-lg leading-6;
+  @apply mb-4;
 }
 
 strong {
   @apply text-black;
 }
 
-strong span {
-  @apply bg-gray-300 px-1 py-0.5;
+li span {
+  @apply bg-gray-600 text-white px-1 py-0.5;
 }
 
 * {
