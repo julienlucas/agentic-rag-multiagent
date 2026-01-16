@@ -27,6 +27,10 @@ WORKDIR /app
 COPY . .
 
 WORKDIR /app/frontend
+RUN if [ ! -f /app/frontend/src/lib/utils.ts ]; then \
+  mkdir -p /app/frontend/src/lib && \
+  printf 'import { clsx, type ClassValue } from "clsx"\nimport { twMerge } from "tailwind-merge"\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs))\n}\n' > /app/frontend/src/lib/utils.ts; \
+fi
 RUN pnpm run build
 
 WORKDIR /app
