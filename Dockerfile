@@ -27,7 +27,6 @@ WORKDIR /app
 COPY . .
 
 WORKDIR /app/frontend
-COPY frontend/src/lib/utils.ts ./src/lib/utils.ts
 RUN pnpm run build
 
 WORKDIR /app
