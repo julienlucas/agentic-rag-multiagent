@@ -118,13 +118,34 @@ const App = () => {
         <Card className="border-none mx-auto max-w-2xl w-full">
           <CardTitle variant="h4">Mes autres projets IA</CardTitle>
           <CardDescription className="text-sm flex items-center gap-1">
-            Fakefinder Nano Banana Pro
+            <a
+              href="https://fakefinder-nanobananapro.up.railway.app"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:underline"
+            >
+              Fakefinder Nano Banana Pro
+            </a>
           </CardDescription>
           <CardDescription className="text-sm flex items-center gap-1">
-            StyleAnalyzer - Analyse vètement, style et MM-RAG recommandation
+            <a
+              href="https://mm-rag-styleanalyzer.up.railway.app"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:underline"
+            >
+              StyleAnalyzer - Analyse vètement, style et MM-RAG recommandation
+            </a>
           </CardDescription>
           <CardDescription className="text-sm flex items-center gap-1">
-            PneumoDiag - Pneumonia Diagnostic Assistant
+            <a
+              href="https://pneumodiag.up.railway.app"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:underline"
+            >
+              PneumoDiag - Pneumonia Diagnostic Assistant
+            </a>
           </CardDescription>
           <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 py-4 pt-8">
             <div className="text-sm flex justify-center">
