@@ -72,4 +72,53 @@ LANGSMITH_PROJECT=agentic_rag_multi_agent
 poetry run python app.py
 ```
 
+## Évaluation (pertinence + avant/après)
+
+1. **Créer un dataset** (JSONL) à partir du template :
+```bash
+cp backend/evaluation/dataset.sample.jsonl backend/evaluation/dataset.jsonl
+```
+Remplace `REPLACE_ME` par vos questions, réponses attendues et passages gold.
+
+Guidelines d'annotation :
+- `backend/evaluation/guidelines.md`
+
+2. **Lancer l'évaluation** :
+```bash
+uv run python -m backend.evaluation.run_eval \
+  --dataset backend/evaluation/dataset.jsonl \
+  --mode both \
+  --out-dir backend/evaluation/outputs
+```
+Les résultats sont dans `backend/evaluation/outputs/` (`eval_summary.json` et `eval_results.json`).
+
+Métriques suivies :
+- Retrieval : `recall@k`, `mrr@k`, `ndcg@k`
+- Réponse : `mean_f1`, `context_hit_rate`
+- Vérification : `supported_rate`, `relevant_rate`
+
+Fichiers générés :
+- `eval_summary.json`
+- `eval_results.json`
+- `eval_regressions.json`
+- `eval_errors.json`
+
+## RAG‑Evals (Ragas)
+
+```bash
+uv run python -m backend.evaluation.run_ragas \
+  --dataset backend/evaluation/dataset.jsonl \
+  --mode agentic \
+  --out-dir backend/evaluation/ragas_outputs
+```
+Résultats : `ragas_summary.json`, `ragas_results.json`.
+
+## CI (GitHub Actions)
+
+Workflow : `.github/workflows/eval.yml`
+
+Secrets requis :
+- `MISTRALAI_API_KEY`
+- `LANGSMITH_API_KEY` (optionnel)
+
 Ajoutez une étoile au repo pour soutenir mon travail. 🙏

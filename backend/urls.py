@@ -5,9 +5,9 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('', index),
-    path('load-file', load_file),
-    path('upload-file', upload_file),
-    path('process-question', process_question),
+    path('api/load-file', load_file),
+    path('api/upload-file', upload_file),
+    path('api/process-question', process_question),
 ]
 
 if settings.DEBUG:

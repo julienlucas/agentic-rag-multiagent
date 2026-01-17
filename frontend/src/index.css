@@ -69,6 +69,11 @@ body {
 p,
 ul li,
 ol li {
+  @apply text-zinc-600 text-lg leading-6;
+}
+
+ul li,
+ol li {
   @apply mb-4;
 }
 
@@ -82,4 +87,16 @@ li span {
 
 * {
   @apply border-border transition-all duration-100 ease-in-out;
+}
+
+
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
 }

@@ -174,8 +174,8 @@ export default function Index() {
           techniques
         </CardDescription>
         <CardDescription className="text-center text-sm">
-          <strong>RAG Agentique</strong> précis et à faible taux d'halucinations
-          (5-1%)
+          <strong>RAG Multi-Agentique</strong> précis et à faible taux
+          d'halucinations (5-1%)
           <br />
           fonctionne avec 3 modèles Mistral AI (Embbed, OCR et Mistral Large)
         </CardDescription>
@@ -240,61 +240,87 @@ export default function Index() {
             Le challenge
           </CardTitle>
           <CardTitle variant="h3" className="font-medium">
-            ....
+            Créer un système RAG récupérant de l'info factcheckée et pertinente dans le cas de docs techniques.
           </CardTitle>
           <ul className="list-disc list-inside mb-4 space-y-4">
             <li>
-              <strong>Réduction des hallucinations</strong> : Les modèles LLM
-              génèrent souvent des informations non présentes dans les documents
-              sources
+              <strong>Pertinence de la récupération</strong> : Remonter les
+              passages exacts malgré le bruit, le vocabulaire technique et les
+              tableaux.
             </li>
             <li>
-              <strong>Vérification factuelle</strong> : S'assurer que chaque
-              réponse est directement supportée par le contexte fourni
+              <strong>Avoir aussi un factcheck des réponses</strong> : Éviter les
+              hallucinations et ne répondre qu'avec des preuves dans le
+              contexte.
             </li>
             <li>
-              <strong>Récupération hybride</strong> : Combiner recherche
-              sémantique (vecteurs) et recherche lexicale (BM25) pour une
-              meilleure précision
+              <strong>
+                Pouvoir couvrir de multiples documents et pages
+              </strong>{" "}
+              : Croiser plusieurs sources sans perdre l'information clé.
             </li>
             <li>
-              <strong>Orchestration multi-agents</strong> : Coordonner plusieurs
-              agents spécialisés (recherche, vérification, pertinence) pour une
-              réponse optimale
+              <strong>Vérifier la qualité OCR avec la solution Mistral OCR</strong> :
+              Extraire du texte propre depuis des PDF longs et hétérogènes.
             </li>
             <li>
-              <strong>Traitement OCR</strong> : Extraire et traiter efficacement
-              le texte depuis des documents PDF techniques
+              <strong>Évaluer la pertinence</strong> : Prouver la
+              pertinence avec des métriques et des comparaisons avant/après.
             </li>
           </ul>
           <CardTitle variant="h3-card">Résultats et évaluation</CardTitle>
           <ul className="list-inside mb-4 space-y-4">
-            <ul className="list-disc list-inside mb-4 space-y-2">
+            <ul className="list-inside mb-4 space-y-4">
               <li>
-                <strong>Architecture multi-agents</strong> : Orchestration avec
-                LangGraph de 3 agents spécialisés (recherche, vérification,
-                pertinence)
-              </li>
-              <li>
-                <strong>Fact-checker intégré</strong> : Chaque réponse est
-                automatiquement vérifiée contre les documents sources avant
-                d'être retournée
-              </li>
-              <li>
-                <strong>Récupération hybride</strong> : Combinaison BM25 +
-                recherche vectorielle{" "}
+                <strong>
+                  Récupération hybride + ajout de 2 agents spécialisés
+                  (FactChecker et PertinenceChecker)
+                </strong>{" "}
+                : La combinaison BM25 + recherche vectorielle permettant{" "}
                 <span>
-                  pour une meilleure couverture et précision des réponses
+                  la bonne couverture et pertinence des réponses sur des
+                  documentations techniques.
                 </span>
               </li>
               <li>
-                <strong>Traitement OCR avancé</strong> : Utilisation de Mistral
-                OCR pour extraire le texte depuis les PDF techniques
+                <strong>🎯 Recall@10 (top 10 résultats) : 37.5% → 62.5%</strong>{" "}
+                —{" "}
+                <span>
+                  donc 5 questions sur 8 ont au moins un passage pertinent dans
+                  le top 10.
+                </span>
               </li>
               <li>
-                <strong>Réduction des hallucinations</strong> : Le système
-                refuse de répondre si les documents ne contiennent pas
-                d'informations pertinentes
+                <strong>🎯 MRR@10 (top 10 résultats) : 27.6% → 47.92%</strong> —{" "}
+                <span>
+                  donc en moyenne le 1er bon passage arrive vers la 2ᵉ place.
+                </span>
+              </li>
+              <li>
+                <strong>🎯 nDCG@10 (top 10 résultats) : 35.96% → 51.64%</strong>{" "}
+                —{" "}
+                <span>
+                  donc classement global de pertience correct, mais pas encore
+                  excellent.
+                </span>
+              </li>
+              <li>
+                <strong>
+                  <span>
+                    🌀 Un 0% d'hallucination grâce au reranker développé
+                  </span>
+                </strong>{" "}
+                mais peu fiable, il faudrait des tests sur une plus vaste
+                quantité de données.
+              </li>
+              <li>
+                <strong>
+                  💡 Au final{" "}
+                  <span>
+                    81% des résponses jugées pertinentes d'après RAGAS,
+                  </span>
+                </strong>{" "}
+                mais testé sur seulement 2 documents.
               </li>
             </ul>
           </ul>
@@ -305,7 +331,12 @@ export default function Index() {
           <CardDescription className="italic text-center text-xs">
             Montoring dans Langsmith
           </CardDescription>
-          <p>Et voilà.</p>
+          <br />
+          <p>
+            En somme un bon POC.
+            <br />
+            Mais à améliorer pour passage à l'échelle.
+          </p>
           <CardTitle
             variant="h3"
             className="mt-12 max-w-xl mx-auto text-center"

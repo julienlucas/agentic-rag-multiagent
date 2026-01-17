@@ -1,7 +1,7 @@
 class ApiService {
   async loadFile(fileName: string, sessionId: string = "default") {
     try {
-      const response = await fetch("load-file", {
+      const response = await fetch("/api/load-file", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -28,7 +28,7 @@ class ApiService {
     formData.append("file", file);
 
     try {
-      const response = await fetch("upload-file", {
+      const response = await fetch("/api/upload-file", {
         method: "POST",
         body: formData,
       });
@@ -46,7 +46,7 @@ class ApiService {
     question: string,
     sessionId: string
   ) {
-    const response = await fetch("process-question", {
+    const response = await fetch("/api/process-question", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

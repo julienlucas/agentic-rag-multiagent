@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List
 from mistralai import Mistral
-from langchain_text_splitters import MarkdownHeaderTextSplitter
+from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
 from ..config import constants
 from ..config.settings import settings
 from ..utils.logging import logger
@@ -127,8 +127,13 @@ class DocumentProcessor:
 
             # Assembler le markdown et créer les chunks
             markdown = "\n\n".join(all_markdown)
-            splitter = MarkdownHeaderTextSplitter(self.headers)
-            return splitter.split_text(markdown)
+            header_splitter = MarkdownHeaderTextSplitter(self.headers)
+            header_chunks = header_splitter.split_text(markdown)
+            chunk_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=settings.CHUNK_SIZE,
+                chunk_overlap=settings.CHUNK_OVERLAP,
+            )
+            return chunk_splitter.split_documents(header_chunks)
 
         except Exception as e:
             logger.error(f"Erreur lors du traitement OCR: {str(e)}")

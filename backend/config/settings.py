@@ -25,8 +25,17 @@ class Settings(BaseSettings):
     CHROMA_COLLECTION_NAME: str = "documents"
 
     # Paramètres de récupération
-    VECTOR_SEARCH_K: int = 10
-    HYBRID_RETRIEVER_WEIGHTS: tuple = (0.4, 0.6)
+    VECTOR_SEARCH_K: int = 30
+    BM25_K: int = 30
+    HYBRID_RETRIEVER_WEIGHTS: tuple = (0.5, 0.5)
+    RERANK_ENABLED: bool = True
+    RERANK_TOP_K: int = 20
+    RERANK_STRATEGY: str = "bge"  # "bge", "llm" ou "embedding"
+    RERANK_BGE_MODEL: str = "BAAI/bge-reranker-v2-m3"
+
+    # Paramètres de chunking
+    CHUNK_SIZE: int = 700
+    CHUNK_OVERLAP: int = 300
 
     # Paramètres de journalisation
     LOG_LEVEL: str = "INFO"

@@ -1,0 +1,282 @@
+[
+  {
+    "id": "ds-1",
+    "question": "Quels modèles et tailles ont été open-sourcés par DeepSeek-R1 ?",
+    "expected_answer": "Ils ont open-sourcé DeepSeek-R1-Zero, DeepSeek-R1 et six modèles denses distillés (1.5B, 7B, 8B, 14B, 32B, 70B).",
+    "mode": "baseline",
+    "answer": "D'après le contexte fourni, les modèles et tailles open-sourcés par **DeepSeek-R1** sont les suivants :\n\n### **Modèles distillés open-sourcés** (basés sur DeepSeek-R1) :\n1. **Série Qwen** :\n   - **DeepSeek-R1-Distill-Qwen-1.5B**\n   - **DeepSeek-R1-Distill-Qwen-7B**\n   - **DeepSeek-R1-Distill-Qwen-14B**\n   - **DeepSeek-R1-Distill-Qwen-32B**\n\n2. **Série Llama** :\n   - **DeepSeek-R1-Distill-Llama-8B**\n   - **DeepSeek-R1-Distill-Llama-70B**\n\n### **Modèles de base open-sourcés** :\n- **DeepSeek-R1-Zero** (modèle entraîné uniquement par RL sans SFT initial).\n- **DeepSeek-R1** (version améliorée avec cold-start data et multi-stage training).\n\n### **Résumé des tailles disponibles** :\n- **1.5B, 7B, 8B, 14B, 32B, 70B** (pour les modèles distillés).\n- Les modèles **Qwen** et **Llama** sont les architectures de base utilisées pour la distillation.\n\nCes modèles sont conçus pour améliorer les",
+    "context_hit": true,
+    "answer_f1": 0.21768707482993196,
+    "supported": null,
+    "relevant": null,
+    "gold_passages": [
+      "To support the research community, we open-source DeepSeek-R1-Zero, DeepSeek-R1, and six dense models (1.5B, 7B, 8B, 14B, 32B, 70B) distilled from DeepSeek-R1 based on Qwen and Llama."
+    ],
+    "recall@10": 0.0,
+    "mrr@10": 0.0,
+    "ndcg@10": 0.0
+  },
+  {
+    "id": "ds-1",
+    "question": "Quels modèles et tailles ont été open-sourcés par DeepSeek-R1 ?",
+    "expected_answer": "Ils ont open-sourcé DeepSeek-R1-Zero, DeepSeek-R1 et six modèles denses distillés (1.5B, 7B, 8B, 14B, 32B, 70B).",
+    "mode": "agentic",
+    "answer": "D'après le contexte fourni, les modèles et tailles **open-sourcés par DeepSeek-R1** sont les suivants :\n\n### **Modèles distillés open-sourcés** (basés sur Qwen et Llama) :\n1. **DeepSeek-R1-Distill-Qwen** :\n   - 1.5B\n   - 7B\n   - 14B\n   - 32B\n\n2. **DeepSeek-R1-Distill-Llama** :\n   - 8B\n   - 70B\n\n### **Autres modèles open-sourcés** :\n- **DeepSeek-R1-Zero** (modèle entraîné par RL pur sans SFT initial).\n- **DeepSeek-R1** (version finale avec cold-start data et multi-stage training).\n\n### **Remarques** :\n- Les modèles distillés surpassent souvent des modèles plus grands (ex. : le 14B dépasse QwQ-32B-Preview).\n- Les tailles 1.5B, 7B, 8B, 14B, 32B et 70B sont explicitement mentionnées comme open-sourcées.",
+    "context_hit": true,
+    "answer_f1": 0.25806451612903225,
+    "supported": true,
+    "relevant": true,
+    "hallucinated": false,
+    "gold_passages": [
+      "To support the research community, we open-source DeepSeek-R1-Zero, DeepSeek-R1, and six dense models (1.5B, 7B, 8B, 14B, 32B, 70B) distilled from DeepSeek-R1 based on Qwen and Llama."
+    ],
+    "recall@10": 0.0,
+    "mrr@10": 0.0,
+    "ndcg@10": 0.0
+  },
+  {
+    "id": "ds-2",
+    "question": "Quelle progression du pass@1 sur AIME 2024 est mentionnée pour DeepSeek-R1-Zero ?",
+    "expected_answer": "Le pass@1 sur AIME 2024 augmente de 15.6% à 71.0% et monte à 86.7% avec majority voting.",
+    "mode": "baseline",
+    "answer": "D'après le contexte fourni, la progression du **pass@1** de **DeepSeek-R1-Zero** sur **AIME 2024** est la suivante :\n\n- **Score initial** : **15,6 %**\n- **Score final** : **71,0 %**\n\nCette amélioration significative (de **15,6 % à 71,0 %**) est obtenue grâce au processus d'apprentissage par renforcement (RL) sans données supervisées, et place le modèle à un niveau de performance comparable à **OpenAI-o1-0912** (74,4 % sur AIME 2024).\nAvec un **consensus@64** (majorité vote sur 64 échantillons), le score atteint même **86,7 %**.",
+    "context_hit": true,
+    "answer_f1": 0.3238095238095238,
+    "supported": null,
+    "relevant": null,
+    "gold_passages": [
+      "For instance, the pass@1 score on AIME 2024 increases from 15.6% to 71.0%, and with majority voting, the score further improves to 86.7%, matching the performance of OpenAI-o1-0912."
+    ],
+    "recall@10": 1.0,
+    "mrr@10": 0.5,
+    "ndcg@10": 0.6309297535714575
+  },
+  {
+    "id": "ds-2",
+    "question": "Quelle progression du pass@1 sur AIME 2024 est mentionnée pour DeepSeek-R1-Zero ?",
+    "expected_answer": "Le pass@1 sur AIME 2024 augmente de 15.6% à 71.0% et monte à 86.7% avec majority voting.",
+    "mode": "agentic",
+    "answer": "D'après le contexte fourni, la progression du **pass@1** de **DeepSeek-R1-Zero** sur **AIME 2024** est la suivante :\n\n- **Score initial** : **15,6 %**\n- **Score final** : **71,0 %**\n\nCette amélioration significative (de **15,6 % à 71,0 %**) est obtenue grâce au processus d'entraînement par **renforcement learning (RL)**, sans utilisation de données supervisées. Le modèle atteint ainsi des performances comparables à celles d'**OpenAI-o1-0912** (74,4 % sur AIME 2024).\n\n*Note* : Avec une stratégie de **majority voting (cons@64)**, le score passe à **86,7 %**, dépassant OpenAI-o1-0912.",
+    "context_hit": true,
+    "answer_f1": 0.32432432432432434,
+    "supported": true,
+    "relevant": true,
+    "hallucinated": false,
+    "gold_passages": [
+      "For instance, the pass@1 score on AIME 2024 increases from 15.6% to 71.0%, and with majority voting, the score further improves to 86.7%, matching the performance of OpenAI-o1-0912."
+    ],
+    "recall@10": 1.0,
+    "mrr@10": 0.5,
+    "ndcg@10": 0.6309297535714575
+  },
+  {
+    "id": "ds-3",
+    "question": "Quel score Codeforces est donné pour DeepSeek-R1 ?",
+    "expected_answer": "Il atteint un Elo de 2,029 sur Codeforces et surpasse 96.3% des participants humains.",
+    "mode": "baseline",
+    "answer": "D'après le contexte fourni, le score **Codeforces** attribué à **DeepSeek-R1** est un **rating de 2029**.\n\nCe score place DeepSeek-R1 au-dessus de **96,3 % des participants humains** dans les compétitions Codeforces.",
+    "context_hit": true,
+    "answer_f1": 0.31999999999999995,
+    "supported": null,
+    "relevant": null,
+    "gold_passages": [
+      "On coding-related tasks, DeepSeek-R1 demonstrates expert level in code competition tasks, as it achieves 2,029 Elo rating on Codeforces outperforming 96.3% human participants in the competition."
+    ],
+    "recall@10": 1.0,
+    "mrr@10": 1.0,
+    "ndcg@10": 1.0
+  },
+  {
+    "id": "ds-3",
+    "question": "Quel score Codeforces est donné pour DeepSeek-R1 ?",
+    "expected_answer": "Il atteint un Elo de 2,029 sur Codeforces et surpasse 96.3% des participants humains.",
+    "mode": "agentic",
+    "answer": "D'après le contexte fourni, le score **Codeforces** attribué à **DeepSeek-R1** est un **rating de 2029**.\n\nCe score place DeepSeek-R1 au-dessus de **96,3 % des participants humains** dans les compétitions Codeforces.",
+    "context_hit": true,
+    "answer_f1": 0.31999999999999995,
+    "supported": true,
+    "relevant": true,
+    "hallucinated": false,
+    "gold_passages": [
+      "On coding-related tasks, DeepSeek-R1 demonstrates expert level in code competition tasks, as it achieves 2,029 Elo rating on Codeforces outperforming 96.3% human participants in the competition."
+    ],
+    "recall@10": 1.0,
+    "mrr@10": 1.0,
+    "ndcg@10": 1.0
+  },
+  {
+    "id": "ds-4",
+    "question": "Quels scores sont rapportés pour DeepSeek-R1-Distill-Qwen-32B ?",
+    "expected_answer": "DeepSeek-R1-Distill-Qwen-32B score 72.6% sur AIME 2024, 94.3% sur MATH-500 et 57.2% sur LiveCodeBench.",
+    "mode": "baseline",
+    "answer": "D'après le contexte fourni, les scores rapportés pour **DeepSeek-R1-Distill-Qwen-32B** sont les suivants :\n\n1. **AIME 2024** :\n   - **pass@1** : **72.6%**\n   - **cons@64** : **83.3%**\n\n2. **MATH-500** :\n   - **pass@1** : **94.3%**\n\n3. **GPQA Diamond** :\n   - **pass@1** : **62.1%**\n\n4. **LiveCodeBench** :\n   - **pass@1** : **57.2%**\n\n5. **CodeForces** :\n   - **Rating** : **1691**\n\nCes résultats sont extraits des **Tableaux 5 et 6** du contexte, où **DeepSeek-R1-Distill-Qwen-32B** surpasse les modèles précédents (comme QwQ-32B-Preview et OpenAI-o1-mini) sur la plupart des benchmarks.",
+    "context_hit": true,
+    "answer_f1": 0.33644859813084116,
+    "supported": null,
+    "relevant": null,
+    "gold_passages": [
+      "DeepSeek-R1-Distill-Qwen-32B scores 72.6% on AIME 2024, 94.3% on MATH-500, and 57.2% on LiveCodeBench."
+    ],
+    "recall@10": 1.0,
+    "mrr@10": 1.0,
+    "ndcg@10": 1.0
+  },
+  {
+    "id": "ds-4",
+    "question": "Quels scores sont rapportés pour DeepSeek-R1-Distill-Qwen-32B ?",
+    "expected_answer": "DeepSeek-R1-Distill-Qwen-32B score 72.6% sur AIME 2024, 94.3% sur MATH-500 et 57.2% sur LiveCodeBench.",
+    "mode": "agentic",
+    "answer": "D'après le contexte fourni, les scores rapportés pour **DeepSeek-R1-Distill-Qwen-32B** sont les suivants :\n\n1. **AIME 2024** :\n   - **pass@1** : **72.6%**\n   - **cons@64** : **83.3%**\n\n2. **MATH-500** :\n   - **pass@1** : **94.3%**\n\n3. **GPQA Diamond** :\n   - **pass@1** : **62.1%**\n\n4. **LiveCodeBench** :\n   - **pass@1** : **57.2%**\n\n5. **CodeForces** :\n   - **Rating** : **1691**\n\nCes résultats sont extraits des **Tableaux 5 et 6** du contexte, qui comparent les performances des modèles distillés et d'autres modèles sur des benchmarks liés au raisonnement.",
+    "context_hit": true,
+    "answer_f1": 0.3564356435643564,
+    "supported": true,
+    "relevant": true,
+    "hallucinated": false,
+    "gold_passages": [
+      "DeepSeek-R1-Distill-Qwen-32B scores 72.6% on AIME 2024, 94.3% on MATH-500, and 57.2% on LiveCodeBench."
+    ],
+    "recall@10": 1.0,
+    "mrr@10": 1.0,
+    "ndcg@10": 1.0
+  },
+  {
+    "id": "gg-1",
+    "question": "Quelle période couvre l'exercice 2023 cité dans le rapport environnemental 2024 de Google ?",
+    "expected_answer": "L'exercice 2023 va du 1er janvier au 31 décembre 2023.",
+    "mode": "baseline",
+    "answer": "D'après le contexte fourni, l'**exercice 2023** cité dans le rapport environnemental 2024 de Google couvre la période suivante :\n\n**Du 1er janvier 2023 au 31 décembre 2023** (année fiscale complète).\nCette période est explicitement mentionnée à plusieurs reprises dans le rapport, notamment :\n- *\"This report features data, performance highlights, and progress against our targets from our 2023 fiscal year (January 1 to December 31, 2023)\"*.\n- *\"The reporting period for our environmental data covers our fiscal year January 1, 2023, through December 31, 2023\"*.",
+    "context_hit": true,
+    "answer_f1": 0.21276595744680848,
+    "supported": null,
+    "relevant": null,
+    "gold_passages": [
+      "This report features data, performance highlights, and progress against our targets from our 2023 fiscal year (January 1 to December 31, 2023), and mentions some notable achievements from 2024 to date."
+    ],
+    "recall@10": 1.0,
+    "mrr@10": 1.0,
+    "ndcg@10": 1.0
+  },
+  {
+    "id": "gg-1",
+    "question": "Quelle période couvre l'exercice 2023 cité dans le rapport environnemental 2024 de Google ?",
+    "expected_answer": "L'exercice 2023 va du 1er janvier au 31 décembre 2023.",
+    "mode": "agentic",
+    "answer": "D'après le contexte fourni, l'exercice 2023 cité dans le rapport environnemental 2024 de Google couvre la période suivante :\n\n**Du 1er janvier 2023 au 31 décembre 2023.**\n*(C'est l'année fiscale complète de Google pour 2023, mentionnée explicitement à plusieurs reprises dans le rapport.)*",
+    "context_hit": true,
+    "answer_f1": 0.3508771929824562,
+    "supported": true,
+    "relevant": true,
+    "hallucinated": false,
+    "gold_passages": [
+      "This report features data, performance highlights, and progress against our targets from our 2023 fiscal year (January 1 to December 31, 2023), and mentions some notable achievements from 2024 to date."
+    ],
+    "recall@10": 1.0,
+    "mrr@10": 1.0,
+    "ndcg@10": 1.0
+  },
+  {
+    "id": "gg-2",
+    "question": "Quelle amélioration d'efficacité énergétique est mentionnée pour Trillium (TPU 6e génération) ?",
+    "expected_answer": "Trillium est indiqué comme étant plus de 67% plus économe en énergie que TPU v5e.",
+    "mode": "baseline",
+    "answer": "D'après le contexte fourni, **aucune amélioration spécifique d'efficacité énergétique pour Trillium (TPU 6e génération)** n'est mentionnée explicitement.\n\nLe document se concentre principalement sur :\n- Les performances énergétiques des **TPU v4** (référence 54) et des **GPU Blackwell de Nvidia** (référence 55, avec une réduction de 75 % de la consommation pour l'entraînement des modèles IA).\n- Les efforts généraux de Google en matière d'efficacité énergétique (PUE, CFE, optimisation des data centers, etc.), mais sans lien direct avec Trillium.\n\n**Conclusion** : Aucune information sur Trillium n'est disponible dans le contexte fourni.",
+    "context_hit": false,
+    "answer_f1": 0.09433962264150943,
+    "supported": null,
+    "relevant": null,
+    "gold_passages": [
+      "To help minimize our environmental footprint, we’ve built world-leading efficient infrastructure for the AI era, including Trillium, our sixth-generation Tensor Processing Unit (TPU), which is over 67% more energy-efficient than TPU v5e."
+    ],
+    "recall@10": 0.0,
+    "mrr@10": 0.0,
+    "ndcg@10": 0.0
+  },
+  {
+    "id": "gg-2",
+    "question": "Quelle amélioration d'efficacité énergétique est mentionnée pour Trillium (TPU 6e génération) ?",
+    "expected_answer": "Trillium est indiqué comme étant plus de 67% plus économe en énergie que TPU v5e.",
+    "mode": "agentic",
+    "answer": "Cette question n'est pas liée (ou il n'y a pas de données) pour votre requête. Veuillez poser une autre question pertinente aux document(s) téléchargé(s).",
+    "context_hit": false,
+    "answer_f1": 0.09302325581395349,
+    "supported": null,
+    "relevant": null,
+    "hallucinated": false,
+    "gold_passages": [
+      "To help minimize our environmental footprint, we’ve built world-leading efficient infrastructure for the AI era, including Trillium, our sixth-generation Tensor Processing Unit (TPU), which is over 67% more energy-efficient than TPU v5e."
+    ],
+    "recall@10": 0.0,
+    "mrr@10": 0.0,
+    "ndcg@10": 0.0
+  },
+  {
+    "id": "gg-3",
+    "question": "Quel était le PUE moyen des data centers Google en 2023 et la moyenne industrie ?",
+    "expected_answer": "Le PUE moyen était de 1.10 contre 1.58 pour la moyenne industrie.",
+    "mode": "baseline",
+    "answer": "**Réponse basée sur le contexte fourni :**\n\n- **PUE moyen des data centers Google en 2023** : **1,10**\n  (Moyenne annuelle pour l'ensemble des data centers de Google dans le monde, stable depuis 2012 avec un PUE ≤ 1,12).\n\n- **PUE moyen de l'industrie en 2023** : **1,58**\n  (Selon l'Uptime Institute, avec une tendance à la stagnation due à l'augmentation des data centers dans des régions aux climats chauds et de petite capacité, comme l'Asie, le Moyen-Orient, l'Afrique et l'Amérique latine).\n\n**Source :**\n- Données internes de Google (2023) et rapport de l'Uptime Institute (2023).\n- Le PUE (Power Usage Effectiveness) mesure l'efficacité énergétique : un PUE de 1,10 signifie que 90 % de l'énergie est utilisée pour l'IT, contre seulement ~63 % pour l'industrie (PUE 1,58).",
+    "context_hit": true,
+    "answer_f1": 0.17808219178082194,
+    "supported": null,
+    "relevant": null,
+    "gold_passages": [
+      "In 2023, the average annual power usage effectiveness for our data centers was 1.10 compared with the industry average of 1.58,"
+    ],
+    "recall@10": 0.0,
+    "mrr@10": 0.0,
+    "ndcg@10": 0.0
+  },
+  {
+    "id": "gg-3",
+    "question": "Quel était le PUE moyen des data centers Google en 2023 et la moyenne industrie ?",
+    "expected_answer": "Le PUE moyen était de 1.10 contre 1.58 pour la moyenne industrie.",
+    "mode": "agentic",
+    "answer": "**Réponse basée sur le contexte fourni :**\n\n- **PUE moyen des data centers Google en 2023** : **1,10**\n  (Moyenne annuelle pour l'ensemble des data centers Google dans le monde, stable depuis 2012 avec un PUE ≤ 1,12).\n\n- **PUE moyen de l'industrie en 2023** : **1,58**\n  (Selon l'*Uptime Institute's 2023 Global Data Center Survey*, reflétant une moyenne mondiale incluant des data centers dans des régions aux climats plus chauds et de plus petite capacité, ce qui augmente la consommation énergétique).\n\n**Comparaison** :\nLes data centers Google consomment **5,8 fois moins d'énergie overhead** (pour le refroidissement et la distribution d'électricité) par unité d'énergie IT que la moyenne de l'industrie.",
+    "context_hit": true,
+    "answer_f1": 0.18897637795275588,
+    "supported": true,
+    "relevant": true,
+    "hallucinated": false,
+    "gold_passages": [
+      "In 2023, the average annual power usage effectiveness for our data centers was 1.10 compared with the industry average of 1.58,"
+    ],
+    "recall@10": 0.0,
+    "mrr@10": 0.0,
+    "ndcg@10": 0.0
+  },
+  {
+    "id": "gg-4",
+    "question": "Quel est l'objectif net-zero de Google mentionné dans le rapport ?",
+    "expected_answer": "Atteindre le net-zero pour toutes les opérations et la chaîne de valeur d'ici 2030, avec un objectif de 24/7 CFE sur chaque réseau.",
+    "mode": "baseline",
+    "answer": "D'après le contexte fourni, l'objectif **net-zero de Google** est le suivant :\n\n1. **Cible principale** :\n   - Atteindre **zéro émission nette** (net-zero emissions) **d'ici 2030** pour **l'ensemble de ses opérations et de sa chaîne de valeur** (incluant les émissions de Scope 1, 2 et 3).\n\n2. **Stratégie en deux volets** :\n   - **Réduction des émissions** :\n     - Réduire de **50 %** ses émissions absolues combinées (Scope 1, 2 [market-based] et 3) **par rapport à 2019** d’ici 2030.\n     - Atteindre un fonctionnement **24h/24 et 7j/7 avec une énergie décarbonée (CFE)** sur tous les réseaux électriques où Google opère.\n   - **Compensation des émissions résiduelles** :\n     - Neutraliser les émissions restantes via des **solutions de capture carbone** (naturelles ou technologiques), en priorisant l’**échelle** et la **certitude** des impacts.\n\n3. **Alignement scientifique** :\n   - Engagement validé par l’**initiative Science Based Targets (SBTi)**.\n   - Conforme à la définition du GIEC (IPCC) : équilibrer les émissions anthropiques",
+    "context_hit": true,
+    "answer_f1": 0.26589595375722547,
+    "supported": null,
+    "relevant": null,
+    "gold_passages": [
+      "We have a bold goal to reach net-zero emissions across all of our operations and value chain by 2030, supported by a goal to run on 24/7 CFE on every grid where we operate."
+    ],
+    "recall@10": 1.0,
+    "mrr@10": 0.3333333333333333,
+    "ndcg@10": 0.5
+  },
+  {
+    "id": "gg-4",
+    "question": "Quel est l'objectif net-zero de Google mentionné dans le rapport ?",
+    "expected_answer": "Atteindre le net-zero pour toutes les opérations et la chaîne de valeur d'ici 2030, avec un objectif de 24/7 CFE sur chaque réseau.",
+    "mode": "agentic",
+    "answer": "D'après le contexte fourni, l'objectif **net-zero de Google** est le suivant :\n\n1. **Cible principale** :\n   - Atteindre **zéro émission nette** (net-zero emissions) **d'ici 2030**, couvrant **toutes ses opérations et sa chaîne de valeur** (Scope 1, 2 et 3).\n\n2. **Stratégie en deux volets** :\n   - **Réduction des émissions** :\n     - Réduire de **50 %** ses émissions absolues combinées (Scopes 1, 2 et 3) **par rapport à 2019** d'ici 2030.\n     - Objectif complémentaire : fonctionner avec une énergie **100 % sans carbone (24/7 CFE)** sur tous les réseaux électriques où Google opère d'ici 2030.\n   - **Neutralisation des émissions résiduelles** :\n     - Investir dans des **solutions de capture carbone** (naturelles et technologiques) pour compenser les émissions restantes après réduction.\n\n3. **Alignement scientifique** :\n   - Engagement validé par l’**initiative Science Based Targets (SBTi)**.\n   - Conforme à la définition du GIEC (IPCC) : équilibrer les émissions anthropiques avec des absorptions équivalentes sur une période donnée.\n\n4. **Appro",
+    "context_hit": true,
+    "answer_f1": 0.26900584795321636,
+    "supported": true,
+    "relevant": true,
+    "hallucinated": false,
+    "gold_passages": [
+      "We have a bold goal to reach net-zero emissions across all of our operations and value chain by 2030, supported by a goal to run on 24/7 CFE on every grid where we operate."
+    ],
+    "recall@10": 1.0,
+    "mrr@10": 0.3333333333333333,
+    "ndcg@10": 0.5
+  }
+]
