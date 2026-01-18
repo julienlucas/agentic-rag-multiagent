@@ -2,7 +2,7 @@ import os
 import re
 from langchain_community.vectorstores import Chroma
 from langchain_mistralai import ChatMistralAI, MistralAIEmbeddings
-from FlagEmbedding import FlagReranker
+from sentence_transformers import CrossEncoder
 from langchain_community.retrievers import BM25Retriever
 from langchain_classic.retrievers.ensemble import EnsembleRetriever
 from ..config.settings import settings
@@ -79,7 +79,7 @@ class RerankRetriever:
         self.retriever = retriever
         self.embeddings = embeddings
         self.llm = llm
-        self.bge = FlagReranker(settings.RERANK_BGE_MODEL, use_fp16=True)
+        self.cross = CrossEncoder(settings.RERANK_CE_MODEL)
 
     def _cosine(self, a, b):
         dot = 0.0
@@ -113,11 +113,11 @@ class RerankRetriever:
         top_k = min(settings.RERANK_TOP_K, len(docs))
         if settings.RERANK_STRATEGY == "llm":
             scores = [self._llm_score(query, d.page_content) for d in docs[:top_k]]
-        elif settings.RERANK_STRATEGY == "bge":
-            pairs = [[query, d.page_content] for d in docs[:top_k]]
-            scores = self.bge.compute_score(pairs)
+        elif settings.RERANK_STRATEGY == "cross":
+            pairs = [(query, d.page_content) for d in docs[:top_k]]
+            scores = self.cross.predict(pairs)
             if not isinstance(scores, list):
-                scores = [scores]
+                scores = list(scores)
         else:
             query_emb = self.embeddings.embed_query(query)
             doc_embs = self.embeddings.embed_documents([d.page_content for d in docs[:top_k]])

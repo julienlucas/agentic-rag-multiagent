@@ -30,8 +30,8 @@ class Settings(BaseSettings):
     HYBRID_RETRIEVER_WEIGHTS: tuple = (0.5, 0.5)
     RERANK_ENABLED: bool = True
     RERANK_TOP_K: int = 20
-    RERANK_STRATEGY: str = "bge"  # "bge", "llm" ou "embedding"
-    RERANK_BGE_MODEL: str = "BAAI/bge-reranker-v2-m3"
+    RERANK_STRATEGY: str = "cross"  # "cross", "llm" ou "embedding"
+    RERANK_CE_MODEL: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
     # Paramètres de chunking
     CHUNK_SIZE: int = 700
