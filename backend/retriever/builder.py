@@ -1,26 +1,26 @@
 import os
 import re
 from langchain_community.vectorstores import Chroma
-from langchain_mistralai import ChatMistralAI, MistralAIEmbeddings
+from langchain_mistralai import ChatMistralAI
 from sentence_transformers import CrossEncoder
 from langchain_community.retrievers import BM25Retriever
 from langchain_classic.retrievers.ensemble import EnsembleRetriever
 from ..config.settings import settings
 from ..utils.logging import logger
+from .embeddings import get_embeddings
+from .parent_child_retriever import ParentChildRetriever
+from .multi_query import MultiQueryRetriever
 
 hf_token = os.environ.get("HF_TOKEN")
 if hf_token:
     os.environ["HUGGINGFACE_HUB_TOKEN"] = hf_token
 
+
 class RetrieverBuilder:
     def __init__(self):
         """Initialiser le constructeur de récupérateur avec les embeddings."""
-
-        embedding = MistralAIEmbeddings(
-            model=settings.EMBEDDING_MODEL_ID,
-            api_key=settings.MISTRALAI_API_KEY,
-        )
-        self.embeddings = embedding
+        # Utiliser la factory pour les embeddings (BGE-M3 ou Mistral)
+        self.embeddings = get_embeddings()
         self.llm = ChatMistralAI(
             model=settings.MODEL_ID,
             api_key=settings.MISTRALAI_API_KEY,
@@ -59,15 +59,37 @@ class RetrieverBuilder:
                     weights=weights
                 )
                 logger.info("Récupérateur hybride créé avec succès.")
+
+                # Chaîner les composants: Hybrid → ParentChild → MultiQuery → Rerank
+                retriever = hybrid_retriever
+
+                # Parent-Child (retourne parents des children matchés)
+                if settings.PARENT_CHILD_ENABLED:
+                    retriever = ParentChildRetriever(retriever)
+                    logger.info("Parent-Child retriever activé.")
+
+                # Multi-Query (génère variations de la question)
+                if settings.MULTI_QUERY_ENABLED:
+                    retriever = MultiQueryRetriever(retriever, self.llm)
+                    logger.info("Multi-Query retriever activé.")
+
+                # Reranker
                 if settings.RERANK_ENABLED:
-                    return RerankRetriever(hybrid_retriever, self.embeddings, self.llm)
-                return hybrid_retriever
+                    return RerankRetriever(retriever, self.embeddings, self.llm)
+                return retriever
+
             except Exception as e:
                 logger.warning(f"Erreur lors de la création du magasin de vecteurs: {e}")
                 logger.info("Utilisation du récupérateur BM25 uniquement.")
+                # Même chaînage pour BM25 seul
+                retriever = bm25
+                if settings.PARENT_CHILD_ENABLED:
+                    retriever = ParentChildRetriever(retriever)
+                if settings.MULTI_QUERY_ENABLED:
+                    retriever = MultiQueryRetriever(retriever, self.llm)
                 if settings.RERANK_ENABLED:
-                    return RerankRetriever(bm25, self.embeddings, self.llm)
-                return bm25
+                    return RerankRetriever(retriever, self.embeddings, self.llm)
+                return retriever
 
         except Exception as e:
             logger.error(f"Échec de la construction du récupérateur hybride: {e}")

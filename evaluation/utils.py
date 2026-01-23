@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 from typing import Dict, List
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
+ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
@@ -15,6 +15,8 @@ from backend.retriever.builder import RetrieverBuilder
 
 
 def load_dataset(path: str) -> List[Dict]:
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Dataset introuvable: {path}")
     items = []
     with open(path, "r", encoding="utf-8") as f:
         for raw in f:
@@ -44,13 +46,21 @@ def build_retriever_for_file(file_path: str):
 
 
 def log_to_langsmith(name: str, summary: Dict, inputs: Dict):
-    if not os.getenv("LANGSMITH_API_KEY"):
+    api_key = os.getenv("LANGSMITH_API_KEY")
+    if not api_key:
+        print("⚠️  LANGSMITH_API_KEY non défini, skip logging")
         return None
-    client = Client()
-    return client.create_run(
-        name=name,
-        run_type="chain",
-        inputs=inputs,
-        outputs=summary,
-        project_name="agentic_rag_multi_agent_evals",
-    )
+    try:
+        client = Client()
+        run = client.create_run(
+            name=name,
+            run_type="evaluation",
+            inputs=inputs,
+            outputs=summary,
+            project_name="agentic_rag_multi_agent_evals",
+        )
+        print(f"✓ Résultats envoyés à LangSmith (projet: agentic_rag_multi_agent_eval)")
+        return run
+    except Exception as e:
+        print(f"⚠️  Erreur LangSmith: {e}")
+        return None

@@ -74,23 +74,14 @@ poetry run python app.py
 
 ## Évaluation (pertinence + avant/après)
 
-1. **Créer un dataset** (JSONL) à partir du template :
+**Lancer l'évaluation** :
 ```bash
-cp backend/evaluation/dataset.sample.jsonl backend/evaluation/dataset.jsonl
-```
-Remplace `REPLACE_ME` par vos questions, réponses attendues et passages gold.
-
-Guidelines d'annotation :
-- `backend/evaluation/guidelines.md`
-
-2. **Lancer l'évaluation** :
-```bash
-uv run python -m backend.evaluation.run_eval \
-  --dataset backend/evaluation/dataset.jsonl \
+uv run python evaluation/run_eval.py \
+  --dataset evaluation/dataset.jsonl \
   --mode both \
-  --out-dir backend/evaluation/outputs
+  --out-dir evaluation/outputs
 ```
-Les résultats sont dans `backend/evaluation/outputs/` (`eval_summary.json` et `eval_results.json`).
+Les résultats sont dans `evaluation/outputs/` (`eval_summary.json` et `eval_results.json`).
 
 Métriques suivies :
 - Retrieval : `recall@k`, `mrr@k`, `ndcg@k`
@@ -106,10 +97,10 @@ Fichiers générés :
 ## RAG‑Evals (Ragas)
 
 ```bash
-uv run python -m backend.evaluation.run_ragas \
-  --dataset backend/evaluation/dataset.jsonl \
+uv run python evaluation/run_ragas.py \
+  --dataset evaluation/dataset.jsonl \
   --mode agentic \
-  --out-dir backend/evaluation/ragas_outputs
+  --out-dir evaluation/ragas_outputs
 ```
 Résultats : `ragas_summary.json`, `ragas_results.json`.
 
@@ -120,5 +111,35 @@ Workflow : `.github/workflows/eval.yml`
 Secrets requis :
 - `MISTRALAI_API_KEY`
 - `LANGSMITH_API_KEY` (optionnel)
+
+## Déploiement
+
+Le projet est configuré pour déployer le frontend sur Vercel et le backend sur Railway.
+
+### Déploiement du Backend sur Railway
+
+1. **Créer un projet sur Railway** : https://railway.app
+2. **Connecter votre repository GitHub**
+3. **Configurer les variables d'environnement** :
+   - `MISTRALAI_API_KEY` : Votre clé API Mistral
+   - `LANGSMITH_API_KEY` : (optionnel) Votre clé API LangSmith
+   - `CORS_ALLOWED_ORIGIN` : L'URL de votre frontend Vercel (ex: `https://your-app.vercel.app`)
+4. **Railway détectera automatiquement** le `Dockerfile` et `railway.toml`
+5. **Notez l'URL de votre backend** Railway (ex: `https://your-app.railway.app`)
+
+### Déploiement du Frontend sur Vercel
+
+1. **Créer un projet sur Vercel** : https://vercel.com
+2. **Connecter votre repository GitHub**
+3. **Configurer les variables d'environnement** :
+   - `VITE_API_URL` : L'URL de votre backend Railway (ex: `https://your-app.railway.app`)
+4. **Vercel détectera automatiquement** le `vercel.json` et déploiera le frontend
+5. **Mettre à jour CORS_ALLOWED_ORIGIN** sur Railway avec l'URL Vercel
+
+### Structure de déploiement
+
+- **Frontend (Vercel)** : Le répertoire `frontend/` est déployé sur Vercel
+- **Backend (Railway)** : Le répertoire `backend/` est déployé sur Railway via Docker
+- Les fichiers `.vercelignore` et `vercel.json` garantissent que seul le frontend est déployé sur Vercel
 
 Ajoutez une étoile au repo pour soutenir mon travail. 🙏

@@ -1,10 +1,8 @@
 FROM python:3.11-slim
 
 RUN apt-get update && apt-get install -y \
-    curl \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs \
-    && npm install -g pnpm \
+    libgl1 \
+    libglib2.0-0 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -18,25 +16,12 @@ COPY pyproject.toml uv.lock ./
 
 RUN uv sync --frozen --no-install-project
 
-COPY frontend/ ./frontend/
-
-WORKDIR /app/frontend
-RUN pnpm install --no-frozen-lockfile
-
-WORKDIR /app
 COPY . .
-
-WORKDIR /app/frontend
-RUN if [ ! -f /app/frontend/src/lib/utils.ts ]; then \
-  mkdir -p /app/frontend/src/lib && \
-  printf 'import { clsx, type ClassValue } from "clsx"\nimport { twMerge } from "tailwind-merge"\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs))\n}\n' > /app/frontend/src/lib/utils.ts; \
-fi
-RUN pnpm run build
-
-WORKDIR /app
 
 RUN chown -R appuser:appuser /app
 
 USER appuser
 
 EXPOSE 8000
+
+CMD ["uv", "run", "python", "manage.py", "runserver", "0.0.0.0:8000"]

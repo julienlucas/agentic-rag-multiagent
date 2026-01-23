@@ -24,18 +24,33 @@ class Settings(BaseSettings):
     CHROMA_DB_PATH: str = "./chroma_db"
     CHROMA_COLLECTION_NAME: str = "documents"
 
+    # Paramètres d'embeddings
+    EMBEDDING_PROVIDER: str = "mistral"  # "mistral" ou "bge-m3"
+    BGE_M3_MODEL_ID: str = "BAAI/bge-m3"  # Utilisé si EMBEDDING_PROVIDER = "bge-m3"
+
     # Paramètres de récupération
-    VECTOR_SEARCH_K: int = 30
-    BM25_K: int = 30
+    VECTOR_SEARCH_K: int = 15
+    BM25_K: int = 15
     HYBRID_RETRIEVER_WEIGHTS: tuple = (0.5, 0.5)
     RERANK_ENABLED: bool = True
-    RERANK_TOP_K: int = 20
+    RERANK_TOP_K: int = 15  # Limite les docs à reranker
     RERANK_STRATEGY: str = "cross"  # "cross", "llm" ou "embedding"
-    RERANK_CE_MODEL: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    RERANK_CE_MODEL: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"  # Léger, compatible Mac
+
+    # Multi-Query
+    MULTI_QUERY_ENABLED: bool = True
+    MULTI_QUERY_COUNT: int = 2  # 2 reformulations = bon compromis latence/recall
 
     # Paramètres de chunking
+    CHUNKING_STRATEGY: str = "semantic"  # "recursive" ou "semantic"
+    PARENT_CHILD_ENABLED: bool = True
+    PARENT_CHUNK_SIZE: int = 2000
+    CHILD_CHUNK_SIZE: int = 400
     CHUNK_SIZE: int = 700
     CHUNK_OVERLAP: int = 300
+
+    # Evaluation
+    EVAL_LLM_JUDGE_ENABLED: bool = True
 
     # Paramètres de journalisation
     LOG_LEVEL: str = "INFO"

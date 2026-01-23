@@ -12,13 +12,15 @@ from pathlib import Path
 from statistics import mean
 from typing import Dict, List, Optional, Tuple
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
+ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from backend.agents.workflow import AgentWorkflow
 from backend.agents.research_agent import ResearchAgent
-from backend.evaluation.utils import build_retriever_for_file, load_dataset, log_to_langsmith, resolve_file_path
+from evaluation.utils import build_retriever_for_file, load_dataset, log_to_langsmith, resolve_file_path
+from evaluation.llm_judge import LLMJudge, aggregate_judge_results
+from backend.config.settings import settings
 
 
 def _normalize(text: str) -> str:
@@ -129,7 +131,7 @@ def _parse_verification_flags(report: str) -> Tuple[Optional[bool], Optional[boo
     return supported, relevant, has_unsupported
 
 
-def evaluate_example(example: Dict, retriever, mode: str) -> Dict:
+def evaluate_example(example: Dict, retriever, mode: str, llm_judge: Optional[LLMJudge] = None) -> Dict:
     question = example["question"].strip()
     expected_answer = example.get("expected_answer", "").strip()
     keywords = example.get("answer_keywords", [])
@@ -161,6 +163,24 @@ def evaluate_example(example: Dict, retriever, mode: str) -> Dict:
     if mode == "agentic":
         result["hallucinated"] = bool((supported is False) or (has_unsupported is True))
     result["gold_passages"] = gold_passages
+
+    # LLM-as-a-Judge évaluation
+    if llm_judge and settings.EVAL_LLM_JUDGE_ENABLED and expected_answer:
+        context = "\n\n".join(getattr(d, "page_content", "") for d in docs)
+        judge_result = llm_judge.evaluate(
+            question=question,
+            expected_answer=expected_answer,
+            generated_answer=answer,
+            context=context
+        )
+        result["judge_correctness"] = judge_result.correctness
+        result["judge_faithfulness"] = judge_result.faithfulness
+        result["judge_completeness"] = judge_result.completeness
+        result["judge_correctness_reason"] = judge_result.correctness_reason
+        result["judge_faithfulness_reason"] = judge_result.faithfulness_reason
+        result["judge_completeness_reason"] = judge_result.completeness_reason
+        result["judge_is_hallucination"] = judge_result.is_hallucination
+
     return result
 
 
@@ -192,6 +212,22 @@ def aggregate(results: List[Dict], k_values: List[int]) -> Dict:
         if ndcg_vals:
             retrieval[f"ndcg@{k}"] = round(mean(ndcg_vals), 4)
     base["retrieval"] = retrieval
+
+    # LLM Judge metrics
+    judge_correctness = [r.get("judge_correctness") for r in results if r.get("judge_correctness") is not None]
+    judge_faithfulness = [r.get("judge_faithfulness") for r in results if r.get("judge_faithfulness") is not None]
+    judge_completeness = [r.get("judge_completeness") for r in results if r.get("judge_completeness") is not None]
+    judge_hallucinations = [r.get("judge_is_hallucination") for r in results if r.get("judge_is_hallucination") is not None]
+
+    if judge_correctness:
+        base["llm_judge"] = {
+            "mean_correctness": round(mean(judge_correctness), 2),
+            "mean_faithfulness": round(mean(judge_faithfulness), 2) if judge_faithfulness else None,
+            "mean_completeness": round(mean(judge_completeness), 2) if judge_completeness else None,
+            "hallucination_rate": round(sum(1 for v in judge_hallucinations if v) / len(judge_hallucinations), 4) if judge_hallucinations else None,
+            "perfect_faithfulness_rate": round(sum(1 for v in judge_faithfulness if v >= 4) / len(judge_faithfulness), 4) if judge_faithfulness else None,
+        }
+
     return base
 
 
@@ -208,6 +244,14 @@ def _percent_block(block: Dict) -> Dict:
             out[key] = _percent(block[key])
     if "retrieval" in block:
         out["retrieval"] = {k: _percent(v) for k, v in block["retrieval"].items()}
+    if "llm_judge" in block:
+        out["llm_judge"] = {
+            "mean_correctness": block["llm_judge"].get("mean_correctness"),
+            "mean_faithfulness": block["llm_judge"].get("mean_faithfulness"),
+            "mean_completeness": block["llm_judge"].get("mean_completeness"),
+            "hallucination_rate": _percent(block["llm_judge"].get("hallucination_rate")),
+            "perfect_faithfulness_rate": _percent(block["llm_judge"].get("perfect_faithfulness_rate")),
+        }
     return out
 
 
@@ -225,14 +269,30 @@ def write_outputs(out_dir: str, per_example: List[Dict], summary: Dict, regressi
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", required=True, help="Chemin vers le dataset JSONL")
+    parser.add_argument("--dataset", default="evaluation/dataset.jsonl", help="Chemin vers le dataset JSONL")
     parser.add_argument("--mode", default="both", choices=["baseline", "agentic", "both"])
     parser.add_argument("--out-dir", default="eval_outputs")
     parser.add_argument("--max-items", type=int, default=0)
     parser.add_argument("--k-values", default="10")
     args = parser.parse_args()
 
-    dataset = load_dataset(args.dataset)
+    # Résoudre le chemin relatif depuis la racine du projet
+    dataset_path = args.dataset
+    if not os.path.isabs(dataset_path):
+        # Si le chemin commence par evaluation/, c'est relatif à la racine
+        if dataset_path.startswith("evaluation/"):
+            dataset_path = os.path.join(ROOT_DIR, dataset_path)
+        # Si le chemin commence par backend/evaluation/, corriger vers evaluation/
+        elif dataset_path.startswith("backend/evaluation/"):
+            dataset_path = os.path.join(ROOT_DIR, dataset_path.replace("backend/evaluation/", "evaluation/"))
+        # Sinon, essayer depuis le répertoire evaluation actuel
+        elif not os.path.exists(dataset_path):
+            eval_dir = Path(__file__).parent
+            potential_path = eval_dir / dataset_path
+            if potential_path.exists():
+                dataset_path = str(potential_path)
+
+    dataset = load_dataset(dataset_path)
     if args.max_items:
         dataset = dataset[: args.max_items]
     k_values = [int(v) for v in args.k_values.split(",") if v.strip()]
@@ -242,6 +302,11 @@ def main():
     retrievers = {}
     per_example = []
     start = time.time()
+
+    # Initialiser LLM Judge si activé
+    llm_judge = LLMJudge() if settings.EVAL_LLM_JUDGE_ENABLED else None
+    if llm_judge:
+        print("LLM-as-a-Judge activé pour l'évaluation")
 
     for example in dataset:
         file_path = resolve_file_path(example)
@@ -264,7 +329,7 @@ def main():
         for mode in modes:
             if not example.get("expected_answer") and not example.get("answer_keywords"):
                 continue
-            row = evaluate_example(example, retriever, mode)
+            row = evaluate_example(example, retriever, mode, llm_judge)
             row.update(retrieval_metrics)
             per_example.append(row)
 

@@ -1,0 +1,21 @@
+# Backend Python (deployed on Railway)
+*.py
+pyproject.toml
+poetry.lock
+uv.lock
+manage.py
+Dockerfile
+railway.toml
+
+# Backend directory
+backend/
+
+# Evaluation
+evaluation/
+
+# Environments
+.venv/
+**/.venv/
+
+# Git
+.git/

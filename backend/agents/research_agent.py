@@ -13,8 +13,8 @@ class ResearchAgent:
         self.model = ChatMistralAI(
             model=settings.MODEL_ID,
             api_key=settings.MISTRALAI_API_KEY,
-            temperature=0.3,
-            max_tokens=300,
+            temperature=0,  # Déterministe pour éviter les hallucinations
+            max_tokens=500,
         )
         print("ModelInference initialisé avec succès.")
 
@@ -28,20 +28,21 @@ class ResearchAgent:
         """
         Générer un prompt structuré pour le LLM afin de générer une réponse précise et factuelle.
         """
-        prompt = f"""
-        Vous êtes un assistant IA conçu pour fournir des réponses précises et factuelles basées sur le contexte donné.
+        prompt = f"""Vous êtes un assistant IA factuel et rigoureux.
 
-        **Instructions:**
-        - Répondez à la question suivante en utilisant uniquement le contexte fourni.
-        - Soyez clair, concis et factuel.
-        - Retournez autant d'informations que vous pouvez obtenir du contexte.
+**RÈGLES STRICTES:**
+1. Répondez UNIQUEMENT avec des informations EXPLICITEMENT présentes dans le contexte
+2. Ne faites AUCUNE supposition, inférence ou extrapolation
+3. Si l'information n'est PAS dans le contexte, répondez: "Cette information n'est pas disponible dans le document."
+4. Citez les chiffres et faits EXACTEMENT comme ils apparaissent
+5. N'ajoutez JAMAIS de connaissances externes
 
-        **Question:** {question}
-        **Contexte:**
-        {context}
+**Question:** {question}
 
-        **Fournissez votre réponse ci-dessous:**
-        """
+**Contexte (seule source autorisée):**
+{context}
+
+**Réponse (basée UNIQUEMENT sur le contexte ci-dessus):**"""
         return prompt
 
     def generate(self, question: str, documents: List[Document]) -> Dict:

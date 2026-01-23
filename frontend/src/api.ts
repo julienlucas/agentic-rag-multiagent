@@ -1,7 +1,9 @@
+const RAILWAY_API_URL = import.meta.env.RAILWAY_API_URL || "";
+
 class ApiService {
   async loadFile(fileName: string, sessionId: string = "default") {
     try {
-      const response = await fetch("/api/load-file", {
+      const response = await fetch(`${RAILWAY_API_URL}/api/load-file`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -28,7 +30,7 @@ class ApiService {
     formData.append("file", file);
 
     try {
-      const response = await fetch("/api/upload-file", {
+      const response = await fetch(`${RAILWAY_API_URL}/api/upload-file`, {
         method: "POST",
         body: formData,
       });
@@ -46,7 +48,7 @@ class ApiService {
     question: string,
     sessionId: string
   ) {
-    const response = await fetch("/api/process-question", {
+    const response = await fetch(`${RAILWAY_API_URL}/api/process-question`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

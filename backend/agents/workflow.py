@@ -44,14 +44,7 @@ class AgentWorkflow:
             }
         )
         workflow.add_edge("research", "verify")
-        workflow.add_conditional_edges(
-            "verify",
-            self._decide_next_step,
-            {
-                "re_research": "research",
-                "end": END
-            }
-        )
+        workflow.add_edge("verify", END)  # Plus de boucle re_research
         return workflow.compile()
 
     def _check_relevance_step(self, state: AgentState) -> Dict:
@@ -111,22 +104,26 @@ class AgentWorkflow:
 
     def _research_step(self, state: AgentState) -> Dict:
         print(f"[DEBUG] Entrée dans _research_step avec question='{state['question']}'")
-        result = self.researcher.generate(state["question"], state["documents"])
+        # Limiter à top 5 docs pour éviter dilution du contexte
+        top_docs = state["documents"][:5]
+        print(f"[DEBUG] Utilisation de {len(top_docs)} docs (sur {len(state['documents'])} récupérés)")
+        result = self.researcher.generate(state["question"], top_docs)
         print("[DEBUG] Le chercheur a retourné une réponse provisoire.")
         return {"draft_answer": result["draft_answer"]}
 
     def _verification_step(self, state: AgentState) -> Dict:
         print("[DEBUG] Entrée dans _verification_step. Vérification de la réponse provisoire...")
-        result = self.verifier.check(state["draft_answer"], state["documents"])
+        # Utiliser top 7 docs pour vérification (plus large que génération)
+        top_docs = state["documents"][:7]
+        result = self.verifier.check(state["draft_answer"], top_docs)
         print("[DEBUG] L'agent de vérification a retourné un rapport de vérification.")
         return {"verification_report": result["verification_report"]}
 
     def _decide_next_step(self, state: AgentState) -> str:
         verification_report = state["verification_report"]
         print(f"[DEBUG] _decide_next_step avec verification_report='{verification_report}'")
-        if "Supported: NO" in verification_report or "Relevant: NO" in verification_report:
-            logger.info("[DEBUG] La vérification indique qu'une nouvelle recherche est nécessaire.")
-            return "re_research"
-        else:
-            logger.info("[DEBUG] Vérification réussie, fin du workflow.")
-            return "end"
+        # Supprimé la boucle re_research qui causait des hallucinations
+        # Si la vérification échoue, on garde la réponse telle quelle
+        # plutôt que de forcer le modèle à "inventer" une réponse
+        logger.info("[DEBUG] Vérification terminée, fin du workflow.")
+        return "end"

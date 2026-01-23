@@ -1,8 +1,0 @@
-[
-  {
-    "id": "gg-2",
-    "question": "Quelle amélioration d'efficacité énergétique est mentionnée pour Trillium (TPU 6e génération) ?",
-    "baseline_f1": 0.09433962264150943,
-    "agentic_f1": 0.09302325581395349
-  }
-]

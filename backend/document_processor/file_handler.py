@@ -10,6 +10,7 @@ from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharac
 from ..config import constants
 from ..config.settings import settings
 from ..utils.logging import logger
+from .chunkers import get_chunking_strategy, ParentChildChunkingStrategy
 
 class DocumentProcessor:
     def __init__(self):
@@ -127,13 +128,24 @@ class DocumentProcessor:
 
             # Assembler le markdown et créer les chunks
             markdown = "\n\n".join(all_markdown)
-            header_splitter = MarkdownHeaderTextSplitter(self.headers)
-            header_chunks = header_splitter.split_text(markdown)
-            chunk_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=settings.CHUNK_SIZE,
-                chunk_overlap=settings.CHUNK_OVERLAP,
-            )
-            return chunk_splitter.split_documents(header_chunks)
+
+            # Utiliser la stratégie de chunking configurée
+            if settings.CHUNKING_STRATEGY == "semantic" or settings.PARENT_CHILD_ENABLED:
+                # Utiliser les nouvelles stratégies de chunking
+                chunker = get_chunking_strategy()
+                metadata = {"source": file.name}
+                chunks = chunker.split(markdown, metadata)
+                logger.info(f"Chunking avec stratégie '{settings.CHUNKING_STRATEGY}': {len(chunks)} chunks")
+                return chunks
+            else:
+                # Fallback vers la méthode originale (header-aware + recursive)
+                header_splitter = MarkdownHeaderTextSplitter(self.headers)
+                header_chunks = header_splitter.split_text(markdown)
+                chunk_splitter = RecursiveCharacterTextSplitter(
+                    chunk_size=settings.CHUNK_SIZE,
+                    chunk_overlap=settings.CHUNK_OVERLAP,
+                )
+                return chunk_splitter.split_documents(header_chunks)
 
         except Exception as e:
             logger.error(f"Erreur lors du traitement OCR: {str(e)}")

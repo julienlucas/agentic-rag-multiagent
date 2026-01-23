@@ -1,0 +1,47 @@
+[
+  {
+    "id": "ds-2",
+    "question": "Quelle est l'architecture de base utilisée pour DeepSeek-R1 ?",
+    "type": "not_supported"
+  },
+  {
+    "id": "ds-16",
+    "question": "Comment le modèle gère-t-il les tâches nécessitant peu de raisonnement ?",
+    "type": "no_context_hit"
+  },
+  {
+    "id": "ds-16",
+    "question": "Comment le modèle gère-t-il les tâches nécessitant peu de raisonnement ?",
+    "type": "not_supported"
+  },
+  {
+    "id": "ds-20",
+    "question": "Quel est le prix d'un abonnement DeepSeek Pro ?",
+    "type": "no_context_hit"
+  },
+  {
+    "id": "gg-2",
+    "question": "Quelle amélioration d'efficacité énergétique est mentionnée pour Trillium (TPU 6e génération) ?",
+    "type": "not_supported"
+  },
+  {
+    "id": "gg-7",
+    "question": "Quelle est la stratégie de Google pour les achats d'énergie renouvelable ?",
+    "type": "not_supported"
+  },
+  {
+    "id": "gg-12",
+    "question": "Quelle quantité d'eau Google utilise-t-il dans ses data centers ?",
+    "type": "not_supported"
+  },
+  {
+    "id": "gg-20",
+    "question": "Comment se compare l'empreinte carbone de Google à celle d'Amazon et Microsoft ?",
+    "type": "no_context_hit"
+  },
+  {
+    "id": "gg-20",
+    "question": "Comment se compare l'empreinte carbone de Google à celle d'Amazon et Microsoft ?",
+    "type": "not_supported"
+  }
+]
