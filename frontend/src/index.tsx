@@ -243,7 +243,8 @@ export default function Index() {
             Le challenge
           </CardTitle>
           <CardTitle variant="h3" className="font-medium">
-            Créer un système RAG récupérant de l'info factcheckée et pertinente dans le cas de docs techniques.
+            Créer un système RAG récupérant de l'info factcheckée et pertinente
+            dans le cas de docs techniques.
           </CardTitle>
           <ul className="list-disc list-inside mb-4 space-y-4">
             <li>
@@ -252,23 +253,23 @@ export default function Index() {
               tableaux.
             </li>
             <li>
-              <strong>Avoir aussi un factcheck des réponses</strong> : Éviter les
-              hallucinations et ne répondre qu'avec des preuves dans le
+              <strong>Avoir aussi un factcheck des réponses</strong> : Éviter
+              les hallucinations et ne répondre qu'avec des preuves dans le
               contexte.
             </li>
             <li>
+              <strong>Pouvoir couvrir de multiples documents et pages</strong> :
+              Croiser plusieurs sources sans perdre l'information clé.
+            </li>
+            <li>
               <strong>
-                Pouvoir couvrir de multiples documents et pages
+                Vérifier la qualité OCR avec la solution Mistral OCR
               </strong>{" "}
-              : Croiser plusieurs sources sans perdre l'information clé.
+              : Extraire du texte propre depuis des PDF longs et hétérogènes.
             </li>
             <li>
-              <strong>Vérifier la qualité OCR avec la solution Mistral OCR</strong> :
-              Extraire du texte propre depuis des PDF longs et hétérogènes.
-            </li>
-            <li>
-              <strong>Évaluer la pertinence</strong> : Prouver la
-              pertinence avec des métriques et des comparaisons avant/après.
+              <strong>Évaluer la pertinence</strong> : Prouver la pertinence
+              avec des métriques et des comparaisons avant/après.
             </li>
           </ul>
           <CardTitle variant="h3-card">Résultats et évaluation</CardTitle>
@@ -286,35 +287,33 @@ export default function Index() {
                 </span>
               </li>
               <li>
-                <strong>🎯 Recall@10 (top 10 résultats) : 37.5% → 62.5%</strong>{" "}
-                —{" "}
+                <strong>🌀 Ajout du reranker Cohere 3.5.</strong>
+              </li>
+              <li>
+                <strong>🎯 Recall@10 (top 10 résultats) : 25% → 52.5%</strong> —{" "}
                 <span>
                   donc 5 questions sur 8 ont au moins un passage pertinent dans
                   le top 10.
                 </span>
               </li>
               <li>
-                <strong>🎯 MRR@10 (top 10 résultats) : 27.6% → 47.92%</strong> —{" "}
+                <strong>🎯 MRR@10 (top 10 résultats) : 24% → 85.6%</strong> —{" "}
                 <span>
                   donc en moyenne le 1er bon passage arrive vers la 2ᵉ place.
                 </span>
               </li>
               <li>
-                <strong>🎯 nDCG@10 (top 10 résultats) : 35.96% → 51.64%</strong>{" "}
-                —{" "}
+                <strong>🎯 nDCG@10 (top 10 résultats) : 22% → 69.5%</strong> —{" "}
                 <span>
-                  donc classement global de pertience correct, mais pas encore
-                  excellent.
+                  donc très bonnes performances globales de pertinence.
                 </span>
               </li>
               <li>
                 <strong>
                   <span>
-                    🌀 Un 0% d'hallucination grâce au reranker développé
+                    🌀 7,5% d'hallucination grâce au mutli-agents de factchecking + le reranker Cohere 3.5
                   </span>
-                </strong>{" "}
-                mais peu fiable, il faudrait des tests sur une plus vaste
-                quantité de données.
+                </strong>
               </li>
               <li>
                 <strong>

@@ -1,5 +1,10 @@
 [
   {
+    "id": "ds-2",
+    "question": "Quelle est l'architecture de base utilisée pour DeepSeek-R1 ?",
+    "type": "no_context_hit"
+  },
+  {
     "id": "ds-13",
     "question": "Quel pourcentage de données cold-start est utilisé pour le SFT ?",
     "type": "not_supported"
@@ -20,13 +25,23 @@
     "type": "no_context_hit"
   },
   {
-    "id": "gg-13",
-    "question": "Quel pourcentage de CFE Google a-t-il atteint globalement ?",
+    "id": "gg-15",
+    "question": "Comment Google équilibre-t-il la croissance de l'IA avec ses objectifs environnementaux ?",
+    "type": "not_supported"
+  },
+  {
+    "id": "gg-17",
+    "question": "Comment Google aborde-t-il les émissions Scope 3 ?",
     "type": "not_supported"
   },
   {
     "id": "gg-20",
     "question": "Comment se compare l'empreinte carbone de Google à celle d'Amazon et Microsoft ?",
     "type": "no_context_hit"
+  },
+  {
+    "id": "gg-20",
+    "question": "Comment se compare l'empreinte carbone de Google à celle d'Amazon et Microsoft ?",
+    "type": "not_supported"
   }
 ]

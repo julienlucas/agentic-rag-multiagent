@@ -24,4 +24,5 @@ dependencies = [
     "python-dotenv>=1.1.1",
     "rank-bm25>=0.2.2",
     "pypdf (>=6.6.0,<7.0.0)",
+    "cohere>=5.20.2",
 ]

@@ -28,9 +28,10 @@ Valide et croise les informations trouvées.
 - **Algo BM25 + Embeddings** : Recherche texte classique à forte précision lexicale + Recherche sémantique capturant le sens contextuel.
 
 ## Stack de modèles
-- 💎 Mistral Large
-- 🧠 Mistral Embbed (pour les embeddings)
 - ⚡ Mistral OCR (plutôt que docling trop lent)
+- 🧠 Mistral Embbed (pour les embeddings)
+- 🧠 Cohere reranker 3.5 multi-langue
+- 💎 Mistral Large
 
 ## Installation
 
@@ -132,7 +133,7 @@ Le projet est configuré pour déployer le frontend sur Vercel et le backend sur
 1. **Créer un projet sur Vercel** : https://vercel.com
 2. **Connecter votre repository GitHub**
 3. **Configurer les variables d'environnement** :
-   - `VITE_API_URL` : L'URL de votre backend Railway (ex: `https://your-app.railway.app`)
+   - `VITE_RAILWAY_API_URL` : L'URL de votre backend Railway (ex: `https://your-app.railway.app`)
 4. **Vercel détectera automatiquement** le `vercel.json` et déploiera le frontend
 5. **Mettre à jour CORS_ALLOWED_ORIGIN** sur Railway avec l'URL Vercel
 

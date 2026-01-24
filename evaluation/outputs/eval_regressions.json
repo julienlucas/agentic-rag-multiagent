@@ -1,33 +1,27 @@
 [
   {
-    "id": "ds-1",
-    "question": "Quels modèles et tailles ont été open-sourcés par DeepSeek-R1 ?",
-    "baseline_f1": 0.3917525773195877,
-    "agentic_f1": 0.31034482758620685
-  },
-  {
     "id": "ds-2",
     "question": "Quelle est l'architecture de base utilisée pour DeepSeek-R1 ?",
-    "baseline_f1": 0.16470588235294117,
-    "agentic_f1": 0.1616161616161616
+    "baseline_f1": 0.1791044776119403,
+    "agentic_f1": 0.05128205128205127
   },
   {
-    "id": "ds-6",
-    "question": "Quels sont les benchmarks utilisés pour évaluer les capacités de raisonnement ?",
-    "baseline_f1": 0.15384615384615385,
-    "agentic_f1": 0.12162162162162163
+    "id": "ds-4",
+    "question": "Quelles sont les deux étapes principales du pipeline d'entraînement de DeepSeek-R1 ?",
+    "baseline_f1": 0.23437499999999997,
+    "agentic_f1": 0.2027027027027027
+  },
+  {
+    "id": "ds-5",
+    "question": "Quel est le rôle du 'language consistency reward' dans DeepSeek-R1 ?",
+    "baseline_f1": 0.1931034482758621,
+    "agentic_f1": 0.17204301075268816
   },
   {
     "id": "ds-13",
     "question": "Quel pourcentage de données cold-start est utilisé pour le SFT ?",
-    "baseline_f1": 0.16279069767441862,
-    "agentic_f1": 0.125
-  },
-  {
-    "id": "ds-18",
-    "question": "Décris le pipeline complet d'entraînement de DeepSeek-R1, du modèle de base au modèle final.",
-    "baseline_f1": 0.14760147601476017,
-    "agentic_f1": 0.10862619808306707
+    "baseline_f1": 0.1568627450980392,
+    "agentic_f1": 0.13333333333333333
   },
   {
     "id": "ds-20",
@@ -36,33 +30,45 @@
     "agentic_f1": 0.2926829268292683
   },
   {
+    "id": "gg-2",
+    "question": "Quelle amélioration d'efficacité énergétique est mentionnée pour Trillium (TPU 6e génération) ?",
+    "baseline_f1": 0.19607843137254902,
+    "agentic_f1": 0.09302325581395349
+  },
+  {
     "id": "gg-4",
     "question": "Quel rôle joue l'IA dans la stratégie environnementale de Google ?",
-    "baseline_f1": 0.0858085808580858,
-    "agentic_f1": 0.08280254777070063
+    "baseline_f1": 0.06984126984126984,
+    "agentic_f1": 0.06374501992031872
   },
   {
-    "id": "gg-11",
-    "question": "De combien les émissions de Google ont-elles augmenté en 2023 par rapport à 2022 ?",
-    "baseline_f1": 0.26086956521739135,
-    "agentic_f1": 0.17283950617283952
+    "id": "gg-5",
+    "question": "Qu'est-ce que Google fait pour la gestion de l'eau ?",
+    "baseline_f1": 0.0911854103343465,
+    "agentic_f1": 0.07999999999999999
   },
   {
-    "id": "gg-13",
-    "question": "Quel pourcentage de CFE Google a-t-il atteint globalement ?",
-    "baseline_f1": 0.18390804597701152,
-    "agentic_f1": 0.15686274509803924
+    "id": "gg-10",
+    "question": "Quel est l'objectif net-zero de Google mentionné dans le rapport ?",
+    "baseline_f1": 0.2276422764227642,
+    "agentic_f1": 0.17751479289940825
   },
   {
-    "id": "gg-15",
-    "question": "Comment Google équilibre-t-il la croissance de l'IA avec ses objectifs environnementaux ?",
-    "baseline_f1": 0.13293051359516614,
-    "agentic_f1": 0.11522633744855966
+    "id": "gg-14",
+    "question": "Quels sont les deux piliers principaux de la stratégie climatique de Google ?",
+    "baseline_f1": 0.2153846153846154,
+    "agentic_f1": 0.1702127659574468
   },
   {
-    "id": "gg-17",
-    "question": "Comment Google aborde-t-il les émissions Scope 3 ?",
-    "baseline_f1": 0.13090909090909092,
-    "agentic_f1": 0.11564625850340135
+    "id": "gg-16",
+    "question": "Quel est le lien entre les produits Google et les opérations pour la durabilité ?",
+    "baseline_f1": 0.1043956043956044,
+    "agentic_f1": 0.09999999999999999
+  },
+  {
+    "id": "gg-19",
+    "question": "Explique le programme de décarbonisation des data centers de Google, de la conception à l'exploitation.",
+    "baseline_f1": 0.09210526315789473,
+    "agentic_f1": 0.08053691275167787
   }
 ]

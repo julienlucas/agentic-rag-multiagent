@@ -1,8 +1,6 @@
 import os
-import re
 from langchain_community.vectorstores import Chroma
 from langchain_mistralai import ChatMistralAI
-from mistralai import Mistral
 from langchain_community.retrievers import BM25Retriever
 from langchain_classic.retrievers.ensemble import EnsembleRetriever
 from ..config.settings import settings
@@ -96,7 +94,7 @@ class RetrieverBuilder:
                 # Reranker (améliore la précision du ranking)
                 if settings.RERANK_ENABLED:
                     retriever = RerankRetriever(retriever, self.embeddings, self.llm)
-                    logger.info(f"Reranker activé: {settings.RERANK_CE_MODEL}")
+                    logger.info(f"Reranker activé: {settings.RERANK_MODEL}")
 
                 # Contextual Compression (filtre le contenu non pertinent)
                 if settings.CONTEXTUAL_COMPRESSION_ENABLED:
@@ -131,19 +129,27 @@ class RetrieverBuilder:
 
 class RerankRetriever:
     """
-    Reranker utilisant l'API Mistral Rerank (mistral-rerank-2408).
-    Plus léger que les modèles locaux (pas de torch/transformers).
+    Reranker utilisant l'API Cohere Rerank.
+    Top-tier performance, excellent multilingue.
     """
 
     def __init__(self, retriever, embeddings, llm):
         self.retriever = retriever
         self.embeddings = embeddings
         self.llm = llm
-        self.client = Mistral(api_key=settings.MISTRALAI_API_KEY)
-        logger.info(f"Mistral Reranker initialisé: {settings.RERANK_MODEL}")
+        self._client = None
+        logger.info(f"Cohere Reranker initialisé: {settings.RERANK_MODEL}")
+
+    @property
+    def client(self):
+        """Lazy loading du client Cohere."""
+        if self._client is None:
+            import cohere
+            self._client = cohere.Client(api_key=settings.COHERE_API_KEY)
+        return self._client
 
     def invoke(self, query: str):
-        """Reranke les documents via l'API Mistral Rerank."""
+        """Reranke les documents via l'API Cohere Rerank."""
         docs = self.retriever.invoke(query)
         if not docs or not settings.RERANK_ENABLED:
             return docs
@@ -152,12 +158,12 @@ class RerankRetriever:
         docs_to_rerank = docs[:top_k]
 
         try:
-            # Appel à l'API Mistral Rerank
-            response = self.client.classifiers.rerank(
+            # Appel à l'API Cohere Rerank
+            response = self.client.rerank(
                 model=settings.RERANK_MODEL,
                 query=query,
                 documents=[d.page_content for d in docs_to_rerank],
-                top_k=top_k,
+                top_n=top_k,
             )
 
             # Reconstruire la liste ordonnée par score
@@ -168,16 +174,16 @@ class RerankRetriever:
                 reranked_docs.append(doc)
 
             # Log des scores pour debug
-            if reranked_docs:
+            if response.results:
                 top_score = response.results[0].relevance_score
                 avg_score = sum(r.relevance_score for r in response.results) / len(response.results)
-                logger.debug(f"Mistral Rerank: top_score={top_score:.3f}, avg={avg_score:.3f}")
+                logger.debug(f"Cohere Rerank: top={top_score:.3f}, avg={avg_score:.3f}")
 
             # Ajouter les docs non rerankés à la fin
             return reranked_docs + docs[top_k:]
 
         except Exception as e:
-            logger.warning(f"Erreur Mistral Rerank: {e}, retour des docs non rerankés")
+            logger.warning(f"Erreur Cohere Rerank: {e}, retour des docs non rerankés")
             return docs
 
     def get_relevant_documents(self, query: str):

@@ -24,19 +24,26 @@ class Settings(BaseSettings):
     CHROMA_DB_PATH: str = "./chroma_db"
     CHROMA_COLLECTION_NAME: str = "documents"
 
-    # Paramètres de récupération - OPTIMISÉS
-    VECTOR_SEARCH_K: int = 25  # Augmenté: plus de candidats = meilleur recall
-    BM25_K: int = 25  # Augmenté
-    HYBRID_RETRIEVER_WEIGHTS: tuple = (0.6, 0.4)  # Favorise BM25 (matching exact)
+    # Cohere API (pour reranking)
+    COHERE_API_KEY: str = os.getenv("COHERE_API_KEY")
+
+    # Paramètres d'embeddings
+    EMBEDDING_PROVIDER: str = "mistral"  # Mistral-embed fonctionne mieux sur ce corpus
+    BGE_M3_MODEL_ID: str = "BAAI/bge-m3"
+
+    # Paramètres de récupération - CONFIG OPTIMALE TESTÉE
+    VECTOR_SEARCH_K: int = 15
+    BM25_K: int = 15
+    HYBRID_RETRIEVER_WEIGHTS: tuple = (0.5, 0.5)  # Équilibré
     RERANK_ENABLED: bool = True
-    RERANK_TOP_K: int = 20  # Rerank plus de docs
-    RERANK_MODEL: str = "mistral-rerank-2408"  # API Mistral Rerank (léger, pas de torch)
+    RERANK_TOP_K: int = 15
+    RERANK_MODEL: str = "rerank-v3.5"  # Cohere Rerank
 
-    # Multi-Query - AUGMENTÉ
+    # Multi-Query
     MULTI_QUERY_ENABLED: bool = True
-    MULTI_QUERY_COUNT: int = 3  # 3 reformulations = meilleur recall
+    MULTI_QUERY_COUNT: int = 2
 
-    # HyDE - DÉSACTIVÉ
+    # HyDE - DÉSACTIVÉ (nuit au retrieval sur ce corpus)
     HYDE_ENABLED: bool = False
 
     # Query Decomposition - DÉSACTIVÉ
@@ -46,15 +53,15 @@ class Settings(BaseSettings):
     CONTEXTUAL_COMPRESSION_ENABLED: bool = False
     CONTEXTUAL_COMPRESSION_TOP_K: int = 5
 
-    # Paramètres de chunking - OPTIMISÉS
+    # Paramètres de chunking - CONFIG OPTIMALE TESTÉE
     CHUNKING_STRATEGY: str = "semantic"
     PARENT_CHILD_ENABLED: bool = True
-    PARENT_CHUNK_SIZE: int = 1500  # Réduit pour plus de granularité
-    CHILD_CHUNK_SIZE: int = 350  # Légèrement réduit
-    CHILD_OVERLAP: int = 100  # Plus d'overlap = moins de perte d'info
-    CHUNK_SIZE: int = 600  # Réduit
-    CHUNK_OVERLAP: int = 200  # Plus d'overlap
-    SEMANTIC_THRESHOLD: float = 0.45  # Plus de découpes sémantiques
+    PARENT_CHUNK_SIZE: int = 2000
+    CHILD_CHUNK_SIZE: int = 400
+    CHILD_OVERLAP: int = 50
+    CHUNK_SIZE: int = 700
+    CHUNK_OVERLAP: int = 300
+    SEMANTIC_THRESHOLD: float = 0.5
 
     # Evaluation
     EVAL_LLM_JUDGE_ENABLED: bool = True
