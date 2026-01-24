@@ -24,19 +24,13 @@ class Settings(BaseSettings):
     CHROMA_DB_PATH: str = "./chroma_db"
     CHROMA_COLLECTION_NAME: str = "documents"
 
-    # Paramètres d'embeddings
-    EMBEDDING_PROVIDER: str = "mistral"  # "mistral" ou "bge-m3"
-    BGE_M3_MODEL_ID: str = "BAAI/bge-m3"
-
     # Paramètres de récupération - OPTIMISÉS
     VECTOR_SEARCH_K: int = 25  # Augmenté: plus de candidats = meilleur recall
     BM25_K: int = 25  # Augmenté
     HYBRID_RETRIEVER_WEIGHTS: tuple = (0.6, 0.4)  # Favorise BM25 (matching exact)
     RERANK_ENABLED: bool = True
     RERANK_TOP_K: int = 20  # Rerank plus de docs
-    RERANK_STRATEGY: str = "cross"
-    RERANK_CE_MODEL: str = "cross-encoder/ms-marco-MiniLM-L-12-v2"
-    RERANK_DEVICE: str = "cpu"
+    RERANK_MODEL: str = "mistral-rerank-2408"  # API Mistral Rerank (léger, pas de torch)
 
     # Multi-Query - AUGMENTÉ
     MULTI_QUERY_ENABLED: bool = True

@@ -2,7 +2,7 @@ import os
 import re
 from langchain_community.vectorstores import Chroma
 from langchain_mistralai import ChatMistralAI
-from sentence_transformers import CrossEncoder
+from mistralai import Mistral
 from langchain_community.retrievers import BM25Retriever
 from langchain_classic.retrievers.ensemble import EnsembleRetriever
 from ..config.settings import settings
@@ -131,115 +131,54 @@ class RetrieverBuilder:
 
 class RerankRetriever:
     """
-    Reranker avec support de plusieurs stratégies :
-    - cross: CrossEncoder (BGE-reranker-v2-m3 ou ms-marco-MiniLM)
-    - llm: LLM scoring (lent mais flexible)
-    - embedding: Cosine similarity (rapide mais moins précis)
+    Reranker utilisant l'API Mistral Rerank (mistral-rerank-2408).
+    Plus léger que les modèles locaux (pas de torch/transformers).
     """
-
-    # Cache du modèle CrossEncoder pour éviter de le recharger à chaque requête
-    _cross_encoder_cache = {}
 
     def __init__(self, retriever, embeddings, llm):
         self.retriever = retriever
         self.embeddings = embeddings
         self.llm = llm
-        self._init_cross_encoder()
-
-    def _init_cross_encoder(self):
-        """Initialise le CrossEncoder avec fallback si le modèle n'est pas disponible."""
-        model_name = settings.RERANK_CE_MODEL
-        device = getattr(settings, "RERANK_DEVICE", "cpu")
-
-        # Utiliser le cache
-        cache_key = f"{model_name}_{device}"
-        if cache_key in self._cross_encoder_cache:
-            self.cross = self._cross_encoder_cache[cache_key]
-            return
-
-        try:
-            self.cross = CrossEncoder(model_name, device=device)
-            self._cross_encoder_cache[cache_key] = self.cross
-            logger.info(f"CrossEncoder chargé: {model_name} sur {device}")
-        except Exception as e:
-            # Fallback vers ms-marco-MiniLM-L-6 si échec
-            fallback_model = "cross-encoder/ms-marco-MiniLM-L-6-v2"
-            logger.warning(f"Erreur chargement {model_name}: {e}")
-            logger.info(f"Fallback vers {fallback_model}")
-            try:
-                self.cross = CrossEncoder(fallback_model, device="cpu")
-                self._cross_encoder_cache[f"{fallback_model}_cpu"] = self.cross
-            except Exception as e2:
-                logger.error(f"Erreur chargement fallback: {e2}")
-                self.cross = None
-
-    def _cosine(self, a, b):
-        """Calcule la similarité cosinus entre deux vecteurs."""
-        dot = 0.0
-        na = 0.0
-        nb = 0.0
-        for x, y in zip(a, b):
-            dot += x * y
-            na += x * x
-            nb += y * y
-        if na == 0.0 or nb == 0.0:
-            return 0.0
-        return dot / ((na ** 0.5) * (nb ** 0.5))
-
-    def _llm_score(self, query: str, passage: str) -> float:
-        """Score de pertinence via LLM."""
-        prompt = (
-            "Note la pertinence du passage pour la question sur 0-100. "
-            "Réponds uniquement par un nombre.\n\n"
-            f"Question: {query}\n\nPassage:\n{passage}"
-        )
-        try:
-            response = self.llm.invoke(prompt)
-            text = (response.content or "").strip()
-            return float(re.findall(r"\\d+", text)[0])
-        except Exception:
-            return 0.0
+        self.client = Mistral(api_key=settings.MISTRALAI_API_KEY)
+        logger.info(f"Mistral Reranker initialisé: {settings.RERANK_MODEL}")
 
     def invoke(self, query: str):
-        """Reranke les documents récupérés."""
+        """Reranke les documents via l'API Mistral Rerank."""
         docs = self.retriever.invoke(query)
         if not docs or not settings.RERANK_ENABLED:
             return docs
 
         top_k = min(settings.RERANK_TOP_K, len(docs))
+        docs_to_rerank = docs[:top_k]
 
-        if settings.RERANK_STRATEGY == "llm":
-            scores = [self._llm_score(query, d.page_content) for d in docs[:top_k]]
+        try:
+            # Appel à l'API Mistral Rerank
+            response = self.client.classifiers.rerank(
+                model=settings.RERANK_MODEL,
+                query=query,
+                documents=[d.page_content for d in docs_to_rerank],
+                top_k=top_k,
+            )
 
-        elif settings.RERANK_STRATEGY == "cross" and self.cross is not None:
-            pairs = [(query, d.page_content) for d in docs[:top_k]]
-            scores = self.cross.predict(pairs)
-            if not isinstance(scores, list):
-                scores = list(scores)
+            # Reconstruire la liste ordonnée par score
+            reranked_docs = []
+            for result in response.results:
+                doc = docs_to_rerank[result.index]
+                doc.metadata["rerank_score"] = result.relevance_score
+                reranked_docs.append(doc)
 
-        else:
-            # Fallback vers embedding similarity
-            query_emb = self.embeddings.embed_query(query)
-            doc_embs = self.embeddings.embed_documents([d.page_content for d in docs[:top_k]])
-            scores = [self._cosine(query_emb, emb) for emb in doc_embs]
+            # Log des scores pour debug
+            if reranked_docs:
+                top_score = response.results[0].relevance_score
+                avg_score = sum(r.relevance_score for r in response.results) / len(response.results)
+                logger.debug(f"Mistral Rerank: top_score={top_score:.3f}, avg={avg_score:.3f}")
 
-        # Scorer et trier
-        scored = list(zip(docs[:top_k], scores))
-        scored.sort(key=lambda x: x[1], reverse=True)
+            # Ajouter les docs non rerankés à la fin
+            return reranked_docs + docs[top_k:]
 
-        # Log des scores pour debug
-        if scored:
-            top_score = scored[0][1]
-            avg_score = sum(s for _, s in scored) / len(scored)
-            logger.debug(f"Rerank: top_score={top_score:.3f}, avg={avg_score:.3f}")
-
-        reranked = [d for d, _ in scored] + docs[top_k:]
-
-        # Ajouter le score de reranking dans les metadata
-        for doc, score in scored:
-            doc.metadata["rerank_score"] = float(score)
-
-        return reranked
+        except Exception as e:
+            logger.warning(f"Erreur Mistral Rerank: {e}, retour des docs non rerankés")
+            return docs
 
     def get_relevant_documents(self, query: str):
         """Alias pour compatibilité LangChain."""

@@ -24,6 +24,4 @@ dependencies = [
     "python-dotenv>=1.1.1",
     "rank-bm25>=0.2.2",
     "pypdf (>=6.6.0,<7.0.0)",
-    "flagembedding>=1.3.5,<2.0.0",
-    "sentence-transformers>=2.2.0",
 ]

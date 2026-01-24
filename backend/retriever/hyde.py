@@ -1,8 +1,3 @@
-"""
-HyDE (Hypothetical Document Embeddings) Retriever.
-Génère une réponse hypothétique puis utilise cette réponse pour la recherche vectorielle.
-Technique qui améliore significativement le recall.
-"""
 from typing import List
 from langchain_core.documents import Document
 from langchain_mistralai import ChatMistralAI
