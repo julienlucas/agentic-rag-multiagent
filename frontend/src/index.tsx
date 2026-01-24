@@ -178,7 +178,7 @@ export default function Index() {
         </CardDescription>
         <CardDescription className="text-center text-sm">
           <strong>RAG Multi-Agentique</strong> précis et à faible taux
-          d'halucinations (5-1%)
+          d'halucinations (5-10%)
           <br />
           fonctionne avec 3 modèles Mistral AI (Embbed, OCR et Mistral Large)
         </CardDescription>
