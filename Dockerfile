@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.11-slim
 
 RUN apt-get update && apt-get install -y \
     libgl1 \
@@ -23,5 +23,3 @@ RUN chown -R appuser:appuser /app
 USER appuser
 
 EXPOSE 8000
-
-CMD ["uv", "run", "python", "manage.py", "runserver", "0.0.0.0:8000"]
