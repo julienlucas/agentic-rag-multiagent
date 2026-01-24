@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FileText, Download, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -40,6 +40,14 @@ export function ExampleSelector({
   documentLoaded,
 }: ExampleSelectorProps) {
   const { elapsedTime, finalTime, startTimer } = useTimer(isLoading);
+  const prevLoadingRef = useRef(false);
+
+  useEffect(() => {
+    if (isLoading && !prevLoadingRef.current) {
+      startTimer();
+    }
+    prevLoadingRef.current = isLoading;
+  }, [isLoading, startTimer]);
 
   const handleExampleChange = (value: string) => {
     const example = examples.find((ex) => ex.id === value);

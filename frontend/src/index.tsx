@@ -4,8 +4,9 @@ import { QuestionInput } from "@/components/ui/question-input";
 import { ResponseInputs } from "@/components/ui/reponses-inputs";
 import ContactForm from "@/components/ui/contact-form";
 import { Card, CardContent, CardTitle, CardHeader, CardDescription } from "@/components/ui/card.tsx";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { api } from "./api";
+import { useTimer } from "@/hooks/useTimer";
 
 const examples = [
   {
@@ -41,6 +42,7 @@ export default function Index() {
   const [sessionId] = useState(() => `session_${Date.now()}`);
   const [isLoadingExample, setIsLoadingExample] = useState(false);
   const [preloadedQuestion, setPreloadedQuestion] = useState<string>(deepseekExample?.question || "");
+  const hasLoadedInitial = useRef(false);
 
   const hasDocument = selectedFile !== null || selectedExample !== null;
   const showDocumentUploader =
@@ -48,7 +50,8 @@ export default function Index() {
 
   useEffect(() => {
     const loadInitialExample = async () => {
-      if (deepseekExample && !documentLoaded) {
+      if (deepseekExample && !documentLoaded && !hasLoadedInitial.current) {
+        hasLoadedInitial.current = true;
         setIsLoadingExample(true);
         try {
           const response = await api.loadFile(
