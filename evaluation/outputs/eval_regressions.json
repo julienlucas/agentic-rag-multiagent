@@ -2,38 +2,32 @@
   {
     "id": "ds-1",
     "question": "Quels modèles et tailles ont été open-sourcés par DeepSeek-R1 ?",
-    "baseline_f1": 0.24528301886792456,
-    "agentic_f1": 0.22784810126582278
+    "baseline_f1": 0.3917525773195877,
+    "agentic_f1": 0.31034482758620685
   },
   {
-    "id": "ds-4",
-    "question": "Quelles sont les deux étapes principales du pipeline d'entraînement de DeepSeek-R1 ?",
-    "baseline_f1": 0.24719101123595508,
-    "agentic_f1": 0.22399999999999998
+    "id": "ds-2",
+    "question": "Quelle est l'architecture de base utilisée pour DeepSeek-R1 ?",
+    "baseline_f1": 0.16470588235294117,
+    "agentic_f1": 0.1616161616161616
   },
   {
     "id": "ds-6",
     "question": "Quels sont les benchmarks utilisés pour évaluer les capacités de raisonnement ?",
-    "baseline_f1": 0.14965986394557823,
-    "agentic_f1": 0.1103448275862069
-  },
-  {
-    "id": "ds-10",
-    "question": "Quel score Codeforces est donné pour DeepSeek-R1 ?",
-    "baseline_f1": 0.43478260869565216,
-    "agentic_f1": 0.3773584905660377
-  },
-  {
-    "id": "ds-11",
-    "question": "Quels scores sont rapportés pour DeepSeek-R1-Distill-Qwen-32B ?",
-    "baseline_f1": 0.4776119402985074,
-    "agentic_f1": 0.4705882352941176
+    "baseline_f1": 0.15384615384615385,
+    "agentic_f1": 0.12162162162162163
   },
   {
     "id": "ds-13",
     "question": "Quel pourcentage de données cold-start est utilisé pour le SFT ?",
-    "baseline_f1": 0.17241379310344826,
-    "agentic_f1": 0.14285714285714288
+    "baseline_f1": 0.16279069767441862,
+    "agentic_f1": 0.125
+  },
+  {
+    "id": "ds-18",
+    "question": "Décris le pipeline complet d'entraînement de DeepSeek-R1, du modèle de base au modèle final.",
+    "baseline_f1": 0.14760147601476017,
+    "agentic_f1": 0.10862619808306707
   },
   {
     "id": "ds-20",
@@ -42,39 +36,33 @@
     "agentic_f1": 0.2926829268292683
   },
   {
-    "id": "gg-2",
-    "question": "Quelle amélioration d'efficacité énergétique est mentionnée pour Trillium (TPU 6e génération) ?",
-    "baseline_f1": 0.19607843137254902,
-    "agentic_f1": 0.15
+    "id": "gg-4",
+    "question": "Quel rôle joue l'IA dans la stratégie environnementale de Google ?",
+    "baseline_f1": 0.0858085808580858,
+    "agentic_f1": 0.08280254777070063
   },
   {
-    "id": "gg-6",
-    "question": "Quels types d'émissions sont couverts dans le rapport ?",
-    "baseline_f1": 0.15517241379310343,
-    "agentic_f1": 0.14634146341463414
+    "id": "gg-11",
+    "question": "De combien les émissions de Google ont-elles augmenté en 2023 par rapport à 2022 ?",
+    "baseline_f1": 0.26086956521739135,
+    "agentic_f1": 0.17283950617283952
   },
   {
-    "id": "gg-9",
-    "question": "Quel était le PUE moyen des data centers Google en 2023 et la moyenne industrie ?",
-    "baseline_f1": 0.46153846153846156,
-    "agentic_f1": 0.22222222222222227
+    "id": "gg-13",
+    "question": "Quel pourcentage de CFE Google a-t-il atteint globalement ?",
+    "baseline_f1": 0.18390804597701152,
+    "agentic_f1": 0.15686274509803924
   },
   {
-    "id": "gg-14",
-    "question": "Quels sont les deux piliers principaux de la stratégie climatique de Google ?",
-    "baseline_f1": 0.22222222222222224,
-    "agentic_f1": 0.06451612903225808
+    "id": "gg-15",
+    "question": "Comment Google équilibre-t-il la croissance de l'IA avec ses objectifs environnementaux ?",
+    "baseline_f1": 0.13293051359516614,
+    "agentic_f1": 0.11522633744855966
   },
   {
-    "id": "gg-16",
-    "question": "Quel est le lien entre les produits Google et les opérations pour la durabilité ?",
-    "baseline_f1": 0.125,
-    "agentic_f1": 0.10256410256410255
-  },
-  {
-    "id": "gg-19",
-    "question": "Explique le programme de décarbonisation des data centers de Google, de la conception à l'exploitation.",
-    "baseline_f1": 0.10294117647058823,
-    "agentic_f1": 0.09318996415770608
+    "id": "gg-17",
+    "question": "Comment Google aborde-t-il les émissions Scope 3 ?",
+    "baseline_f1": 0.13090909090909092,
+    "agentic_f1": 0.11564625850340135
   }
 ]

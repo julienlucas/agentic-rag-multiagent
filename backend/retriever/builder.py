@@ -10,6 +10,10 @@ from ..utils.logging import logger
 from .embeddings import get_embeddings
 from .parent_child_retriever import ParentChildRetriever
 from .multi_query import MultiQueryRetriever
+from .hyde import HyDERetriever
+from .query_decomposition import QueryDecompositionRetriever
+from .contextual_compression import ContextualCompressionRetriever
+from .sentence_window_retriever import SentenceWindowRetriever
 
 hf_token = os.environ.get("HF_TOKEN")
 if hf_token:
@@ -60,22 +64,45 @@ class RetrieverBuilder:
                 )
                 logger.info("Récupérateur hybride créé avec succès.")
 
-                # Chaîner les composants: Hybrid → ParentChild → MultiQuery → Rerank
+                # Chaîner les composants optimisés pour le recall :
+                # Hybrid → SentenceWindow → ParentChild → HyDE → MultiQuery → QueryDecomp → Rerank → Compression
                 retriever = hybrid_retriever
+
+                # Sentence Window (étend les phrases au contexte de fenêtre)
+                if settings.CHUNKING_STRATEGY.lower() == "sentence_window":
+                    retriever = SentenceWindowRetriever(retriever)
+                    logger.info("Sentence Window retriever activé.")
 
                 # Parent-Child (retourne parents des children matchés)
                 if settings.PARENT_CHILD_ENABLED:
                     retriever = ParentChildRetriever(retriever)
                     logger.info("Parent-Child retriever activé.")
 
+                # HyDE (génère une réponse hypothétique pour améliorer les embeddings)
+                if settings.HYDE_ENABLED:
+                    retriever = HyDERetriever(retriever, self.llm)
+                    logger.info("HyDE retriever activé.")
+
                 # Multi-Query (génère variations de la question)
                 if settings.MULTI_QUERY_ENABLED:
                     retriever = MultiQueryRetriever(retriever, self.llm)
                     logger.info("Multi-Query retriever activé.")
 
-                # Reranker
+                # Query Decomposition (décompose les questions complexes)
+                if settings.QUERY_DECOMPOSITION_ENABLED:
+                    retriever = QueryDecompositionRetriever(retriever, self.llm)
+                    logger.info("Query Decomposition retriever activé.")
+
+                # Reranker (améliore la précision du ranking)
                 if settings.RERANK_ENABLED:
-                    return RerankRetriever(retriever, self.embeddings, self.llm)
+                    retriever = RerankRetriever(retriever, self.embeddings, self.llm)
+                    logger.info(f"Reranker activé: {settings.RERANK_CE_MODEL}")
+
+                # Contextual Compression (filtre le contenu non pertinent)
+                if settings.CONTEXTUAL_COMPRESSION_ENABLED:
+                    retriever = ContextualCompressionRetriever(retriever, self.llm)
+                    logger.info("Contextual Compression activé.")
+
                 return retriever
 
             except Exception as e:
@@ -85,10 +112,16 @@ class RetrieverBuilder:
                 retriever = bm25
                 if settings.PARENT_CHILD_ENABLED:
                     retriever = ParentChildRetriever(retriever)
+                if settings.HYDE_ENABLED:
+                    retriever = HyDERetriever(retriever, self.llm)
                 if settings.MULTI_QUERY_ENABLED:
                     retriever = MultiQueryRetriever(retriever, self.llm)
+                if settings.QUERY_DECOMPOSITION_ENABLED:
+                    retriever = QueryDecompositionRetriever(retriever, self.llm)
                 if settings.RERANK_ENABLED:
-                    return RerankRetriever(retriever, self.embeddings, self.llm)
+                    retriever = RerankRetriever(retriever, self.embeddings, self.llm)
+                if settings.CONTEXTUAL_COMPRESSION_ENABLED:
+                    retriever = ContextualCompressionRetriever(retriever, self.llm)
                 return retriever
 
         except Exception as e:
@@ -97,13 +130,51 @@ class RetrieverBuilder:
 
 
 class RerankRetriever:
+    """
+    Reranker avec support de plusieurs stratégies :
+    - cross: CrossEncoder (BGE-reranker-v2-m3 ou ms-marco-MiniLM)
+    - llm: LLM scoring (lent mais flexible)
+    - embedding: Cosine similarity (rapide mais moins précis)
+    """
+
+    # Cache du modèle CrossEncoder pour éviter de le recharger à chaque requête
+    _cross_encoder_cache = {}
+
     def __init__(self, retriever, embeddings, llm):
         self.retriever = retriever
         self.embeddings = embeddings
         self.llm = llm
-        self.cross = CrossEncoder(settings.RERANK_CE_MODEL)
+        self._init_cross_encoder()
+
+    def _init_cross_encoder(self):
+        """Initialise le CrossEncoder avec fallback si le modèle n'est pas disponible."""
+        model_name = settings.RERANK_CE_MODEL
+        device = getattr(settings, "RERANK_DEVICE", "cpu")
+
+        # Utiliser le cache
+        cache_key = f"{model_name}_{device}"
+        if cache_key in self._cross_encoder_cache:
+            self.cross = self._cross_encoder_cache[cache_key]
+            return
+
+        try:
+            self.cross = CrossEncoder(model_name, device=device)
+            self._cross_encoder_cache[cache_key] = self.cross
+            logger.info(f"CrossEncoder chargé: {model_name} sur {device}")
+        except Exception as e:
+            # Fallback vers ms-marco-MiniLM-L-6 si échec
+            fallback_model = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+            logger.warning(f"Erreur chargement {model_name}: {e}")
+            logger.info(f"Fallback vers {fallback_model}")
+            try:
+                self.cross = CrossEncoder(fallback_model, device="cpu")
+                self._cross_encoder_cache[f"{fallback_model}_cpu"] = self.cross
+            except Exception as e2:
+                logger.error(f"Erreur chargement fallback: {e2}")
+                self.cross = None
 
     def _cosine(self, a, b):
+        """Calcule la similarité cosinus entre deux vecteurs."""
         dot = 0.0
         na = 0.0
         nb = 0.0
@@ -116,6 +187,7 @@ class RerankRetriever:
         return dot / ((na ** 0.5) * (nb ** 0.5))
 
     def _llm_score(self, query: str, passage: str) -> float:
+        """Score de pertinence via LLM."""
         prompt = (
             "Note la pertinence du passage pour la question sur 0-100. "
             "Réponds uniquement par un nombre.\n\n"
@@ -129,22 +201,46 @@ class RerankRetriever:
             return 0.0
 
     def invoke(self, query: str):
+        """Reranke les documents récupérés."""
         docs = self.retriever.invoke(query)
         if not docs or not settings.RERANK_ENABLED:
             return docs
+
         top_k = min(settings.RERANK_TOP_K, len(docs))
+
         if settings.RERANK_STRATEGY == "llm":
             scores = [self._llm_score(query, d.page_content) for d in docs[:top_k]]
-        elif settings.RERANK_STRATEGY == "cross":
+
+        elif settings.RERANK_STRATEGY == "cross" and self.cross is not None:
             pairs = [(query, d.page_content) for d in docs[:top_k]]
             scores = self.cross.predict(pairs)
             if not isinstance(scores, list):
                 scores = list(scores)
+
         else:
+            # Fallback vers embedding similarity
             query_emb = self.embeddings.embed_query(query)
             doc_embs = self.embeddings.embed_documents([d.page_content for d in docs[:top_k]])
             scores = [self._cosine(query_emb, emb) for emb in doc_embs]
+
+        # Scorer et trier
         scored = list(zip(docs[:top_k], scores))
         scored.sort(key=lambda x: x[1], reverse=True)
+
+        # Log des scores pour debug
+        if scored:
+            top_score = scored[0][1]
+            avg_score = sum(s for _, s in scored) / len(scored)
+            logger.debug(f"Rerank: top_score={top_score:.3f}, avg={avg_score:.3f}")
+
         reranked = [d for d, _ in scored] + docs[top_k:]
+
+        # Ajouter le score de reranking dans les metadata
+        for doc, score in scored:
+            doc.metadata["rerank_score"] = float(score)
+
         return reranked
+
+    def get_relevant_documents(self, query: str):
+        """Alias pour compatibilité LangChain."""
+        return self.invoke(query)

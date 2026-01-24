@@ -26,28 +26,41 @@ class Settings(BaseSettings):
 
     # Paramètres d'embeddings
     EMBEDDING_PROVIDER: str = "mistral"  # "mistral" ou "bge-m3"
-    BGE_M3_MODEL_ID: str = "BAAI/bge-m3"  # Utilisé si EMBEDDING_PROVIDER = "bge-m3"
+    BGE_M3_MODEL_ID: str = "BAAI/bge-m3"
 
-    # Paramètres de récupération
-    VECTOR_SEARCH_K: int = 15
-    BM25_K: int = 15
-    HYBRID_RETRIEVER_WEIGHTS: tuple = (0.5, 0.5)
+    # Paramètres de récupération - OPTIMISÉS
+    VECTOR_SEARCH_K: int = 25  # Augmenté: plus de candidats = meilleur recall
+    BM25_K: int = 25  # Augmenté
+    HYBRID_RETRIEVER_WEIGHTS: tuple = (0.6, 0.4)  # Favorise BM25 (matching exact)
     RERANK_ENABLED: bool = True
-    RERANK_TOP_K: int = 15  # Limite les docs à reranker
-    RERANK_STRATEGY: str = "cross"  # "cross", "llm" ou "embedding"
-    RERANK_CE_MODEL: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"  # Léger, compatible Mac
+    RERANK_TOP_K: int = 20  # Rerank plus de docs
+    RERANK_STRATEGY: str = "cross"
+    RERANK_CE_MODEL: str = "cross-encoder/ms-marco-MiniLM-L-12-v2"
+    RERANK_DEVICE: str = "cpu"
 
-    # Multi-Query
+    # Multi-Query - AUGMENTÉ
     MULTI_QUERY_ENABLED: bool = True
-    MULTI_QUERY_COUNT: int = 2  # 2 reformulations = bon compromis latence/recall
+    MULTI_QUERY_COUNT: int = 3  # 3 reformulations = meilleur recall
 
-    # Paramètres de chunking
-    CHUNKING_STRATEGY: str = "semantic"  # "recursive" ou "semantic"
+    # HyDE - DÉSACTIVÉ
+    HYDE_ENABLED: bool = False
+
+    # Query Decomposition - DÉSACTIVÉ
+    QUERY_DECOMPOSITION_ENABLED: bool = False
+
+    # Contextual Compression - DÉSACTIVÉ
+    CONTEXTUAL_COMPRESSION_ENABLED: bool = False
+    CONTEXTUAL_COMPRESSION_TOP_K: int = 5
+
+    # Paramètres de chunking - OPTIMISÉS
+    CHUNKING_STRATEGY: str = "semantic"
     PARENT_CHILD_ENABLED: bool = True
-    PARENT_CHUNK_SIZE: int = 2000
-    CHILD_CHUNK_SIZE: int = 400
-    CHUNK_SIZE: int = 700
-    CHUNK_OVERLAP: int = 300
+    PARENT_CHUNK_SIZE: int = 1500  # Réduit pour plus de granularité
+    CHILD_CHUNK_SIZE: int = 350  # Légèrement réduit
+    CHILD_OVERLAP: int = 100  # Plus d'overlap = moins de perte d'info
+    CHUNK_SIZE: int = 600  # Réduit
+    CHUNK_OVERLAP: int = 200  # Plus d'overlap
+    SEMANTIC_THRESHOLD: float = 0.45  # Plus de découpes sémantiques
 
     # Evaluation
     EVAL_LLM_JUDGE_ENABLED: bool = True

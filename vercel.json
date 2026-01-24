@@ -1,5 +1,5 @@
 {
-  "buildCommand": "rm -rf frontend/public/static || true; mkdir -p frontend/public; cp -r static frontend/public/static; cd frontend && (npm install -g pnpm || true) && pnpm install && pnpm run build",
+  "buildCommand": "rm -rf frontend/public/static && cp -r static frontend/public/static && cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/dist",
   "framework": "vite",
   "installCommand": "echo 'Skipping root install'"

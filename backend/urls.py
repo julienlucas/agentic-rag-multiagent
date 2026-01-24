@@ -10,6 +10,6 @@ urlpatterns = [
     path('api/process-question', process_question),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATICFILES_DIRS[1])
-    urlpatterns += static('/', document_root=settings.STATICFILES_DIRS[1])
+if settings.DEBUG and len(settings.STATICFILES_DIRS) > 0:
+    static_dir = settings.STATICFILES_DIRS[0]
+    urlpatterns += static(settings.STATIC_URL, document_root=static_dir)
