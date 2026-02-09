@@ -2,6 +2,8 @@ from .views import index, upload_file, process_question, load_file
 from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.static import serve
+from pathlib import Path
 
 urlpatterns = [
     path('', index),
@@ -10,6 +12,12 @@ urlpatterns = [
     path('api/process-question', process_question),
 ]
 
-if settings.DEBUG and len(settings.STATICFILES_DIRS) > 0:
-    static_dir = settings.STATICFILES_DIRS[0]
-    urlpatterns += static(settings.STATIC_URL, document_root=static_dir)
+if settings.DEBUG:
+    for static_dir in settings.STATICFILES_DIRS:
+        urlpatterns += static(settings.STATIC_URL, document_root=static_dir)
+
+    assets_dir = settings.BASE_DIR / "frontend" / "dist" / "assets"
+    if assets_dir.exists():
+        urlpatterns += [
+            path('assets/<path:path>', serve, {'document_root': str(assets_dir)}),
+        ]

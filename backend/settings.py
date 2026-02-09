@@ -73,7 +73,10 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = "static/"
-STATICFILES_DIRS = [BASE_DIR / "static"]
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+    BASE_DIR / "frontend" / "dist",
+]
 
 # CORS - Allow frontend on Vercel to call the API
 CORS_ALLOWED_ORIGINS = [
