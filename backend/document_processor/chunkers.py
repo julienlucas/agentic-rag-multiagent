@@ -97,9 +97,13 @@ class SemanticChunkingStrategy(ChunkingStrategy):
         if len(paragraphs) <= 1:
             return [Document(page_content=text, metadata=metadata)]
 
-        # Calculer les embeddings des paragraphes
+        # Calculer les embeddings des paragraphes (par batch pour éviter les 400)
         try:
-            embeddings = self.embeddings.embed_documents(paragraphs)
+            BATCH_SIZE = 16
+            embeddings = []
+            for i in range(0, len(paragraphs), BATCH_SIZE):
+                batch = paragraphs[i:i + BATCH_SIZE]
+                embeddings.extend(self.embeddings.embed_documents(batch))
         except Exception as e:
             logger.warning(f"SemanticChunking: erreur embeddings, fallback: {e}")
             return RecursiveChunkingStrategy().split(text, metadata)
@@ -250,6 +254,124 @@ class ParentChildChunkingStrategy(ChunkingStrategy):
         return all_children
 
 
+class SemanticParentChildChunkingStrategy(ChunkingStrategy):
+    """
+    Stratégie hybride : Semantic chunking pour les parents + Recursive pour les children.
+    Les parents sont des sections sémantiquement cohérentes.
+    Les children sont des petits chunks précis pour l'indexation.
+    On indexe les children, on retourne les parents au LLM.
+    """
+
+    def __init__(self, embeddings=None):
+        self.embeddings = embeddings
+        self.semantic_threshold = settings.SEMANTIC_THRESHOLD
+        self.parent_max_size = settings.PARENT_CHUNK_SIZE
+        self.child_chunk_size = settings.CHILD_CHUNK_SIZE
+        self.child_overlap = settings.CHILD_OVERLAP
+
+        self._child_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=self.child_chunk_size,
+            chunk_overlap=self.child_overlap,
+            separators=["\n\n", "\n", ". ", " ", ""],
+        )
+
+    def _create_semantic_parents(self, text: str, metadata: Dict[str, Any]) -> List[Document]:
+        """Crée des chunks parents via semantic chunking."""
+        # Fallback vers recursive si pas d'embeddings
+        if self.embeddings is None:
+            splitter = RecursiveCharacterTextSplitter(
+                chunk_size=self.parent_max_size,
+                chunk_overlap=100,
+            )
+            return splitter.create_documents([text], [metadata])
+
+        paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
+        if not paragraphs:
+            paragraphs = [s.strip() + "." for s in text.split(". ") if s.strip()]
+
+        if len(paragraphs) <= 1:
+            return [Document(page_content=text, metadata=metadata)]
+
+        try:
+            # Batch les appels embeddings par groupes de 16 pour éviter les 400
+            BATCH_SIZE = 16
+            embeddings = []
+            for i in range(0, len(paragraphs), BATCH_SIZE):
+                batch = paragraphs[i:i + BATCH_SIZE]
+                embeddings.extend(self.embeddings.embed_documents(batch))
+        except Exception as e:
+            logger.warning(f"SemanticParentChild: erreur embeddings, fallback recursive: {e}")
+            splitter = RecursiveCharacterTextSplitter(
+                chunk_size=self.parent_max_size,
+                chunk_overlap=100,
+            )
+            return splitter.create_documents([text], [metadata])
+
+        # Grouper les paragraphes en sections sémantiquement cohérentes
+        parents = []
+        current_chunk = [paragraphs[0]]
+        current_size = len(paragraphs[0])
+
+        for i in range(1, len(paragraphs)):
+            dot = sum(a * b for a, b in zip(embeddings[i - 1], embeddings[i]))
+            norm1 = sum(a * a for a in embeddings[i - 1]) ** 0.5
+            norm2 = sum(b * b for b in embeddings[i]) ** 0.5
+            similarity = dot / (norm1 * norm2) if norm1 and norm2 else 0.0
+
+            if (similarity < self.semantic_threshold and current_size >= 200) or \
+               current_size + len(paragraphs[i]) > self.parent_max_size:
+                chunk_text = "\n\n".join(current_chunk)
+                parents.append(Document(page_content=chunk_text, metadata=metadata.copy()))
+                current_chunk = [paragraphs[i]]
+                current_size = len(paragraphs[i])
+            else:
+                current_chunk.append(paragraphs[i])
+                current_size += len(paragraphs[i])
+
+        if current_chunk:
+            chunk_text = "\n\n".join(current_chunk)
+            parents.append(Document(page_content=chunk_text, metadata=metadata.copy()))
+
+        return parents
+
+    def split(self, text: str, metadata: Optional[Dict[str, Any]] = None) -> List[Document]:
+        """
+        Crée des parents sémantiques puis les découpe en children.
+        Les children portent parent_id et parent_content en metadata.
+        """
+        metadata = metadata or {}
+        all_children = []
+
+        # Étape 1 : créer les parents sémantiques
+        parent_docs = self._create_semantic_parents(text, metadata)
+
+        # Étape 2 : découper chaque parent en children
+        for parent in parent_docs:
+            parent_id = str(uuid.uuid4())
+            parent_content = parent.page_content
+
+            children = self._child_splitter.create_documents(
+                [parent_content],
+                [parent.metadata]
+            )
+
+            for child in children:
+                child.metadata = {
+                    **child.metadata,
+                    "parent_id": parent_id,
+                    "parent_content": parent_content,
+                    "is_child": True,
+                }
+                all_children.append(child)
+
+        logger.info(
+            f"SemanticParentChild: {len(parent_docs)} parents -> {len(all_children)} children "
+            f"(parent avg={sum(len(p.page_content) for p in parent_docs)//max(len(parent_docs),1)} chars, "
+            f"child avg={sum(len(c.page_content) for c in all_children)//max(len(all_children),1)} chars)"
+        )
+        return all_children
+
+
 def get_chunking_strategy(embeddings=None) -> ChunkingStrategy:
     """
     Factory function pour obtenir la stratégie de chunking configurée.
@@ -262,17 +384,22 @@ def get_chunking_strategy(embeddings=None) -> ChunkingStrategy:
     """
     strategy = settings.CHUNKING_STRATEGY.lower()
 
+    # Priorité : si parent-child est activé, toujours produire des children avec metadata parent
+    if settings.PARENT_CHILD_ENABLED:
+        if strategy == "semantic":
+            logger.info("Utilisation du chunking sémantique + parent-child (hybride)")
+            return SemanticParentChildChunkingStrategy(embeddings=embeddings)
+        else:
+            logger.info("Utilisation du chunking parent-child (recursive)")
+            return ParentChildChunkingStrategy()
+
     if strategy == "semantic":
-        logger.info("Utilisation du chunking sémantique")
+        logger.info("Utilisation du chunking sémantique (sans parent-child)")
         return SemanticChunkingStrategy(embeddings=embeddings)
 
     elif strategy == "sentence_window":
         logger.info("Utilisation du chunking Sentence Window")
         return SentenceWindowChunkingStrategy(window_size=3)
-
-    elif strategy == "parent-child" or settings.PARENT_CHILD_ENABLED:
-        logger.info("Utilisation du chunking parent-child")
-        return ParentChildChunkingStrategy()
 
     else:
         logger.info("Utilisation du chunking récursif standard")

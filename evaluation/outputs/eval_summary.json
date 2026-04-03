@@ -1,86 +1,110 @@
 {
   "baseline": {
     "count": 40,
-    "mean_f1": 0.1775,
-    "context_hit_rate": 0.9,
+    "mean_f1": 0.196,
+    "context_hit_rate": 0.85,
     "supported_rate": null,
     "relevant_rate": null,
     "hallucination_rate": null,
     "retrieval": {
-      "recall@10": 0.5248,
-      "mrr@10": 0.8561,
-      "ndcg@10": 0.6951
+      "recall@5": 0.3897,
+      "mrr@5": 0.8816,
+      "ndcg@5": 0.776,
+      "recall@10": 0.5918,
+      "mrr@10": 0.8853,
+      "ndcg@10": 0.7561,
+      "recall@20": 0.8058,
+      "mrr@20": 0.8853,
+      "ndcg@20": 0.7902
     },
     "llm_judge": {
-      "mean_correctness": 4.33,
-      "mean_faithfulness": 3.85,
-      "mean_completeness": 4.47,
-      "hallucination_rate": 0.175,
-      "perfect_faithfulness_rate": 0.65
+      "mean_correctness": 4.3,
+      "mean_faithfulness": 4.28,
+      "mean_completeness": 4.1,
+      "hallucination_rate": 0.075,
+      "perfect_faithfulness_rate": 0.8
     }
   },
   "agentic": {
     "count": 40,
-    "mean_f1": 0.1989,
-    "context_hit_rate": 0.9,
-    "supported_rate": 0.8649,
-    "relevant_rate": 0.9459,
-    "hallucination_rate": 0.125,
+    "mean_f1": 0.2009,
+    "context_hit_rate": 0.85,
+    "supported_rate": 0.8947,
+    "relevant_rate": 1.0,
+    "hallucination_rate": 0.1,
     "retrieval": {
-      "recall@10": 0.5248,
-      "mrr@10": 0.8561,
-      "ndcg@10": 0.6951
+      "recall@5": 0.3897,
+      "mrr@5": 0.8816,
+      "ndcg@5": 0.776,
+      "recall@10": 0.5918,
+      "mrr@10": 0.8853,
+      "ndcg@10": 0.7561,
+      "recall@20": 0.8058,
+      "mrr@20": 0.8853,
+      "ndcg@20": 0.7902
     },
     "llm_judge": {
-      "mean_correctness": 4.22,
-      "mean_faithfulness": 4.4,
-      "mean_completeness": 3.95,
-      "hallucination_rate": 0.075,
-      "perfect_faithfulness_rate": 0.775
+      "mean_correctness": 4.0,
+      "mean_faithfulness": 4.55,
+      "mean_completeness": 3.9,
+      "hallucination_rate": 0.025,
+      "perfect_faithfulness_rate": 0.875
     }
   },
-  "elapsed_sec": 1219.24,
+  "elapsed_sec": 4808.71,
   "delta": {
-    "mean_f1": 0.0214,
+    "mean_f1": 0.0049,
     "context_hit_rate": 0.0
   },
   "percent": {
     "baseline": {
-      "mean_f1": 17.75,
-      "context_hit_rate": 90.0,
+      "mean_f1": 19.6,
+      "context_hit_rate": 85.0,
       "supported_rate": null,
       "relevant_rate": null,
       "hallucination_rate": null,
       "retrieval": {
-        "recall@10": 52.48,
-        "mrr@10": 85.61,
-        "ndcg@10": 69.51
+        "recall@5": 38.97,
+        "mrr@5": 88.16,
+        "ndcg@5": 77.6,
+        "recall@10": 59.18,
+        "mrr@10": 88.53,
+        "ndcg@10": 75.61,
+        "recall@20": 80.58,
+        "mrr@20": 88.53,
+        "ndcg@20": 79.02
       },
       "llm_judge": {
-        "mean_correctness": 4.33,
-        "mean_faithfulness": 3.85,
-        "mean_completeness": 4.47,
-        "hallucination_rate": 17.5,
-        "perfect_faithfulness_rate": 65.0
+        "mean_correctness": 4.3,
+        "mean_faithfulness": 4.28,
+        "mean_completeness": 4.1,
+        "hallucination_rate": 7.5,
+        "perfect_faithfulness_rate": 80.0
       }
     },
     "agentic": {
-      "mean_f1": 19.89,
-      "context_hit_rate": 90.0,
-      "supported_rate": 86.49,
-      "relevant_rate": 94.59,
-      "hallucination_rate": 12.5,
+      "mean_f1": 20.09,
+      "context_hit_rate": 85.0,
+      "supported_rate": 89.47,
+      "relevant_rate": 100.0,
+      "hallucination_rate": 10.0,
       "retrieval": {
-        "recall@10": 52.48,
-        "mrr@10": 85.61,
-        "ndcg@10": 69.51
+        "recall@5": 38.97,
+        "mrr@5": 88.16,
+        "ndcg@5": 77.6,
+        "recall@10": 59.18,
+        "mrr@10": 88.53,
+        "ndcg@10": 75.61,
+        "recall@20": 80.58,
+        "mrr@20": 88.53,
+        "ndcg@20": 79.02
       },
       "llm_judge": {
-        "mean_correctness": 4.22,
-        "mean_faithfulness": 4.4,
-        "mean_completeness": 3.95,
-        "hallucination_rate": 7.5,
-        "perfect_faithfulness_rate": 77.5
+        "mean_correctness": 4.0,
+        "mean_faithfulness": 4.55,
+        "mean_completeness": 3.9,
+        "hallucination_rate": 2.5,
+        "perfect_faithfulness_rate": 87.5
       }
     }
   }

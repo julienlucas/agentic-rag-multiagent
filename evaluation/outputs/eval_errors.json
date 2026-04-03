@@ -1,15 +1,5 @@
 [
   {
-    "id": "ds-2",
-    "question": "Quelle est l'architecture de base utilisée pour DeepSeek-R1 ?",
-    "type": "no_context_hit"
-  },
-  {
-    "id": "ds-13",
-    "question": "Quel pourcentage de données cold-start est utilisé pour le SFT ?",
-    "type": "not_supported"
-  },
-  {
     "id": "ds-16",
     "question": "Comment le modèle gère-t-il les tâches nécessitant peu de raisonnement ?",
     "type": "no_context_hit"
@@ -25,13 +15,28 @@
     "type": "no_context_hit"
   },
   {
-    "id": "gg-15",
-    "question": "Comment Google équilibre-t-il la croissance de l'IA avec ses objectifs environnementaux ?",
+    "id": "gg-2",
+    "question": "Quelle amélioration d'efficacité énergétique est mentionnée pour Trillium (TPU 6e génération) ?",
+    "type": "no_context_hit"
+  },
+  {
+    "id": "gg-5",
+    "question": "Qu'est-ce que Google fait pour la gestion de l'eau ?",
+    "type": "no_context_hit"
+  },
+  {
+    "id": "gg-7",
+    "question": "Quelle est la stratégie de Google pour les achats d'énergie renouvelable ?",
     "type": "not_supported"
   },
   {
-    "id": "gg-17",
-    "question": "Comment Google aborde-t-il les émissions Scope 3 ?",
+    "id": "gg-15",
+    "question": "Comment Google équilibre-t-il la croissance de l'IA avec ses objectifs environnementaux ?",
+    "type": "no_context_hit"
+  },
+  {
+    "id": "gg-15",
+    "question": "Comment Google équilibre-t-il la croissance de l'IA avec ses objectifs environnementaux ?",
     "type": "not_supported"
   },
   {

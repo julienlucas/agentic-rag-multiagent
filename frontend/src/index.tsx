@@ -287,32 +287,43 @@ export default function Index() {
                 </span>
               </li>
               <li>
-                <strong>🌀 Ajout du reranker Cohere 3.5.</strong>
+                <strong>🌀 Ajout du reranker Cohere 4 Pro.</strong>
               </li>
               <li>
-                <strong>🎯 Recall@10 (top 10 résultats) : 25% → 52.5%</strong> —{" "}
-                <span>
-                  donc 5 questions sur 8 ont au moins un passage pertinent dans
-                  le top 10.
-                </span>
+                <strong>
+                  🎯 Améliorations effectuées sur le Recall@10 (top 10
+                  résultats) : 25% → 59.2%
+                </strong>{" "}
+                — moyenne sur le bench : <span>part des extraits
+                pertinents (vs. passages gold) déjà présents dans la liste
+                renvoyée par le retriever qui tombent dans le top 10.</span>
               </li>
               <li>
-                <strong>🎯 MRR@10 (top 10 résultats) : 24% → 85.6%</strong> —{" "}
+                <strong>
+                  🎯 Améliorations effectuées sur le MRR@10 (top 10 résultats) :
+                  24% → 88.5%
+                </strong>{" "}
+                —{" "}
                 <span>
-                  donc en moyenne le 1er bon passage arrive vers la 2ᵉ place.
-                </span>
-              </li>
-              <li>
-                <strong>🎯 nDCG@10 (top 10 résultats) : 22% → 69.5%</strong> —{" "}
-                <span>
-                  donc très bonnes performances globales de pertinence.
+                  MRR ~0,885 signifie en pratique que le premier document
+                  pertinent arrive très souvent en tête de liste (rang moyen
+                  proche de 1), pas à la 2ᵉ place.
                 </span>
               </li>
               <li>
                 <strong>
-                  <span>
-                    🌀 7,5% d'hallucination grâce au mutli-agents de factchecking + le reranker Cohere 3.5
-                  </span>
+                  🎯 Améliorations effectuées sur le nDCG@10 (top 10 résultats)
+                  : 22% → 75.6%
+                </strong>{" "}
+                —{" "}
+                <span>
+                  bon équilibre entre bons passages en tête du top 10 et qualité
+                  globale du classement.
+                </span>
+              </li>
+              <li>
+                <strong>
+                  <span>🌀 Taux d'hallucination final atteint: 2.5%</span>
                 </strong>
               </li>
               <li>

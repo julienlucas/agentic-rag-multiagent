@@ -31,17 +31,17 @@ class Settings(BaseSettings):
     EMBEDDING_PROVIDER: str = "mistral"  # Mistral-embed fonctionne mieux sur ce corpus
     BGE_M3_MODEL_ID: str = "BAAI/bge-m3"
 
-    # Paramètres de récupération - CONFIG OPTIMALE TESTÉE
-    VECTOR_SEARCH_K: int = 15
-    BM25_K: int = 15
-    HYBRID_RETRIEVER_WEIGHTS: tuple = (0.5, 0.5)  # Équilibré
+    # Paramètres de récupération - CONFIG OPTIMISÉE RECALL
+    VECTOR_SEARCH_K: int = 20
+    BM25_K: int = 20
+    HYBRID_RETRIEVER_WEIGHTS: tuple = (0.5, 0.5)  # Équilibré — BM25 crucial pour termes exacts
     RERANK_ENABLED: bool = True
-    RERANK_TOP_K: int = 15
-    RERANK_MODEL: str = "rerank-v3.5"  # Cohere Rerank
+    RERANK_TOP_K: int = 30  # Top N résultats après reranking de TOUS les candidats
+    RERANK_MODEL: str = "rerank-v4.0-pro"  # Cohere Rerank 4 Pro (gratuit en trial)
 
-    # Multi-Query
+    # Multi-Query - 4 reformulations pour couvrir plus d'angles sémantiques
     MULTI_QUERY_ENABLED: bool = True
-    MULTI_QUERY_COUNT: int = 2
+    MULTI_QUERY_COUNT: int = 4
 
     # HyDE - DÉSACTIVÉ (nuit au retrieval sur ce corpus)
     HYDE_ENABLED: bool = False
@@ -53,15 +53,15 @@ class Settings(BaseSettings):
     CONTEXTUAL_COMPRESSION_ENABLED: bool = False
     CONTEXTUAL_COMPRESSION_TOP_K: int = 5
 
-    # Paramètres de chunking - CONFIG OPTIMALE TESTÉE
+    # Paramètres de chunking - CONFIG OPTIMISÉE RECALL
     CHUNKING_STRATEGY: str = "semantic"
     PARENT_CHILD_ENABLED: bool = True
-    PARENT_CHUNK_SIZE: int = 2000
-    CHILD_CHUNK_SIZE: int = 400
+    PARENT_CHUNK_SIZE: int = 1200  # Parents ciblés pour le reranking
+    CHILD_CHUNK_SIZE: int = 400  # Children assez gros pour matcher les keywords BM25
     CHILD_OVERLAP: int = 50
-    CHUNK_SIZE: int = 700
-    CHUNK_OVERLAP: int = 300
-    SEMANTIC_THRESHOLD: float = 0.5
+    CHUNK_SIZE: int = 500  # Réduit pour éviter la "moyennisation" des embeddings
+    CHUNK_OVERLAP: int = 100  # 300 était excessif, 100 suffit
+    SEMANTIC_THRESHOLD: float = 0.35  # Splits plus granulaires
 
     # Evaluation
     EVAL_LLM_JUDGE_ENABLED: bool = True

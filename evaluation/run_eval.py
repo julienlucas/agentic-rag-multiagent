@@ -70,14 +70,36 @@ def _normalize_list(values: Optional[List[str]]) -> List[str]:
     return [_normalize(v) for v in (values or []) if v]
 
 
-def _doc_relevance_flags(docs, gold_passages: Optional[List[str]]) -> List[int]:
+def _token_overlap_score(gold_text: str, doc_text: str) -> float:
+    """Calcule le ratio de tokens du gold présents dans le doc."""
+    gold_toks = _tokens(gold_text)
+    if not gold_toks:
+        return 0.0
+    doc_toks_set = set(_tokens(doc_text))
+    matched = sum(1 for t in gold_toks if t in doc_toks_set)
+    return matched / len(gold_toks)
+
+
+def _doc_relevance_flags(docs, gold_passages: Optional[List[str]], fuzzy_threshold: float = 0.6) -> List[int]:
+    """
+    Détermine la pertinence de chaque doc par rapport aux gold passages.
+    Utilise un matching hybride : substring exact OU token overlap >= seuil.
+    """
     if not gold_passages:
         return []
     gold = _normalize_list(gold_passages)
     flags = []
     for doc in docs:
         content = _normalize(getattr(doc, "page_content", ""))
-        flags.append(1 if any(g in content for g in gold) else 0)
+        # Match exact (substring) — rapide
+        if any(g in content for g in gold):
+            flags.append(1)
+            continue
+        # Match fuzzy (token overlap) — rattrape les reformulations et coupures
+        if any(_token_overlap_score(g, content) >= fuzzy_threshold for g in gold):
+            flags.append(1)
+            continue
+        flags.append(0)
     return flags
 
 
@@ -114,6 +136,43 @@ def _ndcg_at_k(flags: List[int], k: int) -> Optional[float]:
     if idcg == 0:
         return 0.0
     return dcg / idcg
+
+
+def _parse_section_header(line: str) -> Optional[str]:
+    """Extrait le nom de section depuis une ligne `# Factual (8)` / `# Multi-passage (2)`."""
+    line = line.strip()
+    if not line.startswith("#"):
+        return None
+    m = re.match(r"^\s*#\s*(.+?)\s*\(\d+\)\s*$", line)
+    if m:
+        return m.group(1).strip()
+    return None
+
+
+def _example_labels_for_dataset(path: str) -> List[str]:
+    """Une étiquette par ligne JSON, alignée sur load_dataset (ex. « Factual 3 », « Numerical 2 »)."""
+    labels: List[str] = []
+    current_category = ""
+    idx_in_section = 0
+    with open(path, "r", encoding="utf-8") as f:
+        for raw in f:
+            line = raw.strip()
+            if not line:
+                continue
+            cat = _parse_section_header(line)
+            if cat is not None:
+                current_category = cat
+                idx_in_section = 0
+                continue
+            if line.startswith("#"):
+                continue
+            json.loads(line)
+            idx_in_section += 1
+            if current_category:
+                labels.append(f"{current_category} {idx_in_section}")
+            else:
+                labels.append(f"Example {idx_in_section}")
+    return labels
 
 
 def _parse_verification_flags(report: str) -> Tuple[Optional[bool], Optional[bool], Optional[bool]]:
@@ -295,9 +354,14 @@ def main():
     dataset = load_dataset(dataset_path)
     if args.max_items:
         dataset = dataset[: args.max_items]
+    example_labels = _example_labels_for_dataset(dataset_path)
+    if args.max_items:
+        example_labels = example_labels[: args.max_items]
+    if len(example_labels) != len(dataset):
+        example_labels = [f"Example {i + 1}" for i in range(len(dataset))]
     k_values = [int(v) for v in args.k_values.split(",") if v.strip()]
-    if 10 in k_values:
-        k_values = [10]
+    if k_values == [10]:
+        k_values = [5, 10, 20]
 
     retrievers = {}
     per_example = []
@@ -308,7 +372,10 @@ def main():
     if llm_judge:
         print("LLM-as-a-Judge activé pour l'évaluation")
 
-    for example in dataset:
+    for ex_idx, example in enumerate(dataset):
+        label = example_labels[ex_idx]
+        ex_id = example.get("id")
+        print(f"[eval] {label}" + (f" — {ex_id}" if ex_id else ""), flush=True)
         file_path = resolve_file_path(example)
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"Fichier introuvable: {file_path}")

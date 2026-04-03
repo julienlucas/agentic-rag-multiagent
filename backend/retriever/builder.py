@@ -154,22 +154,24 @@ class RerankRetriever:
         if not docs or not settings.RERANK_ENABLED:
             return docs
 
-        top_k = min(settings.RERANK_TOP_K, len(docs))
-        docs_to_rerank = docs[:top_k]
+        # Reranker TOUS les docs candidats, pas seulement les N premiers.
+        # Multi-query produit des docs dans un ordre arbitraire —
+        # le reranker doit voir l'ensemble pour bien classer.
+        num_to_rerank = len(docs)
 
         try:
-            # Appel à l'API Cohere Rerank
+            # Cohere rerank a une limite de ~10000 docs, largement suffisant
             response = self.client.rerank(
                 model=settings.RERANK_MODEL,
                 query=query,
-                documents=[d.page_content for d in docs_to_rerank],
-                top_n=top_k,
+                documents=[d.page_content for d in docs],
+                top_n=min(settings.RERANK_TOP_K, num_to_rerank),
             )
 
-            # Reconstruire la liste ordonnée par score
+            # Reconstruire la liste ordonnée par score de reranking
             reranked_docs = []
             for result in response.results:
-                doc = docs_to_rerank[result.index]
+                doc = docs[result.index]
                 doc.metadata["rerank_score"] = result.relevance_score
                 reranked_docs.append(doc)
 
@@ -177,10 +179,12 @@ class RerankRetriever:
             if response.results:
                 top_score = response.results[0].relevance_score
                 avg_score = sum(r.relevance_score for r in response.results) / len(response.results)
-                logger.debug(f"Cohere Rerank: top={top_score:.3f}, avg={avg_score:.3f}")
+                logger.info(
+                    f"Cohere Rerank: {num_to_rerank} docs -> top {len(reranked_docs)}, "
+                    f"top_score={top_score:.3f}, avg={avg_score:.3f}"
+                )
 
-            # Ajouter les docs non rerankés à la fin
-            return reranked_docs + docs[top_k:]
+            return reranked_docs
 
         except Exception as e:
             logger.warning(f"Erreur Cohere Rerank: {e}, retour des docs non rerankés")

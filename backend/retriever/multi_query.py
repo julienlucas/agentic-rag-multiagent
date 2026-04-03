@@ -2,6 +2,7 @@
 Multi-Query Retrieval.
 Génère plusieurs reformulations de la question pour améliorer le recall.
 """
+import hashlib
 from typing import List, Set
 from langchain_core.documents import Document
 from langchain_mistralai import ChatMistralAI
@@ -9,13 +10,13 @@ from ..config.settings import settings
 from ..utils.logging import logger
 
 
-MULTI_QUERY_PROMPT = """Tu es un assistant spécialisé dans la reformulation de questions pour la recherche documentaire.
+MULTI_QUERY_PROMPT = """Tu es un expert en recherche documentaire. Génère {count} reformulations TRÈS DIFFÉRENTES de la question suivante.
 
-Génère {count} reformulations différentes de la question suivante pour améliorer la recherche.
-Chaque reformulation doit :
-- Garder le même sens que la question originale
-- Utiliser des synonymes ou structures différentes
-- Être concise et claire
+Stratégies à utiliser (une par reformulation) :
+1. Synonymes et paraphrases (reformuler avec d'autres mots)
+2. Termes techniques anglais si la question est en français (ou inversement)
+3. Focus sur un aspect spécifique de la question (plus précis)
+4. Formulation inversée (décrire ce qu'on cherche plutôt que poser une question)
 
 Question originale: {question}
 
@@ -89,37 +90,37 @@ class MultiQueryRetriever:
             logger.warning(f"MultiQuery: erreur génération, utilisation query originale: {e}")
             return [question]
 
-    def _deduplicate_docs(self, all_docs: List[Document]) -> List[Document]:
+    def _deduplicate_and_rank(self, all_docs: List[Document]) -> List[Document]:
         """
-        Déduplique les documents par contenu.
-
-        Args:
-            all_docs: Liste de tous les documents récupérés
-
-        Returns:
-            Liste de documents uniques
+        Déduplique et trie par fréquence de retrieval.
+        Un doc trouvé par plusieurs queries est plus probablement pertinent.
         """
-        seen_content: Set[str] = set()
-        unique_docs: List[Document] = []
+        from collections import OrderedDict
+
+        doc_freq: dict[str, int] = {}
+        doc_map: OrderedDict[str, Document] = OrderedDict()
 
         for doc in all_docs:
-            # Utiliser un hash du contenu pour la déduplication
-            content_hash = hash(doc.page_content[:500])  # Premiers 500 chars
-            if content_hash not in seen_content:
-                seen_content.add(content_hash)
-                unique_docs.append(doc)
+            content_hash = hashlib.md5(doc.page_content.encode()).hexdigest()
+            doc_freq[content_hash] = doc_freq.get(content_hash, 0) + 1
+            if content_hash not in doc_map:
+                doc_map[content_hash] = doc
 
-        return unique_docs
+        # Trier par fréquence décroissante (docs trouvés par le plus de queries en premier)
+        sorted_hashes = sorted(doc_map.keys(), key=lambda h: doc_freq[h], reverse=True)
+        ranked_docs = []
+        for h in sorted_hashes:
+            doc = doc_map[h]
+            doc.metadata["retrieval_freq"] = doc_freq[h]
+            ranked_docs.append(doc)
+
+        return ranked_docs
 
     def invoke(self, query: str) -> List[Document]:
         """
         Exécute la recherche multi-query.
-
-        Args:
-            query: La question originale
-
-        Returns:
-            Liste de documents dédupliqués
+        Les résultats sont triés par fréquence de retrieval (docs trouvés
+        par le plus de queries en premier) pour optimiser le reranking.
         """
         if not self.enabled:
             return self.retriever.invoke(query)
@@ -144,15 +145,16 @@ class MultiQueryRetriever:
             for future in as_completed(futures):
                 all_docs.extend(future.result())
 
-        # Dédupliquer
-        unique_docs = self._deduplicate_docs(all_docs)
+        # Dédupliquer ET trier par fréquence
+        ranked_docs = self._deduplicate_and_rank(all_docs)
 
         logger.info(
             f"MultiQuery: {len(queries)} queries -> "
-            f"{len(all_docs)} docs -> {len(unique_docs)} uniques"
+            f"{len(all_docs)} docs -> {len(ranked_docs)} uniques "
+            f"(top freq={ranked_docs[0].metadata.get('retrieval_freq', 0) if ranked_docs else 0})"
         )
 
-        return unique_docs
+        return ranked_docs
 
     def get_relevant_documents(self, query: str) -> List[Document]:
         """Alias pour compatibilité LangChain."""

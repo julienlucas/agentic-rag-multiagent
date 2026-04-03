@@ -11,6 +11,7 @@ from ..config import constants
 from ..config.settings import settings
 from ..utils.logging import logger
 from .chunkers import get_chunking_strategy, ParentChildChunkingStrategy
+from ..retriever.embeddings import get_embeddings
 
 class DocumentProcessor:
     def __init__(self):
@@ -131,8 +132,9 @@ class DocumentProcessor:
 
             # Utiliser la stratégie de chunking configurée
             if settings.CHUNKING_STRATEGY == "semantic" or settings.PARENT_CHILD_ENABLED:
-                # Utiliser les nouvelles stratégies de chunking
-                chunker = get_chunking_strategy()
+                # Passer les embeddings pour le chunking sémantique
+                embeddings = get_embeddings() if settings.CHUNKING_STRATEGY == "semantic" else None
+                chunker = get_chunking_strategy(embeddings=embeddings)
                 metadata = {"source": file.name}
                 chunks = chunker.split(markdown, metadata)
                 logger.info(f"Chunking avec stratégie '{settings.CHUNKING_STRATEGY}': {len(chunks)} chunks")
