@@ -13,9 +13,9 @@ class RelevanceChecker:
             max_tokens=10,
         )
 
-    def check(self, question: str, retriever, k=3) -> str:
+    def check(self, question: str, documents, k=3) -> str:
         """
-        1. Récupérer les k premiers chunks de documents depuis le récupérateur global.
+        1. Utiliser les documents déjà récupérés (pas de nouvel appel retriever).
         2. Les combiner en une seule chaîne de texte.
         3. Passer ce texte + question au LLM pour classification.
 
@@ -24,10 +24,9 @@ class RelevanceChecker:
 
         logger.debug(f"RelevanceChecker.check appelé avec question='{question}' et k={k}")
 
-        # Récupérer les chunks de documents depuis le récupérateur d'ensemble
-        top_docs = retriever.invoke(question)
+        top_docs = documents
         if not top_docs:
-            logger.debug("Aucun document retourné par retriever.invoke(). Classification comme NO_MATCH.")
+            logger.debug("Aucun document fourni. Classification comme NO_MATCH.")
             return "NO_MATCH"
 
         # Combiner les k premiers chunks de texte en une seule chaîne

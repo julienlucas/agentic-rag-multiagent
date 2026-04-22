@@ -48,10 +48,9 @@ class AgentWorkflow:
         return workflow.compile()
 
     def _check_relevance_step(self, state: AgentState) -> Dict:
-        retriever = state["retriever"]
         classification = self.relevance_checker.check(
             question=state["question"],
-            retriever=retriever,
+            documents=state["documents"],
             k=20
         )
 

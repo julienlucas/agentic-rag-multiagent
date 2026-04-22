@@ -22,6 +22,10 @@ os.environ["LANGCHAIN_PROJECT"] = "agentic_rag_multi_agent"
 # Stockage des sessions (en production, utiliser Redis ou base de données)
 sessions = {}
 
+# Workflow instancié une seule fois (les modèles LangGraph + LLM clients
+# sont réutilisés entre requêtes).
+_workflow = AgentWorkflow()
+
 def get_file_hashes(uploaded_files: List) -> frozenset:
     """Générer des hashes SHA-256 pour les fichiers téléchargés"""
 
@@ -149,8 +153,7 @@ def process_question(request):
         if sessions[session_id]["retriever"] is None:
             return JsonResponse({"error": "Aucun retriever disponible. Veuillez recharger le document."}, status=400)
 
-        workflow = AgentWorkflow()
-        result = workflow.full_pipeline(
+        result = _workflow.full_pipeline(
             question=question,
             retriever=sessions[session_id]["retriever"]
         )

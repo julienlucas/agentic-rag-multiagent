@@ -39,10 +39,11 @@ class RetrieverBuilder:
             logger.info("Récupérateur BM25 créé avec succès.")
 
             try:
+                # Store en mémoire par session : évite l'accumulation de vecteurs
+                # entre uploads (qui gonflait la collection et polluait les résultats).
                 vector_store = Chroma.from_documents(
                     documents=docs,
                     embedding=self.embeddings,
-                    persist_directory=settings.CHROMA_DB_PATH
                 )
                 logger.info("Magasin de vecteurs créé avec succès.")
 
@@ -154,9 +155,12 @@ class RerankRetriever:
         if not docs or not settings.RERANK_ENABLED:
             return docs
 
-        # Reranker TOUS les docs candidats, pas seulement les N premiers.
-        # Multi-query produit des docs dans un ordre arbitraire —
-        # le reranker doit voir l'ensemble pour bien classer.
+        # Cap le nombre de candidats envoyés à Cohere pour limiter la latence.
+        # Multi-query peut produire 100-200 docs uniques, ce qui ralentit
+        # inutilement le rerank sans gain de qualité notable au-delà de ~40.
+        MAX_RERANK_CANDIDATES = 40
+        if len(docs) > MAX_RERANK_CANDIDATES:
+            docs = docs[:MAX_RERANK_CANDIDATES]
         num_to_rerank = len(docs)
 
         try:

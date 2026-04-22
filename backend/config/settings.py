@@ -39,9 +39,9 @@ class Settings(BaseSettings):
     RERANK_TOP_K: int = 30  # Top N résultats après reranking de TOUS les candidats
     RERANK_MODEL: str = "rerank-v4.0-pro"  # Cohere Rerank 4 Pro (gratuit en trial)
 
-    # Multi-Query - 4 reformulations pour couvrir plus d'angles sémantiques
+    # Multi-Query - 2 reformulations (compromis latence/recall pour la prod)
     MULTI_QUERY_ENABLED: bool = True
-    MULTI_QUERY_COUNT: int = 4
+    MULTI_QUERY_COUNT: int = 2
 
     # HyDE - DÉSACTIVÉ (nuit au retrieval sur ce corpus)
     HYDE_ENABLED: bool = False
