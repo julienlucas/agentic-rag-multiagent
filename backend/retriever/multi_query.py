@@ -44,10 +44,12 @@ class MultiQueryRetriever:
         """Initialise le LLM si nécessaire."""
         if self.llm is None:
             self.llm = ChatMistralAI(
-                model=settings.MODEL_ID,
+                model=settings.MODEL_SMALL_ID,
                 api_key=settings.MISTRALAI_API_KEY,
                 temperature=0.7,  # Un peu de variabilité pour les reformulations
                 max_tokens=500,
+                timeout=settings.LLM_TIMEOUT,
+                max_retries=settings.LLM_MAX_RETRIES,
             )
         return self.llm
 

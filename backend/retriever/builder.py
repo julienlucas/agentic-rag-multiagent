@@ -24,10 +24,12 @@ class RetrieverBuilder:
         # Utiliser la factory pour les embeddings (BGE-M3 ou Mistral)
         self.embeddings = get_embeddings()
         self.llm = ChatMistralAI(
-            model=settings.MODEL_ID,
+            model=settings.MODEL_SMALL_ID,
             api_key=settings.MISTRALAI_API_KEY,
             temperature=0,
             max_tokens=10,
+            timeout=settings.LLM_TIMEOUT,
+            max_retries=settings.LLM_MAX_RETRIES,
         )
 
     def build_hybrid_retriever(self, docs):

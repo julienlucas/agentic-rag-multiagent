@@ -7,10 +7,12 @@ logger = logging.getLogger(__name__)
 class RelevanceChecker:
     def __init__(self):
         self.model = ChatMistralAI(
-            model=settings.MODEL_ID,
+            model=settings.MODEL_SMALL_ID,
             api_key=settings.MISTRALAI_API_KEY,
             temperature=0,
             max_tokens=10,
+            timeout=settings.LLM_TIMEOUT,
+            max_retries=settings.LLM_MAX_RETRIES,
         )
 
     def check(self, question: str, documents, k=3) -> str:

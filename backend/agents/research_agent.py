@@ -15,6 +15,8 @@ class ResearchAgent:
             api_key=settings.MISTRALAI_API_KEY,
             temperature=0,  # Déterministe pour éviter les hallucinations
             max_tokens=500,
+            timeout=settings.LLM_TIMEOUT,
+            max_retries=settings.LLM_MAX_RETRIES,
         )
         print("ModelInference initialisé avec succès.")
 

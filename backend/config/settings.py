@@ -8,9 +8,14 @@ load_dotenv()
 class Settings(BaseSettings):
     # Paramètres requis
     MISTRALAI_API_KEY: str = os.getenv("MISTRALAI_API_KEY")
-    MODEL_ID: str = "mistral-large-latest"
+    MODEL_ID: str = "mistral-large-latest"  # Réservé à la génération finale
+    MODEL_SMALL_ID: str = "mistral-small-latest"  # Sous-agents (classif, reformulation)
     MODEL_OCR_ID: str = "mistral-ocr-latest"
     EMBEDDING_MODEL_ID: str = "mistral-embed"
+
+    # Timeouts et retries sur les appels LLM (évite les blocages de 2min)
+    LLM_TIMEOUT: int = 30  # secondes par appel
+    LLM_MAX_RETRIES: int = 2
 
     # Tracking LangSmith (si besoin)
     LANGSMITH_API_KEY: str = os.getenv("LANGSMITH_API_KEY")
@@ -39,9 +44,9 @@ class Settings(BaseSettings):
     RERANK_TOP_K: int = 30  # Top N résultats après reranking de TOUS les candidats
     RERANK_MODEL: str = "rerank-v4.0-pro"  # Cohere Rerank 4 Pro (gratuit en trial)
 
-    # Multi-Query - 2 reformulations (compromis latence/recall pour la prod)
+    # Multi-Query - 1 reformulation (compromis latence/recall pour la prod)
     MULTI_QUERY_ENABLED: bool = True
-    MULTI_QUERY_COUNT: int = 2
+    MULTI_QUERY_COUNT: int = 1
 
     # HyDE - DÉSACTIVÉ (nuit au retrieval sur ce corpus)
     HYDE_ENABLED: bool = False
