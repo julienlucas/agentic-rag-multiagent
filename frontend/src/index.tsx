@@ -6,7 +6,6 @@ import ContactForm from "@/components/ui/contact-form";
 import { Card, CardContent, CardTitle, CardHeader, CardDescription } from "@/components/ui/card.tsx";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { api } from "./api";
-import { useTimer } from "@/hooks/useTimer";
 
 const examples = [
   {
@@ -178,7 +177,7 @@ export default function Index() {
         </CardDescription>
         <CardDescription className="text-center text-sm">
           <strong>RAG Multi-Agentique</strong> précis et à faible taux
-          d'halucinations (5-10%)
+          d'halucinations (2-5%)
           <br />
           fonctionne avec 3 modèles Mistral AI (Embbed, OCR et Mistral Large)
         </CardDescription>
