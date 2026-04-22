@@ -1,3 +1,16 @@
+FROM node:20-slim AS frontend-builder
+
+WORKDIR /frontend
+
+COPY frontend/package.json frontend/package-lock.json ./
+
+RUN npm ci
+
+COPY frontend/ ./
+
+RUN npm run build
+
+
 FROM python:3.11-slim
 
 RUN apt-get update && apt-get install -y \
@@ -17,6 +30,8 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-install-project
 
 COPY . .
+
+COPY --from=frontend-builder /frontend/dist ./frontend/dist
 
 RUN chown -R appuser:appuser /app
 
