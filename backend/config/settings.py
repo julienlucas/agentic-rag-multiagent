@@ -58,6 +58,32 @@ class Settings(BaseSettings):
     CONTEXTUAL_COMPRESSION_ENABLED: bool = False
     CONTEXTUAL_COMPRESSION_TOP_K: int = 5
 
+    # Routage par document : avant de chercher, cibler le(s) document(s) que la question
+    # désigne (nom d'entreprise / de fichier). Réduit la dilution quand plusieurs documents
+    # longs sont indexés ensemble. Sans effet avec un seul document.
+    DOCUMENT_ROUTING_ENABLED: bool = True
+
+    # Recherche corrective (agentique) : si le vérificateur de pertinence juge les passages
+    # insuffisants, réécrire la question dans le vocabulaire du document et relancer la
+    # recherche, puis fusionner. Traite les questions dont les mots ne sont pas ceux du texte
+    # ("legal battles" vs "litigation", "gross margin" absent d'un bilan bancaire).
+    CORRECTIVE_RETRIEVAL_ENABLED: bool = True
+    CORRECTIVE_MAX_ROUNDS: int = 1
+    CORRECTIVE_QUERY_COUNT: int = 3
+    # Les N premiers documents du retrieval initial sont intouchables : la recherche
+    # corrective ne peut qu'ajouter après eux. Éval FinanceBench : la fusion RRF naïve
+    # éjectait du top-10 des preuves initialement aux rangs 2 et 6.
+    CORRECTIVE_PROTECT_TOP: int = 5
+    # Déclencheur : score max du reranker Cohere sous ce seuil = le retrieval a
+    # probablement raté -> corriger. (NO_MATCH du checker déclenche toujours ;
+    # le checker seul ne suffit pas : son prompt le biaise vers PARTIAL et il ne
+    # renvoie pratiquement jamais NO_MATCH.) 0 = désactive ce critère.
+    CORRECTIVE_RERANK_THRESHOLD: float = 0.5
+
+    # Nombre de documents (parents) transmis au LLM pour la génération.
+    # Éval FinanceBench : à 5, 3 questions sur 21 avaient leur preuve au rang 6-20.
+    RESEARCH_TOP_K: int = 10
+
     # Paramètres de chunking - CONFIG OPTIMISÉE RECALL
     CHUNKING_STRATEGY: str = "semantic"
     PARENT_CHILD_ENABLED: bool = True

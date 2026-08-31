@@ -142,8 +142,15 @@ class MultiQueryRetriever:
                 logger.warning(f"MultiQuery: erreur pour query '{q[:50]}...': {e}")
                 return []
 
+        # Propager les ContextVar (périmètre du routage par document) aux threads :
+        # ThreadPoolExecutor ne le fait pas par défaut, et les sous-requêtes
+        # chercheraient alors dans TOUS les documents au lieu du périmètre choisi.
+        import contextvars
         with ThreadPoolExecutor(max_workers=4) as executor:
-            futures = {executor.submit(fetch_docs, q): q for q in queries}
+            futures = {
+                executor.submit(contextvars.copy_context().run, fetch_docs, q): q
+                for q in queries
+            }
             for future in as_completed(futures):
                 all_docs.extend(future.result())
 

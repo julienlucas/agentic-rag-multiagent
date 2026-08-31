@@ -60,6 +60,9 @@ class RelevanceChecker:
         try:
             response = self.model.invoke(prompt)
         except Exception as e:
+            from ..utils.resilience import is_rate_limit
+            if is_rate_limit(e):
+                raise  # à rejouer par l'appelant, pas un vrai NO_MATCH
             logger.error(f"Erreur lors de l'inférence du modèle: {e}")
             return "NO_MATCH"
 

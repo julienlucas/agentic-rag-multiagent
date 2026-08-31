@@ -12,6 +12,7 @@ from .hyde import HyDERetriever
 from .query_decomposition import QueryDecompositionRetriever
 from .contextual_compression import ContextualCompressionRetriever
 from .sentence_window_retriever import SentenceWindowRetriever
+from .document_router import DocumentRouter, DocumentRouterRetriever, ScopedHybridRetriever
 
 hf_token = os.environ.get("HF_TOKEN")
 if hf_token:
@@ -31,9 +32,30 @@ class RetrieverBuilder:
             timeout=settings.LLM_TIMEOUT,
             max_retries=settings.LLM_MAX_RETRIES,
         )
+        # LLM "texte" pour les composants qui doivent produire plusieurs lignes
+        # (reformulations multi-query, noms de documents du routeur). Le self.llm
+        # ci-dessus est bridé à 10 tokens : passé à MultiQuery, il tronquait les
+        # reformulations à quelques mots.
+        self.llm_text = ChatMistralAI(
+            model=settings.MODEL_SMALL_ID,
+            api_key=settings.MISTRALAI_API_KEY,
+            temperature=0,
+            max_tokens=200,
+            timeout=settings.LLM_TIMEOUT,
+            max_retries=settings.LLM_MAX_RETRIES,
+        )
 
-    def build_hybrid_retriever(self, docs):
-        """Construire un récupérateur hybride utilisant BM25 et la récupération basée sur les vecteurs."""
+    def build_hybrid_retriever(self, docs, persist_directory: str = None):
+        """
+        Construire un récupérateur hybride utilisant BM25 et la récupération basée sur les vecteurs.
+
+        Args:
+            docs: Les documents (chunks) à indexer.
+            persist_directory: Si fourni, la collection Chroma est persistée sur disque et
+                réutilisée telle quelle si elle contient déjà tous les vecteurs. Utilisé par
+                l'évaluation FinanceBench pour ne pas ré-embedder des milliers de chunks à
+                chaque run. Par défaut (None), le comportement est inchangé : store en mémoire.
+        """
         try:
             # Créer le récupérateur BM25 d'abord
             bm25 = BM25Retriever.from_documents(docs)
@@ -41,12 +63,38 @@ class RetrieverBuilder:
             logger.info("Récupérateur BM25 créé avec succès.")
 
             try:
-                # Store en mémoire par session : évite l'accumulation de vecteurs
-                # entre uploads (qui gonflait la collection et polluait les résultats).
-                vector_store = Chroma.from_documents(
-                    documents=docs,
-                    embedding=self.embeddings,
-                )
+                if persist_directory:
+                    # Collection persistée : réutilisée si déjà complète, sinon (re)construite.
+                    vector_store = Chroma(
+                        persist_directory=persist_directory,
+                        embedding_function=self.embeddings,
+                        collection_name=settings.CHROMA_COLLECTION_NAME,
+                    )
+                    existing = vector_store._collection.count()
+                    if 0 < existing < len(docs):
+                        # Indexation précédente interrompue : ré-ajouter produirait des doublons.
+                        logger.warning(
+                            f"Collection persistée incomplète ({existing}/{len(docs)}), reconstruction."
+                        )
+                        vector_store.delete_collection()
+                        vector_store = Chroma(
+                            persist_directory=persist_directory,
+                            embedding_function=self.embeddings,
+                            collection_name=settings.CHROMA_COLLECTION_NAME,
+                        )
+                        existing = 0
+                    if existing == 0:
+                        logger.info(f"Indexation de {len(docs)} chunks dans la collection persistée...")
+                        vector_store.add_documents(docs)
+                    else:
+                        logger.info(f"Collection persistée réutilisée ({existing} vecteurs).")
+                else:
+                    # Store en mémoire par session : évite l'accumulation de vecteurs
+                    # entre uploads (qui gonflait la collection et polluait les résultats).
+                    vector_store = Chroma.from_documents(
+                        documents=docs,
+                        embedding=self.embeddings,
+                    )
                 logger.info("Magasin de vecteurs créé avec succès.")
 
                 # Créer le récupérateur basé sur les vecteurs
@@ -59,10 +107,18 @@ class RetrieverBuilder:
                     logger.warning(f"Poids incorrects: {weights}, utilisation des poids par défaut")
                     weights = [0.4, 0.6]
 
-                hybrid_retriever = EnsembleRetriever(
-                    retrievers=[bm25, vector_retriever],
-                    weights=weights
-                )
+                if settings.DOCUMENT_ROUTING_ENABLED:
+                    # Même fusion RRF, mais capable de se restreindre au périmètre posé
+                    # par DocumentRouterRetriever (BM25 sur le sous-ensemble + filtre Chroma).
+                    hybrid_retriever = ScopedHybridRetriever(
+                        docs, vector_store, weights,
+                        bm25_k=settings.BM25_K, vector_k=settings.VECTOR_SEARCH_K,
+                    )
+                else:
+                    hybrid_retriever = EnsembleRetriever(
+                        retrievers=[bm25, vector_retriever],
+                        weights=weights
+                    )
                 logger.info("Récupérateur hybride créé avec succès.")
 
                 # Chaîner les composants optimisés pour le recall :
@@ -86,7 +142,7 @@ class RetrieverBuilder:
 
                 # Multi-Query (génère variations de la question)
                 if settings.MULTI_QUERY_ENABLED:
-                    retriever = MultiQueryRetriever(retriever, self.llm)
+                    retriever = MultiQueryRetriever(retriever, self.llm_text)
                     logger.info("Multi-Query retriever activé.")
 
                 # Query Decomposition (décompose les questions complexes)
@@ -104,6 +160,10 @@ class RetrieverBuilder:
                     retriever = ContextualCompressionRetriever(retriever, self.llm)
                     logger.info("Contextual Compression activé.")
 
+                # Routage par document (le plus externe : décide du périmètre avant tout)
+                if settings.DOCUMENT_ROUTING_ENABLED:
+                    retriever = self._wrap_with_router(retriever, docs)
+
                 return retriever
 
             except Exception as e:
@@ -116,7 +176,7 @@ class RetrieverBuilder:
                 if settings.HYDE_ENABLED:
                     retriever = HyDERetriever(retriever, self.llm)
                 if settings.MULTI_QUERY_ENABLED:
-                    retriever = MultiQueryRetriever(retriever, self.llm)
+                    retriever = MultiQueryRetriever(retriever, self.llm_text)
                 if settings.QUERY_DECOMPOSITION_ENABLED:
                     retriever = QueryDecompositionRetriever(retriever, self.llm)
                 if settings.RERANK_ENABLED:
@@ -128,6 +188,19 @@ class RetrieverBuilder:
         except Exception as e:
             logger.error(f"Échec de la construction du récupérateur hybride: {e}")
             raise
+
+
+    def _wrap_with_router(self, retriever, docs):
+        """Ajoute le routage par document si plusieurs sources sont indexées."""
+        sources = list(dict.fromkeys(
+            str(d.metadata.get("source")) for d in docs if d.metadata.get("source")
+        ))
+        if len(sources) <= 1:
+            logger.info("Routage par document: une seule source, désactivé.")
+            return retriever
+        router = DocumentRouter(sources, llm=self.llm_text)
+        logger.info(f"Routage par document activé sur {len(sources)} sources.")
+        return DocumentRouterRetriever(retriever, router)
 
 
 class RerankRetriever:
