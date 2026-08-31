@@ -22,6 +22,76 @@ class AgentState(TypedDict, total=False):
     corrective_rounds: int    # nb de recherches correctives déjà tentées
     corrective_queries: List[str]  # requêtes réécrites (traçabilité)
 
+def build_verification_report(state: "AgentState") -> str:
+    """
+    Rapport de vérification construit à partir des signaux réels du pipeline —
+    aucun appel LLM supplémentaire (le VerificationAgent a été retiré pour la latence).
+
+    Le frontend convertit **gras** et *italique*. run_eval._parse_verification_flags
+    lit la ligne "**Pertinent:**" (ancien format), on la conserve pour compatibilité.
+    """
+    import os
+    from collections import OrderedDict
+
+    relevance = state.get("relevance") or ""
+    rel_labels = {
+        "CAN_ANSWER": "les passages récupérés permettent de répondre à la question",
+        "PARTIAL": "couverture partielle — la réponse peut être incomplète",
+        "NO_MATCH": "aucun passage pertinent trouvé dans les documents",
+    }
+    lines = []
+    lines.append(f"**Pertinent:** {'Non' if relevance == 'NO_MATCH' else 'Oui'}")
+    if relevance:
+        lines.append(f"**Pertinence des passages:** {relevance} — {rel_labels.get(relevance, '')}")
+
+    docs = (state.get("documents") or [])[:settings.RESEARCH_TOP_K]
+
+    # Confiance retrieval : meilleur score du reranker sur les passages transmis
+    scores = [
+        d.metadata.get("rerank_score") for d in docs
+        if getattr(d, "metadata", None) and d.metadata.get("rerank_score") is not None
+    ]
+    if scores:
+        top = max(scores)
+        level = "élevée" if top >= 0.7 else ("moyenne" if top >= 0.4 else "faible")
+        lines.append(f"**Confiance retrieval (reranker):** {top:.2f} — {level}")
+
+    # Recherche corrective
+    rounds = state.get("corrective_rounds", 0)
+    queries = state.get("corrective_queries") or []
+    if rounds:
+        lines.append(f"**Recherche corrective:** déclenchée ({rounds} tour{'s' if rounds > 1 else ''})")
+        for q in queries[:3]:
+            lines.append(f"  • *{q}*")
+    else:
+        lines.append("**Recherche corrective:** non nécessaire")
+
+    # Sources réellement transmises au modèle (document + pages si disponibles)
+    by_source = OrderedDict()
+    for d in docs:
+        meta = getattr(d, "metadata", None) or {}
+        source = meta.get("doc_name") or meta.get("source")
+        if not source:
+            continue
+        name = os.path.splitext(os.path.basename(str(source)))[0]
+        page = meta.get("page")
+        by_source.setdefault(name, set())
+        if page is not None:
+            by_source[name].add(int(page))
+    if by_source:
+        parts = []
+        for name, pages in by_source.items():
+            if pages:
+                shown = sorted(pages)[:6]
+                pages_txt = ", ".join(str(p + 1) for p in shown) + ("…" if len(pages) > 6 else "")
+                parts.append(f"{name} (p. {pages_txt})")
+            else:
+                parts.append(name)
+        lines.append(f"**Sources utilisées:** {' · '.join(parts)} — {len(docs)} passages transmis au modèle")
+
+    return "\n".join(lines)
+
+
 class AgentWorkflow:
     def __init__(self):
         self.researcher = ResearchAgent()
@@ -68,10 +138,13 @@ class AgentWorkflow:
             return {"is_relevant": True, "relevance": classification}
 
         else:  # classification == "NO_MATCH"
+            refusal_state = dict(state)
+            refusal_state["relevance"] = classification
             return {
                 "is_relevant": False,
                 "relevance": classification,
-                "draft_answer": "Cette question n'est pas liée (ou il n'y a pas de données) pour votre requête. Veuillez poser une autre question pertinente aux document(s) téléchargé(s)."
+                "draft_answer": "Cette question n'est pas liée (ou il n'y a pas de données) pour votre requête. Veuillez poser une autre question pertinente aux document(s) téléchargé(s).",
+                "verification_report": build_verification_report(refusal_state),
             }
 
 
@@ -168,7 +241,10 @@ class AgentWorkflow:
         try:
             result = self.researcher.generate(state["question"], top_docs)
             print("[DEBUG] Le chercheur a retourné une réponse provisoire.")
-            return {"draft_answer": result["draft_answer"]}
+            return {
+                "draft_answer": result["draft_answer"],
+                "verification_report": build_verification_report(state),
+            }
         except Exception as e:
             # Un rate limit doit remonter : l'appelant (éval, retry externe) sait le
             # rejouer. L'avaler en message figé perdait la question définitivement.
