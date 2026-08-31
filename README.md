@@ -1,8 +1,8 @@
 ![RAG Agentique multi-agent Header](./static/header.png)
 
-# RAG Agentique multi-agent haute précision sans hallucinations (meilleur que GPT4o et DeepSeek R1)
+# RAG Agentique multi-agent haute précision, anti-hallucinations (évalué sur FinanceBench)
 
-Ce système RAG agentique fonctionne avec 3 agents spécialisés et un récupérateur avancé (BM25 + embeddings) garantissant une haute précision dans la recherche de documents.
+Ce système RAG agentique combine des agents spécialisés et un récupérateur avancé (BM25 + embeddings + reranking) pour une haute précision dans la recherche de documents — mesurée sur [FinanceBench](https://github.com/patronus-ai/financebench), le benchmark utilisé par Mistral pour évaluer Agentic Search.
 
 
 ![Image 1](./static/chatgpt-test.png)
@@ -15,23 +15,25 @@ DeepSeek R1 s'arrête il n'arrive pas à lire le document en entier.
 
 ![Projet Overview](./static/project-overview.jpg)
 
-### 1. **Agent de Recherche**
-Analyse la question utilisateur et cherche.
+### 1. **Agent Vérificateur de Pertinence**
+Évalue si les passages récupérés répondent réellement à la question (CAN_ANSWER / PARTIAL / NO_MATCH).
 
-### 2. **Agent Vérificateur de Pertinence**
-Évalue si le document récupéré répond réellement à la question.
+### 2. **Agent de Recherche Corrective**
+Si les passages sont insuffisants (ou que le score du reranker est faible), il réécrit la question dans le vocabulaire du document (ex. « legal battles » → *litigation*) et relance la recherche avant de répondre ou de refuser.
 
-### 3. **Agent Fact Checker**
-Valide et croise les informations trouvées.
+### 3. **Agent de Recherche**
+Génère la réponse finale, contrainte aux seuls passages récupérés — refuse explicitement quand l'information n'y est pas.
 
 ### Le système inclut un retriever hybride pour maximiser la pertinence
 - **Algo BM25 + Embeddings** : Recherche texte classique à forte précision lexicale + Recherche sémantique capturant le sens contextuel.
+- **Routage par document** : avant de chercher, le système cible le(s) document(s) que la question désigne (nom d'entreprise ou de fichier) — indispensable quand plusieurs documents longs sont indexés ensemble.
+- **Reranking Cohere + parent-child + multi-query** : petits chunks pour matcher, gros chunks pour répondre.
 
 ## Stack de modèles
 - ⚡ Mistral OCR (plutôt que docling trop lent)
-- 🧠 Mistral Embbed (pour les embeddings)
-- 🧠 Cohere reranker 3.5 multi-langue
-- 💎 Mistral Large
+- 🧠 Mistral Embed (embeddings)
+- 🧠 Cohere Rerank v4 Pro multi-langue
+- 💎 Mistral Large (génération) + Mistral Small (sous-agents : pertinence, routage, réécriture)
 
 ## Installation
 
@@ -50,9 +52,11 @@ poetry install
 3. **Configuration** :
 Allez sur https://console.mistral.ai pour créer votre clé.
 
-Puis créer un fichier `.env` avec votre clé :
+Puis créer un fichier `.env` avec vos clés ([console.mistral.ai](https://console.mistral.ai) et [dashboard.cohere.com](https://dashboard.cohere.com)) :
 ```bash
 MISTRALAI_API_KEY=votre_clé_api_mistral_ici
+COHERE_API_KEY=votre_clé_api_cohere_ici
+LANGSMITH_API_KEY=
 ```
 
 Pour surveiller votre application avec LangSmith (si vous le souhaitez) :
@@ -95,15 +99,35 @@ Fichiers générés :
 - `eval_regressions.json`
 - `eval_errors.json`
 
-## RAG‑Evals (Ragas)
+## Évaluation FinanceBench (documents financiers difficiles)
 
+Deuxième évaluation, sur [FinanceBench](https://github.com/patronus-ai/financebench) (Patronus AI) —
+le benchmark utilisé par [Mistral pour évaluer Agentic Search](https://mistral.ai/news/agentic-search/) :
+QA sur des filings SEC de 150 à 260 pages, denses en tableaux.
+
+**Préparation (une seule fois, ~5-15 min)** — télécharge, OCRise et met en cache 3 10-K (AMD, American Express, Boeing) :
 ```bash
-uv run python evaluation/run_ragas.py \
-  --dataset evaluation/dataset.jsonl \
-  --mode agentic \
-  --out-dir evaluation/ragas_outputs
+uv run python evaluation/financebench/prepare.py
 ```
-Résultats : `ragas_summary.json`, `ragas_results.json`.
+
+**Lancer l'évaluation (5-10 min)** :
+```bash
+uv run python evaluation/financebench/run_financebench_eval.py --mode both
+```
+
+**Résultats** (21 questions, juge LLM au protocole du benchmark, stables sur plusieurs runs) :
+
+| | Correctes | Hallucinations | Refus |
+|---|---|---|---|
+| Ce système (agentic) | **~71-76 %** | **~14 %** | ~10 % |
+| GPT-4-Turbo + retrieval (papier FinanceBench) | ~19 % | 81 % de réponses fausses ou refusées | |
+| Outils RAG juridiques commerciaux (étude Stanford) | 42-65 % | 17-33 % | |
+
+Quand la preuve atteint le LLM, la justesse monte à ~80 % — le facteur limitant est le retrieval,
+pas la génération, et l'éval le mesure : `page_hit@k` / `page_recall@k` (exacts, grâce aux pages
+annotées du benchmark), `accuracy` / `hallucination_rate` / `refusal_rate` (juge LLM).
+
+Détail du protocole, options et notes d'implémentation : [`evaluation/financebench/README.md`](evaluation/financebench/README.md).
 
 ## CI (GitHub Actions)
 
