@@ -211,3 +211,9 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Évaluation FinanceBench : PDF, caches OCR/chunks, index vectoriel, résultats
+evaluation/financebench/pdfs/
+evaluation/financebench/cache/
+evaluation/financebench/chroma/
+evaluation/financebench/outputs/

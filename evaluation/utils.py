@@ -1,8 +1,11 @@
 import json
 import os
 import sys
+import time
+import uuid
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
@@ -50,17 +53,52 @@ def log_to_langsmith(name: str, summary: Dict, inputs: Dict):
     if not api_key:
         print("⚠️  LANGSMITH_API_KEY non défini, skip logging")
         return None
+
+    project = os.getenv("LANGSMITH_PROJECT", "agentic_rag_multi_agent_evals")
     try:
         client = Client()
-        run = client.create_run(
+        run_id = uuid.uuid4()
+        # LangSmith n'accepte que: tool, chain, llm, retriever, embedding, prompt, parser.
+        # "evaluation" était refusé avec un 422 et le logging ne fonctionnait donc jamais.
+        now = datetime.now(timezone.utc)
+        client.create_run(
+            id=run_id,
             name=name,
-            run_type="evaluation",
+            run_type="chain",
             inputs=inputs,
             outputs=summary,
-            project_name="agentic_rag_multi_agent_evals",
+            project_name=project,
+            # Sans end_time, le run resterait affiché « en cours » indéfiniment.
+            start_time=now,
+            end_time=now,
         )
-        print(f"✓ Résultats envoyés à LangSmith (projet: agentic_rag_multi_agent_eval)")
-        return run
+        # create_run met en file d'attente : sans flush, une erreur serveur passerait
+        # inaperçue et le message de succès serait mensonger.
+        client.flush()
+        print(f"✓ Résultats envoyés à LangSmith (projet: {project})")
+        return run_id
     except Exception as e:
         print(f"⚠️  Erreur LangSmith: {e}")
         return None
+
+
+def build_retriever_from_chunks(chunks: List, persist_directory: str = None):
+    """
+    Construit le retriever à partir de chunks déjà produits, sans repasser par l'OCR.
+
+    build_retriever_for_file() passe par DocumentProcessor, qui ré-OCRise le fichier.
+    L'évaluation FinanceBench pré-calcule ses chunks (OCR page par page + metadata de page)
+    dans une phase séparée, et réutilise ici exactement la même chaîne de retrieval que
+    la production : BM25 + Chroma -> ParentChild -> MultiQuery -> Rerank Cohere.
+    """
+    return RetrieverBuilder().build_hybrid_retriever(chunks, persist_directory=persist_directory)
+
+
+# Résilience aux rate limits : implémentation côté backend (utilisée aussi par le
+# workflow et les agents), ré-exportée ici pour les scripts d'évaluation.
+from backend.utils.resilience import (  # noqa: E402,F401
+    call_with_backoff,
+    is_rate_limit,
+    retry_after,
+    root_cause,
+)

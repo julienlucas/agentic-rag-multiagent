@@ -306,3 +306,206 @@ def aggregate_judge_results(results: List[JudgeResult]) -> Dict:
         "perfect_faithfulness_rate": round(sum(1 for r in valid_results if r.faithfulness >= 4) / len(valid_results), 4),
         "count": len(valid_results)
     }
+
+
+# ---------------------------------------------------------------------------
+# Juge FinanceBench
+# ---------------------------------------------------------------------------
+# Protocole du papier FinanceBench (Islam et al., 2023) : chaque réponse est classée
+# CORRECT / INCORRECT / REFUSAL. La métrique clé est le taux de réponses fausses données
+# avec assurance (INCORRECT), distinct du refus assumé (REFUSAL).
+#
+# Différence avec LLMJudge : un seul appel LLM au lieu de trois, pour tenir le budget
+# de 5-10 min sur un run complet.
+
+
+# Messages de refus émis par le pipeline (backend/agents/research_agent.py et workflow.py).
+# Détectés sans appel LLM.
+REFUSAL_MARKERS = [
+    "cette information n'est pas disponible dans le document",
+    "je ne peux pas répondre à cette question basée sur les documents fournis",
+    "cette question n'est pas liée",
+]
+
+# Messages d'erreur technique : ni une réponse, ni un refus légitime.
+ERROR_MARKERS = [
+    "une erreur est survenue lors du traitement de votre question",
+    "une erreur est survenue lors de la génération de la réponse",
+]
+
+
+FINANCEBENCH_JUDGE_PROMPT = """Tu es un évaluateur expert en analyse financière. Tu compares la réponse d'un système RAG à la réponse de référence annotée par des experts sur le benchmark FinanceBench.
+
+**Question:** {question}
+
+**Réponse de référence (ground truth):** {expected_answer}
+
+**Justification de la référence:** {justification}
+
+**Réponse générée par le système:** {generated_answer}
+
+**Extraits du document fournis au système:**
+{context}
+
+Rends DEUX jugements.
+
+1) VERDICT — classe la réponse générée:
+- "CORRECT": elle donne la même information que la référence. Tolère les écarts de formulation, d'unité, d'arrondi et de mise en forme ($1,577 = 1577.00 = 1 577 millions). Une réponse plus détaillée que la référence reste CORRECT si elle ne la contredit pas.
+- "INCORRECT": elle contredit la référence, donne un chiffre faux, ou répond à côté.
+- "REFUSAL": elle déclare ne pas pouvoir répondre ou que l'information n'est pas dans le document.
+
+RÈGLE DE DÉPARTAGE (à appliquer AVANT de choisir REFUSAL) : si la réponse de référence dit elle-même que la métrique n'est pas applicable, pas publiée ou pas utilisée pour cette entreprise (ex. "Performance is not measured through gross margin", "There are none"), alors une réponse générée qui constate que le document ne fournit pas cette métrique, qu'elle n'y figure pas ou qu'il n'y en a pas est CORRECT — ce n'est pas un refus, c'est la bonne réponse. REFUSAL est réservé au cas où la référence contient une vraie information que la réponse générée déclare introuvable.
+
+2) FAITHFULNESS (1-5) — tout ce qu'affirme la réponse est-il appuyé par les extraits fournis ?
+- 5: intégralement appuyé | 4: inférences mineures raisonnables | 3: quelques affirmations non appuyées
+- 2: plusieurs affirmations inventées | 1: hallucinations majeures
+Un refus honnête vaut 5.
+
+Réponds EXACTEMENT dans ce format:
+VERDICT: [CORRECT|INCORRECT|REFUSAL]
+FAITHFULNESS: [1-5]
+RAISON: [1-2 phrases]"""
+
+
+@dataclass
+class FinanceBenchVerdict:
+    """Résultat du juge FinanceBench pour une réponse."""
+    verdict: str  # CORRECT | INCORRECT | REFUSAL | ERROR
+    faithfulness: float  # 1-5
+    reason: str
+
+    @property
+    def is_correct(self) -> bool:
+        return self.verdict == "CORRECT"
+
+    @property
+    def is_refusal(self) -> bool:
+        return self.verdict == "REFUSAL"
+
+    @property
+    def is_hallucination(self) -> bool:
+        """Répond avec assurance mais se trompe — la métrique centrale de FinanceBench."""
+        return self.verdict == "INCORRECT"
+
+
+class FinanceBenchJudge:
+    """
+    Juge LLM au protocole FinanceBench : un appel, un verdict ternaire + faithfulness.
+    """
+
+    VALID_VERDICTS = {"CORRECT", "INCORRECT", "REFUSAL"}
+
+    def __init__(self, llm=None, model: Optional[str] = None):
+        self.llm = llm
+        self.model = model or settings.MODEL_ID
+
+    def _get_llm(self):
+        if self.llm is None:
+            self.llm = ChatMistralAI(
+                model=self.model,
+                api_key=settings.MISTRALAI_API_KEY,
+                temperature=0,
+                max_tokens=250,
+                timeout=settings.LLM_TIMEOUT,
+                max_retries=settings.LLM_MAX_RETRIES,
+            )
+        return self.llm
+
+    @staticmethod
+    def detect_canned_response(answer: str) -> Optional[str]:
+        """
+        Détecte sans appel LLM les messages figés du pipeline.
+        Retourne "REFUSAL", "ERROR", ou None.
+        """
+        low = (answer or "").strip().lower()
+        if not low:
+            return "ERROR"
+        if any(m in low for m in ERROR_MARKERS):
+            return "ERROR"
+        if any(m in low for m in REFUSAL_MARKERS):
+            return "REFUSAL"
+        return None
+
+    def _parse(self, response: str) -> FinanceBenchVerdict:
+        verdict = "INCORRECT"
+        m = re.search(r"VERDICT:\s*\[?\s*(CORRECT|INCORRECT|REFUSAL)", response, re.IGNORECASE)
+        if m:
+            verdict = m.group(1).upper()
+
+        faithfulness = 3.0
+        m = re.search(r"FAITHFULNESS:\s*\[?\s*(\d(?:\.\d)?)", response, re.IGNORECASE)
+        if m:
+            try:
+                faithfulness = max(1.0, min(5.0, float(m.group(1))))
+            except ValueError:
+                pass
+
+        reason = "Impossible de parser la réponse du juge"
+        m = re.search(r"RAISON:\s*(.+?)(?:\n\s*\n|$)", response, re.IGNORECASE | re.DOTALL)
+        if m:
+            reason = " ".join(m.group(1).split())
+
+        return FinanceBenchVerdict(verdict=verdict, faithfulness=faithfulness, reason=reason)
+
+    def evaluate(
+        self,
+        question: str,
+        expected_answer: str,
+        generated_answer: str,
+        context: str,
+        justification: str = "",
+        max_context_len: int = 6000,
+    ) -> FinanceBenchVerdict:
+        """Juge une réponse. Les messages figés du pipeline court-circuitent l'appel LLM."""
+        canned = self.detect_canned_response(generated_answer)
+        if canned == "ERROR":
+            return FinanceBenchVerdict("ERROR", 0.0, "Erreur technique du pipeline (timeout ou LLM indisponible)")
+        if canned == "REFUSAL":
+            return FinanceBenchVerdict("REFUSAL", 5.0, "Refus explicite du pipeline (message figé)")
+
+        if len(context) > max_context_len:
+            context = context[:max_context_len] + "..."
+
+        prompt = FINANCEBENCH_JUDGE_PROMPT.format(
+            question=question,
+            expected_answer=expected_answer or "(non fournie)",
+            justification=justification or "(non fournie)",
+            generated_answer=generated_answer,
+            context=context or "(aucun extrait)",
+        )
+        try:
+            response = self._get_llm().invoke(prompt)
+            return self._parse(response.content)
+        except Exception as e:
+            # Un rate limit doit remonter à l'appelant pour être rejoué (backoff) ;
+            # l'avaler en verdict ERROR fausserait le dénominateur de l'accuracy.
+            from evaluation.utils import is_rate_limit
+            if is_rate_limit(e):
+                raise
+            logger.warning(f"FinanceBenchJudge error: {e}")
+            return FinanceBenchVerdict("ERROR", 0.0, f"Erreur du juge: {type(e).__name__}: {e}")
+
+
+def aggregate_financebench_verdicts(verdicts: List[FinanceBenchVerdict]) -> Dict:
+    """
+    Agrège au protocole FinanceBench.
+    Les erreurs techniques sont exclues du dénominateur et comptées à part.
+    """
+    if not verdicts:
+        return {}
+
+    scored = [v for v in verdicts if v.verdict != "ERROR"]
+    errors = len(verdicts) - len(scored)
+    if not scored:
+        return {"count": 0, "errors": errors}
+
+    n = len(scored)
+    faith = [v.faithfulness for v in scored if v.faithfulness > 0]
+    return {
+        "count": n,
+        "errors": errors,
+        "accuracy": round(sum(1 for v in scored if v.is_correct) / n, 4),
+        "refusal_rate": round(sum(1 for v in scored if v.is_refusal) / n, 4),
+        "hallucination_rate": round(sum(1 for v in scored if v.is_hallucination) / n, 4),
+        "mean_faithfulness": round(sum(faith) / len(faith), 2) if faith else None,
+    }
