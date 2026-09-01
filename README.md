@@ -74,7 +74,7 @@ LANGSMITH_PROJECT=agentic_rag_multi_agent
 
 4. **Lancer l'application** :
 ```bash
-poetry run python app.py
+uv run python manage.py runserver
 ```
 
 ## Évaluation (pertinence + avant/après)
@@ -128,14 +128,6 @@ pas la génération, et l'éval le mesure : `page_hit@k` / `page_recall@k` (exac
 annotées du benchmark), `accuracy` / `hallucination_rate` / `refusal_rate` (juge LLM).
 
 Détail du protocole, options et notes d'implémentation : [`evaluation/financebench/README.md`](evaluation/financebench/README.md).
-
-## CI (GitHub Actions)
-
-Workflow : `.github/workflows/eval.yml`
-
-Secrets requis :
-- `MISTRALAI_API_KEY`
-- `LANGSMITH_API_KEY` (optionnel)
 
 ## Déploiement
 

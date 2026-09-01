@@ -1,49 +1,22 @@
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 
-export function useTimer(isLoading: boolean) {
-  const [elapsedTime, setElapsedTime] = useState(0);
-  const [startTime, setStartTime] = useState<number | null>(null);
-  const [finalTime, setFinalTime] = useState<number | null>(null);
+/** Compteur de secondes écoulées tant que `running` est vrai ; conserve la valeur finale. */
+export function useElapsed(running: boolean) {
+  const [elapsed, setElapsed] = useState(0);
+  const start = useRef<number | null>(null);
 
-  // Timer pour le compteur de temps
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-
-    if (isLoading && startTime) {
-      interval = setInterval(() => {
-        setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
-      }, 1000);
+    if (!running) {
+      start.current = null;
+      return;
     }
+    start.current = Date.now();
+    setElapsed(0);
+    const id = setInterval(() => {
+      if (start.current) setElapsed(Math.floor((Date.now() - start.current) / 1000));
+    }, 250);
+    return () => clearInterval(id);
+  }, [running]);
 
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isLoading, startTime]);
-
-  // Sauvegarder le temps final quand le loading s'arrête
-  useEffect(() => {
-    if (!isLoading && startTime && elapsedTime > 0) {
-      setFinalTime(elapsedTime);
-      setStartTime(null);
-    }
-  }, [isLoading, startTime, elapsedTime]);
-
-  const startTimer = () => {
-    setStartTime(Date.now());
-    setElapsedTime(0);
-    setFinalTime(null);
-  };
-
-  const resetTimer = () => {
-    setElapsedTime(0);
-    setStartTime(null);
-    setFinalTime(null);
-  };
-
-  return {
-    elapsedTime,
-    finalTime,
-    startTimer,
-    resetTimer,
-  };
+  return elapsed;
 }

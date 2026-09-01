@@ -10,7 +10,7 @@ from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharac
 from ..config import constants
 from ..config.settings import settings
 from ..utils.logging import logger
-from .chunkers import get_chunking_strategy, ParentChildChunkingStrategy
+from .chunkers import get_chunking_strategy
 from ..retriever.embeddings import get_embeddings
 
 class DocumentProcessor:

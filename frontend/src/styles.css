@@ -1,0 +1,471 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Design system — "sand & signal"
+ * Surfaces sable / crème / beige, encre espresso, un seul accent caramel-ocre.
+ * Display : Feature Display (Klim). Corps : Söhne (Klim). Mono : Söhne Mono.
+ * Fallbacks libres : Newsreader / Inter / JetBrains Mono (chargées via index.html).
+ * Toutes les couleurs en oklch. Ne jamais coder une couleur en dur dans un composant.
+ */
+
+/* ---------- Webfonts sous licence (déposer les fichiers dans /public/fonts) ---------- */
+
+@font-face {
+  font-family: "Feature Display";
+  src: local("Feature Display Light"), url("/fonts/feature-display-light.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Feature Display";
+  src: local("Feature Display Light Italic"), url("/fonts/feature-display-light-italic.woff2") format("woff2");
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Feature Display";
+  src: local("Feature Display Regular"), url("/fonts/feature-display-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Feature Display";
+  src: local("Feature Display Regular Italic"), url("/fonts/feature-display-regular-italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Söhne";
+  src: local("Söhne Buch"), local("Soehne Buch"), url("/fonts/soehne-buch.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Söhne";
+  src: local("Söhne Buch Kursiv"), url("/fonts/soehne-buch-kursiv.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Söhne";
+  src: local("Söhne Kräftig"), local("Soehne Kraftig"), url("/fonts/soehne-kraftig.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Söhne";
+  src: local("Söhne Halbfett"), local("Soehne Halbfett"), url("/fonts/soehne-halbfett.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Söhne Mono";
+  src: local("Söhne Mono Buch"), url("/fonts/soehne-mono-buch.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme inline {
+  --font-display: "Feature Display", "Newsreader", Georgia, "Times New Roman", serif;
+  --font-sans: "Söhne", "Inter", ui-sans-serif, system-ui, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Söhne Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-paper-3: var(--paper-3);
+  --color-paper-warm: var(--paper-warm);
+  --color-sand: var(--sand);
+  --color-sand-deep: var(--sand-deep);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-light: var(--brand-light);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-surface: var(--brand-surface);
+  --color-brand-surface-strong: var(--brand-surface-strong);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-muted: var(--ink-muted);
+  --color-on-ink: var(--on-ink);
+  --color-on-ink-muted: var(--on-ink-muted);
+
+  --color-chart-before: var(--chart-before);
+  --color-chart-after: var(--chart-after);
+  --color-chart-ref: var(--chart-ref);
+
+  --shadow-xs: 0 1px 2px oklch(0.25 0.03 60 / 5%);
+  --shadow-card: 0 1px 2px oklch(0.25 0.03 60 / 5%), 0 8px 24px oklch(0.25 0.03 60 / 7%);
+  --shadow-lift: 0 14px 36px oklch(0.25 0.03 60 / 10%), 0 4px 10px oklch(0.25 0.03 60 / 5%);
+  --shadow-brand: 0 10px 30px oklch(0.559 0.1 87.6 / 25%);
+}
+
+:root {
+  --radius: 0.5rem;
+
+  /* Fond de page imposé : #f6f3ea = oklch(0.964 0.012 91.5). Toutes les surfaces gardent cette
+     teinte (91.5°), seule la luminosité descend et le chroma monte légèrement. */
+  --cream: #f6f3ea;
+  --background: var(--cream);
+  --foreground: oklch(0.22 0.015 85);
+  --paper: oklch(0.99 0.006 91.5); /* #fdfcf7 */
+  --paper-2: oklch(0.952 0.014 91.5); /* #f2efe5 */
+  --paper-3: oklch(0.925 0.02 91.5); /* #ebe6d8 */
+  --paper-warm: oklch(0.94 0.03 91.5); /* #f2ebd5 */
+  --sand: oklch(0.865 0.038 91.5); /* #dcd2b7 */
+  --sand-deep: oklch(0.775 0.045 91.5); /* #c0b596 */
+
+  --card: var(--paper);
+  --card-foreground: var(--foreground);
+  --popover: var(--paper);
+  --popover-foreground: var(--foreground);
+
+  --primary: oklch(0.3 0.06 87.6);
+  --primary-foreground: var(--cream);
+  --secondary: var(--paper-2);
+  --secondary-foreground: oklch(0.26 0.015 85);
+  --muted: var(--paper-2);
+  --muted-foreground: oklch(0.5 0.025 88);
+  --accent: var(--paper-warm);
+  --accent-foreground: oklch(0.42 0.09 87.6);
+  --destructive: oklch(0.55 0.17 32);
+  --destructive-foreground: var(--cream);
+  --success: oklch(0.56 0.1 150);
+  --warning: oklch(0.72 0.14 80);
+
+  --border: oklch(0.9 0.018 91.5); /* #e2ded1 */
+  --input: oklch(0.88 0.02 91.5); /* #dcd7c9 */
+  --ring: oklch(0.559 0.1 87.6);
+
+  /* Accent imposé : #8d7022 = oklch(0.559 0.100 87.6) — or bruni. */
+  --brand: oklch(0.559 0.1 87.6); /* #8d7022 */
+  --brand-strong: oklch(0.46 0.1 87.6); /* #705300 · hover */
+  --brand-deep: oklch(0.42 0.09 87.6); /* #624900 · texte accent sur crème */
+  --brand-ink: oklch(0.3 0.06 87.6); /* #3a2b01 */
+  --brand-light: oklch(0.72 0.11 87.6); /* #c2a04c · accent sur fond encre */
+  --brand-surface: oklch(0.559 0.1 87.6 / 12%);
+  --brand-surface-strong: oklch(0.559 0.1 87.6 / 22%);
+
+  --ink: oklch(0.22 0.015 85);
+  --ink-soft: oklch(0.27 0.015 85);
+  --ink-muted: oklch(0.42 0.02 86);
+  --on-ink: oklch(0.96 0.01 91.5);
+  --on-ink-muted: oklch(0.96 0.01 91.5 / 66%);
+
+  /* paire avant/après validée dataviz sur #f6f3ea : #c2a04c / #8d7022 */
+  --chart-before: oklch(0.72 0.11 87.6);
+  --chart-after: oklch(0.559 0.1 87.6);
+  /* série de référence externe (Mistral) — validée dataviz : #1d6f9c */
+  --chart-ref: oklch(0.535 0.113 240);
+}
+
+.dark {
+  --background: oklch(0.2 0.018 58);
+  --foreground: oklch(0.96 0.016 86);
+  --paper: oklch(0.24 0.018 58);
+  --paper-2: oklch(0.28 0.02 58);
+  --paper-3: oklch(0.32 0.022 58);
+  --paper-warm: oklch(0.3 0.03 65);
+  --card: oklch(0.24 0.018 58);
+  --card-foreground: oklch(0.96 0.016 86);
+  --popover: oklch(0.24 0.018 58);
+  --popover-foreground: oklch(0.96 0.016 86);
+  --primary: oklch(0.72 0.11 87.6);
+  --primary-foreground: oklch(0.2 0.018 58);
+  --secondary: oklch(0.32 0.022 58);
+  --secondary-foreground: oklch(0.96 0.016 86);
+  --muted: oklch(0.32 0.022 58);
+  --muted-foreground: oklch(0.72 0.02 75);
+  --accent: oklch(0.36 0.04 60);
+  --accent-foreground: oklch(0.85 0.09 75);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 16%);
+  --on-ink: oklch(0.96 0.016 86);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background: var(--brand-surface-strong);
+  }
+
+  /* Liens inline dans le texte (hors boutons et navigation, qui portent une classe) */
+  a:not([class]) {
+    color: var(--ink);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-thickness: 1px;
+    transition: color 0.15s ease;
+  }
+
+  a:not([class]):hover {
+    color: var(--brand-deep);
+  }
+}
+
+/* ---------- Utilitaires typographiques ---------- */
+
+@utility display-xl {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2.9rem, 5.6vw, 5rem);
+  line-height: 1;
+  letter-spacing: -0.028em;
+}
+
+@utility display-lg {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(2.1rem, 3.9vw, 3.4rem);
+  line-height: 1.06;
+  letter-spacing: -0.022em;
+}
+
+@utility display-md {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.6rem, 2.4vw, 2.1rem);
+  line-height: 1.14;
+  letter-spacing: -0.018em;
+}
+
+@utility display-sm {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.3rem;
+  line-height: 1.2;
+  letter-spacing: -0.012em;
+}
+
+/* Italique caramel à l'intérieur des titres display */
+@utility accent-italic {
+  font-style: italic;
+  color: var(--brand-deep);
+}
+
+@utility eyebrow {
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--brand-deep);
+}
+
+@utility copy {
+  max-width: 62ch;
+  line-height: 1.62;
+  color: var(--ink-muted);
+}
+
+@utility mono-xs {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.02em;
+}
+
+/* ---------- Surfaces ---------- */
+
+@utility card-paper {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+}
+
+@utility grain {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.045;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  }
+}
+
+/* ---------- Mouvements ---------- */
+
+@keyframes signal-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@utility signal-dot {
+  animation: signal-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@utility rise-in {
+  animation: rise-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes halo-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@utility halo-spin {
+  animation: halo-spin 3s linear infinite;
+}
+
+/* ---------- Prose (réponses markdown du RAG) ---------- */
+
+@utility prose-rag {
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: var(--ink-soft);
+  & > :first-child {
+    margin-top: 0;
+  }
+  & > :last-child {
+    margin-bottom: 0;
+  }
+  & h1,
+  & h2,
+  & h3,
+  & h4 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    margin-top: 1rem;
+    margin-bottom: 0.35rem;
+    line-height: 1.2;
+  }
+  & h1 {
+    font-size: 1.25rem;
+  }
+  & h2 {
+    font-size: 1.15rem;
+  }
+  & h3,
+  & h4 {
+    font-size: 1.05rem;
+  }
+  & p {
+    margin: 0.45rem 0;
+  }
+  & ul,
+  & ol {
+    margin: 0.45rem 0 0.45rem 1.1rem;
+    display: grid;
+    gap: 0.25rem;
+  }
+  & ul {
+    list-style: disc;
+  }
+  & ol {
+    list-style: decimal;
+  }
+  & strong {
+    font-weight: 600;
+    color: var(--ink);
+  }
+  & code {
+    font-family: var(--font-mono);
+    font-size: 0.78em;
+    background: var(--paper-3);
+    padding: 0.1em 0.35em;
+    border-radius: 4px;
+  }
+  & hr {
+    border: 0;
+    border-top: 1px solid var(--border);
+    margin: 0.85rem 0;
+  }
+  & table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+    margin: 0.6rem 0;
+  }
+  & th,
+  & td {
+    border: 1px solid var(--border);
+    padding: 0.35rem 0.5rem;
+    text-align: left;
+    vertical-align: top;
+  }
+  & th {
+    background: var(--paper-2);
+    font-weight: 500;
+  }
+}

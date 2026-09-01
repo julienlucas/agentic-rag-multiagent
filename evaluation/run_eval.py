@@ -19,7 +19,7 @@ if str(ROOT_DIR) not in sys.path:
 from backend.agents.workflow import AgentWorkflow
 from backend.agents.research_agent import ResearchAgent
 from evaluation.utils import build_retriever_for_file, load_dataset, log_to_langsmith, resolve_file_path
-from evaluation.llm_judge import LLMJudge, aggregate_judge_results
+from evaluation.llm_judge import LLMJudge
 from backend.config.settings import settings
 
 
