@@ -1,4 +1,5 @@
 import type { VerificationSignals } from "@/lib/verification";
+import type { Citation } from "@/api";
 import type { Evidence } from "./examples";
 
 export type DocState = {
@@ -25,6 +26,7 @@ export type Turn =
       answer: string;
       signals: VerificationSignals;
       elapsed: number;
+      citations: Citation[];
       evidence?: Evidence[];
       failed?: boolean;
     };

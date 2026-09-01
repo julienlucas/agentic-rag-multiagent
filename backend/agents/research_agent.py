@@ -38,14 +38,49 @@ class ResearchAgent:
 3. Si l'information n'est PAS dans le contexte, répondez: "Cette information n'est pas disponible dans le document."
 4. Citez les chiffres et faits EXACTEMENT comme ils apparaissent
 5. N'ajoutez JAMAIS de connaissances externes
+6. Chaque passage du contexte est numéroté. Après CHAQUE affirmation, indiquez entre
+   crochets le ou les numéros des passages qui la soutiennent : [1] ou [2][5].
+   N'utilisez JAMAIS un numéro qui n'apparaît pas dans le contexte, et n'affirmez
+   rien qui ne puisse être rattaché à un passage.
 
 **Question:** {question}
 
-**Contexte (seule source autorisée):**
+**Contexte (seule source autorisée, passages numérotés):**
 {context}
 
-**Réponse (basée UNIQUEMENT sur le contexte ci-dessus):**"""
+**Réponse (basée UNIQUEMENT sur le contexte ci-dessus, avec citations [n]):**"""
         return prompt
+
+    @staticmethod
+    def build_numbered_context(documents: List[Document]) -> tuple:
+        """
+        Numérote les passages transmis au modèle et renvoie (contexte, citations).
+
+        Le contexte préfixe chaque extrait par [n] et son document d'origine, pour que
+        le modèle puisse citer. `citations` est la table de correspondance renvoyée au
+        frontend : un dict par passage avec son numéro, son document, sa page si elle
+        est connue (seul le pipeline FinanceBench pose `page`), et un extrait court.
+        """
+        import os
+
+        parts = []
+        citations = []
+        for i, doc in enumerate(documents, start=1):
+            meta = getattr(doc, "metadata", None) or {}
+            source = meta.get("doc_name") or meta.get("source") or "document"
+            name = os.path.splitext(os.path.basename(str(source)))[0]
+            page = meta.get("page")
+            locator = f"{name}, p. {int(page) + 1}" if page is not None else name
+
+            parts.append(f"[{i}] ({locator})\n{doc.page_content}")
+            citations.append({
+                "n": i,
+                "source": name,
+                "page": int(page) + 1 if page is not None else None,
+                "locator": locator,
+                "excerpt": " ".join(doc.page_content.split())[:280],
+            })
+        return "\n\n".join(parts), citations
 
     def generate(self, question: str, documents: List[Document]) -> Dict:
         """
@@ -53,9 +88,11 @@ class ResearchAgent:
         """
         print(f"ResearchAgent.generate appelé avec question='{question}' et {len(documents)} documents.")
 
-        # Combiner le contenu des documents principaux en une seule chaîne
-        context = "\n\n".join([doc.page_content for doc in documents])
-        print(f"Longueur du contexte combiné: {len(context)} caractères.")
+        # Numéroter les passages : le modèle doit pouvoir rattacher chaque affirmation
+        # à un extrait précis (règle 6 du prompt), et le frontend afficher la source
+        # derrière chaque marqueur [n].
+        context, citations = self.build_numbered_context(documents)
+        print(f"Longueur du contexte combiné: {len(context)} caractères, {len(citations)} passages numérotés.")
 
         # Créer un prompt pour le LLM
         prompt = self.generate_prompt(question, context)
@@ -85,5 +122,6 @@ class ResearchAgent:
 
         return {
             "draft_answer": draft_answer,
-            "context_used": context
+            "context_used": context,
+            "citations": citations,
         }

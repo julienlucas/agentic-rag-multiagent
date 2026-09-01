@@ -160,7 +160,8 @@ def process_question(request):
 
         return JsonResponse({
             "draft_answer": result["draft_answer"],
-            "verification_report": result["verification_report"]
+            "verification_report": result["verification_report"],
+            "citations": result.get("citations", []),
         })
 
     except Exception as e:

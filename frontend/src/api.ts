@@ -23,7 +23,19 @@ async function parse<T>(response: Response): Promise<T> {
 
 export type LoadFileResponse = { message: string; chunks_count: number; filename: string };
 export type UploadFileResponse = { message: string; chunks_count: number };
-export type ProcessQuestionResponse = { draft_answer: string; verification_report: string };
+export type Citation = {
+  n: number;
+  source: string;
+  page: number | null;
+  locator: string;
+  excerpt: string;
+};
+
+export type ProcessQuestionResponse = {
+  draft_answer: string;
+  verification_report: string;
+  citations: Citation[];
+};
 
 export const api = {
   /** Charge un document d'exemple présent côté serveur (dossier static/). */

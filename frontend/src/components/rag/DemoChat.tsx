@@ -2,9 +2,10 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { ArrowUp, ChevronDown, Clock, RotateCcw, ShieldAlert, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { api } from "@/api";
+import { api, type Citation } from "@/api";
 import { renderMarkdown } from "@/lib/markdown";
 import { parseVerificationReport } from "@/lib/verification";
 import { useElapsed } from "@/hooks/useTimer";
@@ -57,6 +58,49 @@ function CollapsibleAnswer({ children }: { children: ReactNode }) {
           <ChevronDown className={cn("size-3 transition-transform", open && "rotate-180")} />
         </button>
       ) : null}
+    </div>
+  );
+}
+
+/** Marqueur de citation [n] : renvoie au passage transmis au modèle. */
+function CiteMark({ n, citation }: { n: number; citation?: Citation }) {
+  const mark = (
+    <sup className="mono-xs ml-0.5 cursor-help rounded bg-brand-surface-strong px-1 py-px text-[0.6rem] text-brand-deep">
+      {n}
+    </sup>
+  );
+  if (!citation) return mark;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{mark}</TooltipTrigger>
+      <TooltipContent className="max-w-sm">
+        <span className="mono-xs block text-brand-light">{citation.locator}</span>
+        <span className="mt-1 block text-xs leading-relaxed">{citation.excerpt}</span>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+/** Liste des passages réellement cités dans la réponse. */
+function CitedSources({ answer, citations }: { answer: string; citations: Citation[] }) {
+  const used = Array.from(new Set([...answer.matchAll(/\[(\d+)\]/g)].map((m) => Number(m[1]))))
+    .sort((a, b) => a - b)
+    .map((n) => citations.find((c) => c.n === n))
+    .filter((c): c is Citation => Boolean(c));
+  if (!used.length) return null;
+  return (
+    <div className="mt-3 border-t border-border pt-3">
+      <span className="eyebrow">Passages cités</span>
+      <ul className="mt-2 space-y-1.5">
+        {used.map((c) => (
+          <li key={c.n} className="flex gap-2 text-[0.7rem] leading-relaxed text-muted-foreground">
+            <span className="mono-xs shrink-0 text-brand-deep">[{c.n}]</span>
+            <span className="min-w-0 flex-1">
+              <span className="font-medium text-ink-muted">{c.locator}</span> — {c.excerpt}
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -219,6 +263,7 @@ export function DemoChat({ children }: { children?: ReactNode }) {
           answer: res.draft_answer,
           signals,
           elapsed: Math.round((Date.now() - started) / 1000),
+          citations: res.citations ?? [],
         },
       ]);
     } catch (err) {
@@ -232,6 +277,7 @@ export function DemoChat({ children }: { children?: ReactNode }) {
           answer: message,
           signals,
           elapsed: Math.round((Date.now() - started) / 1000),
+          citations: [],
           failed: true,
         },
       ]);
@@ -405,10 +451,15 @@ export function DemoChat({ children }: { children?: ReactNode }) {
                             ) : (
                               <CollapsibleAnswer>
                                 <div className="prose-rag">
-                                  {renderMarkdown(turn.answer)}
+                                  {renderMarkdown(turn.answer, (n) => (
+                                    <CiteMark n={n} citation={turn.citations.find((c) => c.n === n)} />
+                                  ))}
                                 </div>
                               </CollapsibleAnswer>
                             )}
+                            {!turn.failed ? (
+                              <CitedSources answer={turn.answer} citations={turn.citations} />
+                            ) : null}
                             {!turn.failed &&
                             turn.signals.correctiveRounds > 0 ? (
                               <p className="mt-3 flex gap-2 border-t border-border pt-3 text-xs text-muted-foreground">
