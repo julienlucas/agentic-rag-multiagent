@@ -29,7 +29,6 @@ from langchain_community.retrievers import BM25Retriever
 from langchain_classic.retrievers.ensemble import EnsembleRetriever
 from langchain_core.documents import Document
 
-from ..config.settings import settings
 from ..utils.logging import logger
 
 # Périmètre de recherche courant : liste de sources, ou None pour "toutes".

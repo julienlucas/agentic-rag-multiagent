@@ -1,16 +1,29 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DocChat - RAG Agentique chat avec docs techniques</title>
-    <meta name="description" content="DocChat - RAG Agentique chat avec docs techniques" />
-    <meta name="author" content="julienlucas" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <title>RAG agentique — étude de cas & démo · Julien Lucas</title>
+    <meta
+      name="description"
+      content="Étude de cas d'un RAG agentique haute précision (BM25 + + reranking Cohere, agents LangGraph) pour automatiser des réponses fiables sur des documents techniques et commerciaux. Évalué sur FinanceBench."
+    />
+    <meta name="author" content="Julien Lucas" />
+    <meta property="og:title" content="RAG agentique — étude de cas & démo" />
+    <meta
+      property="og:description"
+      content="Retrieval hybride, reranking Cohere, agents vérificateur / correctif / recherche. Évalué sur FinanceBench : 76 % de réponses correctes, 14 % d'hallucinations."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/static/header.png" />
+    <link rel="icon" href="/static/mistral.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Fallbacks libres tant que Feature Display / Söhne (Klim) ne sont pas déposées dans /public/fonts -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Gabarito:wght@400..900&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap"
-      rel="stylesheet">
+      href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,300;1,6..72,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
   </head>
 
   <body>

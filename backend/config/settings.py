@@ -1,7 +1,6 @@
 import os
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
-from .constants import MAX_FILE_SIZE, MAX_TOTAL_SIZE, ALLOWED_TYPES
 
 load_dotenv()
 
@@ -21,20 +20,13 @@ class Settings(BaseSettings):
     LANGSMITH_API_KEY: str = os.getenv("LANGSMITH_API_KEY")
 
     # Paramètres optionnels avec valeurs par défaut
-    MAX_FILE_SIZE: int = MAX_FILE_SIZE
-    MAX_TOTAL_SIZE: int = MAX_TOTAL_SIZE
-    ALLOWED_TYPES: list = ALLOWED_TYPES
 
-    # Paramètres de base de données
-    CHROMA_DB_PATH: str = "./chroma_db"
     CHROMA_COLLECTION_NAME: str = "documents"
 
     # Cohere API (pour reranking)
     COHERE_API_KEY: str = os.getenv("COHERE_API_KEY")
 
     # Paramètres d'embeddings
-    EMBEDDING_PROVIDER: str = "mistral"  # Mistral-embed fonctionne mieux sur ce corpus
-    BGE_M3_MODEL_ID: str = "BAAI/bge-m3"
 
     # Paramètres de récupération - CONFIG OPTIMISÉE RECALL
     VECTOR_SEARCH_K: int = 20
@@ -97,8 +89,6 @@ class Settings(BaseSettings):
     # Evaluation
     EVAL_LLM_JUDGE_ENABLED: bool = True
 
-    # Paramètres de journalisation
-    LOG_LEVEL: str = "INFO"
 
     # Nouveaux paramètres de cache avec annotations de type
     CACHE_DIR: str = "document_cache"
