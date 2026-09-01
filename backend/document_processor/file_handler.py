@@ -59,7 +59,9 @@ class DocumentProcessor:
                     # Fichier local - lire depuis le chemin
                     with open(file.name, "rb") as f:
                         file_hash = self._generate_hash(f.read())
-                cache_path = self.cache_dir / f"{file_hash}.pkl"
+                # v2 : les chunks portent désormais metadata["page"] — les caches
+                # antérieurs n'en ont pas, la version dans la clé les invalide.
+                cache_path = self.cache_dir / f"{file_hash}-v2.pkl"
 
                 if self._is_cache_valid(cache_path):
                     logger.info(f"Chargement depuis le cache: {file.name}")
@@ -127,8 +129,16 @@ class DocumentProcessor:
             # Collecter tout le markdown
             all_markdown = [page.markdown for page in response.pages]
 
-            # Assembler le markdown et créer les chunks
-            markdown = "\n\n".join(all_markdown)
+            # Assembler le markdown en gardant la trace des frontières de page :
+            # le chunking reste sémantique sur le document entier (qualité préservée),
+            # et chaque chunk est ensuite rattaché à sa page par correspondance d'offset.
+            separator = "\n\n"
+            page_spans = []
+            cursor = 0
+            for page_idx, page_md in enumerate(all_markdown):
+                page_spans.append((cursor, cursor + len(page_md), page_idx))
+                cursor += len(page_md) + len(separator)
+            markdown = separator.join(all_markdown)
 
             # Utiliser la stratégie de chunking configurée
             if settings.CHUNKING_STRATEGY == "semantic" or settings.PARENT_CHILD_ENABLED:
@@ -137,6 +147,7 @@ class DocumentProcessor:
                 chunker = get_chunking_strategy(embeddings=embeddings)
                 metadata = {"source": file.name}
                 chunks = chunker.split(markdown, metadata)
+                self._attach_pages(chunks, markdown, page_spans)
                 logger.info(f"Chunking avec stratégie '{settings.CHUNKING_STRATEGY}': {len(chunks)} chunks")
                 return chunks
             else:
@@ -152,6 +163,43 @@ class DocumentProcessor:
         except Exception as e:
             logger.error(f"Erreur lors du traitement OCR: {str(e)}")
             return []
+
+    @staticmethod
+    def _attach_pages(chunks, markdown: str, page_spans) -> None:
+        """
+        Rattache chaque chunk à sa page d'origine (metadata["page"], zero-indexed).
+
+        Le chunker sémantique découpe le markdown assemblé sans le réécrire : on retrouve
+        donc chaque chunk par recherche de ses premiers caractères. Le curseur avance de
+        façon monotone (les chunks sortent dans l'ordre du document), avec repli sur une
+        recherche globale. Un chunk introuvable reste simplement sans page, comme avant.
+        """
+        import bisect
+
+        if not page_spans:
+            return
+        starts = [span[0] for span in page_spans]
+        cursor = 0
+        located = 0
+        for chunk in chunks:
+            probe = (chunk.page_content or "")[:120].strip()
+            if not probe:
+                continue
+            pos = markdown.find(probe, cursor)
+            if pos == -1:
+                pos = markdown.find(probe)
+            if pos == -1:
+                continue
+            cursor = pos
+            located += 1
+            idx = bisect.bisect_right(starts, pos) - 1
+            if idx >= 0:
+                chunk.metadata["page"] = page_spans[idx][2]
+
+        logger.info(
+            f"Pages rattachées: {located}/{len(chunks)} chunks "
+            f"({len(page_spans)} pages OCRisées)"
+        )
 
     def _generate_hash(self, content: bytes) -> str:
         return hashlib.sha256(content).hexdigest()

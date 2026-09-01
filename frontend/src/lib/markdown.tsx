@@ -5,16 +5,23 @@ import { Fragment, type ReactNode } from "react";
  * titres, paragraphes, listes, tableaux GFM, **gras**, *italique*, `code`.
  */
 
+let citationRenderer: ((n: number) => ReactNode) | undefined;
+
 function inline(text: string, keyPrefix = "i"): ReactNode[] {
   const out: ReactNode[] = [];
-  const re = /(\*\*[^*]+\*\*|\*[^*\n]+\*|`[^`]+`)/g;
+  const re = /(\*\*[^*]+\*\*|\*[^*\n]+\*|`[^`]+`|\[\d+\])/g;
   let last = 0;
   let m: RegExpExecArray | null;
   let k = 0;
   while ((m = re.exec(text))) {
     if (m.index > last) out.push(text.slice(last, m.index));
     const tok = m[0];
-    if (tok.startsWith("**")) out.push(<strong key={`${keyPrefix}${k++}`}>{tok.slice(2, -2)}</strong>);
+    if (/^\[\d+\]$/.test(tok)) {
+      const n = parseInt(tok.slice(1, -1), 10);
+      out.push(
+        <Fragment key={`${keyPrefix}${k++}`}>{citationRenderer ? citationRenderer(n) : tok}</Fragment>,
+      );
+    } else if (tok.startsWith("**")) out.push(<strong key={`${keyPrefix}${k++}`}>{tok.slice(2, -2)}</strong>);
     else if (tok.startsWith("`")) out.push(<code key={`${keyPrefix}${k++}`}>{tok.slice(1, -1)}</code>);
     else out.push(<em key={`${keyPrefix}${k++}`}>{tok.slice(1, -1)}</em>);
     last = m.index + tok.length;
@@ -33,7 +40,11 @@ const splitRow = (l: string) =>
     .split("|")
     .map((c) => c.trim());
 
-export function renderMarkdown(src: string): ReactNode {
+export function renderMarkdown(
+  src: string,
+  renderCitation?: (n: number) => ReactNode,
+): ReactNode {
+  citationRenderer = renderCitation;
   const lines = (src || "").replace(/\r/g, "").split("\n");
   const blocks: ReactNode[] = [];
   let i = 0;

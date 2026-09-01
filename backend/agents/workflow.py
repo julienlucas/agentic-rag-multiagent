@@ -16,6 +16,7 @@ class AgentState(TypedDict, total=False):
     documents: List[Document]
     draft_answer: str
     verification_report: str
+    citations: List[Dict]
     is_relevant: bool
     retriever: EnsembleRetriever
     relevance: str            # CAN_ANSWER | PARTIAL | NO_MATCH
@@ -210,6 +211,7 @@ class AgentWorkflow:
                 documents=documents,
                 draft_answer="",
                 verification_report="",
+                citations=[],
                 is_relevant=False,
                 retriever=retriever,
                 relevance="",
@@ -221,7 +223,8 @@ class AgentWorkflow:
 
             return {
                 "draft_answer": final_state["draft_answer"],
-                "verification_report": final_state.get("verification_report", "")
+                "verification_report": final_state.get("verification_report", ""),
+                "citations": final_state.get("citations", []),
             }
         except Exception as e:
             logger.error(f"L'exécution du workflow a échoué: {e}")
@@ -230,7 +233,8 @@ class AgentWorkflow:
                     "Une erreur est survenue lors du traitement de votre question "
                     "(timeout ou service LLM indisponible). Merci de réessayer dans un instant."
                 ),
-                "verification_report": f"Erreur: {type(e).__name__}"
+                "verification_report": f"Erreur: {type(e).__name__}",
+                "citations": [],
             }
 
     def _research_step(self, state: AgentState) -> Dict:
@@ -244,6 +248,7 @@ class AgentWorkflow:
             return {
                 "draft_answer": result["draft_answer"],
                 "verification_report": build_verification_report(state),
+                "citations": result.get("citations", []),
             }
         except Exception as e:
             # Un rate limit doit remonter : l'appelant (éval, retry externe) sait le
