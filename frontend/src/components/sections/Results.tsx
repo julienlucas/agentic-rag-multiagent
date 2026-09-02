@@ -86,7 +86,7 @@ const levers = [
   },
   {
     title: "Agent vérificateur de pertinence",
-    text: "Les passages sont classés CAN_ANSWER / PARTIAL / NO_MATCH avant génération. La recherche corrective câblée derrière ne s'est déclenchée sur aucune question du benchmark : son seuil de reranker n'est jamais atteint.",
+    text: "Les passages sont classés CAN_ANSWER / PARTIAL / NO_MATCH avant génération. La recherche corrective câblée derrière part bien sur NO_MATCH, mais son seuil de reranker n'a jamais rien déclenché sur les questions PARTIAL — celles-là mêmes où le système perd des réponses. Seuil à recalibrer.",
   },
   {
     title: "Génération contrainte",

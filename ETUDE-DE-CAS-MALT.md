@@ -35,7 +35,7 @@ Code : github.com/julienlucas/agentic-rag-multiagent
 
 *Posée avant de toucher au pipeline : chaque changement a dû prouver son gain.*
 
-- **2 jeux d'éval** — 40 questions sur corpus technique, puis 21 sur FinanceBench.
+- **2 jeux d'éval, 2 rôles distincts** — 21 questions FinanceBench (vérité terrain annotée par des experts, en anglais) portent le chiffre publiable ; 40 questions maison sur 2 rapports techniques (en français, vérité terrain rédigée par moi) servent de filet de non-régression hors domaine financier. Je ne présente pas les seconds comme un score : on ne se fait pas noter sur un examen qu'on a écrit.
 - **Documents réels** — 3 rapports annuels SEC : AMD (~180 p.), American Express (260 p.), Boeing (~150 p.).
 - **Index combiné** — les 3 documents indexés ensemble, le réglage difficile.
 - **Retrieval exact** — pages de preuve annotées : `page_hit@k` et `page_recall@k`, sans matching flou.
@@ -48,7 +48,7 @@ Code : github.com/julienlucas/agentic-rag-multiagent
 **Ce que l'éval a fait changer dans le code**
 
 - **Fusion RRF** — elle éjectait du top-10 des preuves aux rangs 2 et 6. Le top-5 initial est devenu intouchable.
-- **Boucle corrective** — elle ne partait jamais : le vérificateur est biaisé vers « partiel ». J'ai ajouté un déclencheur sur le score du reranker — et l'éval montre qu'elle ne part **toujours pas** (`corrective_rate` = 0 %) : sur ce corpus, les scores restent au-dessus du seuil. Implémentée, testée, non exercée : je le dis plutôt que de la compter comme un gain.
+- **Boucle corrective** — elle ne partait jamais : le vérificateur est biaisé vers « partiel ». J'ai ajouté un déclencheur sur le score du reranker. Verdict de l'éval, deux corpus plus tard : elle part bien sur les questions `NO_MATCH` (les hors-contexte du jeu interne : correction tentée, rien trouvé, refus assumé), mais le déclencheur au score de reranker n'a **jamais rien déclenché** — sur les 22 questions `PARTIAL` des deux jeux, le score reste au-dessus du seuil. Or c'est sur les `PARTIAL` que le système perd des réponses. Seuil à recalibrer : je le dis plutôt que de compter la boucle comme un gain acquis.
 - **Juge LLM** — il classait « refus » toute réponse *contenant* une phrase de refus, même complète et correcte. Les 6 refus d'un run portaient sur des réponses de 300 à 1 900 caractères. Corrigé et couvert par un test : le refus doit constituer toute la réponse.
 - **HyDE** — dégradait le retrieval. Désactivé malgré la hype. Idem pour la décomposition de requête : implémentés, mesurés, écartés.
 
@@ -78,7 +78,7 @@ un match à armes égales. Les sorties brutes sont versionnées dans le dépôt.
 - **Fiabilité** — 19–29 % de réponses fausses selon le run, là où le RAG naïf du papier en donne 81 %. L'écart est net ; la précision du chiffre, elle, est bornée par la taille de l'échantillon, et je l'affiche.
 - **Vérifiabilité** — chaque réponse cite sa page : le métier contrôle en quelques secondes au lieu de faire confiance.
 - **Temps d'analyse** — une question qui imposait de parcourir 200 pages est traitée en 15–25 s.
-- **Non-régression** — ~0,20 $ et 3 min par run d'éval : vérifier qu'on n'a rien cassé devient une routine.
+- **Non-régression** — ~7 min sur FinanceBench, ~11 min sur le jeu interne, pour quelques dizaines de centimes : vérifier qu'on n'a rien cassé devient une routine plutôt qu'un projet.
 - **Diagnostic actionnable** — on sait où le pipeline perd (le retrieval), donc où investir le budget suivant.
 - **Architecture réutilisable** — changer de corpus (juridique, technique, RH) ne change pas le pipeline.
 
@@ -116,7 +116,10 @@ le premier chiffre de marge du document et le présenter comme la réponse.
 
 C'est la génération contrainte qui produit le bon comportement ici, pas la boucle corrective —
 la trace du run le montre (`corrective_rounds: 0`). Le raccourci « le système réécrit puis
-renonce » serait plus joli à raconter ; il serait faux.
+renonce » serait plus joli à raconter ; il serait faux. La boucle, elle, se déclenche sur les
+questions franchement hors sujet (`NO_MATCH`) : sur le jeu interne, « quel est le prix d'un
+abonnement DeepSeek Pro ? » posée à un rapport technique déclenche bien une réécriture, puis un
+refus.
 
 ## ✨ Caractéristiques clés
 
@@ -124,7 +127,7 @@ renonce » serait plus joli à raconter ; il serait faux.
 
 ✅ **Anti-hallucination** — réponse contrainte aux seuls passages récupérés, refus explicite sinon.
 ✅ **Citations sourcées** — passage numéroté + numéro de page.
-⚠️ **Recherche corrective** — implémentée et testée, jamais déclenchée sur ce benchmark : le seuil de reranker n'est pas atteint. À recalibrer.
+⚠️ **Recherche corrective** — se déclenche sur `NO_MATCH` (vérifié), jamais par le seuil de reranker sur `PARTIAL`. À recalibrer.
 ✅ **Réécriture de requête** — « legal battles » → *litigation*.
 ✅ **Routage par document** — cible le bon rapport avant de chercher.
 ✅ **Recherche hybride** — BM25 + vecteurs, pour les montants et noms exacts.

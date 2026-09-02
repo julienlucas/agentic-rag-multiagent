@@ -8,7 +8,7 @@
 #
 # Usage:
 #   uv run python evaluation/financebench/run_financebench_eval.py --mode both
-#   uv run python evaluation/financebench/run_financebench_eval.py --max-items 3 --no-judge
+#   uv run python evaluation/financebench/run_financebench_eval.py --max-items 3 --no-judge --out-dir /tmp/fb-essai
 
 import argparse
 import json
@@ -428,6 +428,27 @@ def print_report(summary: Dict, modes: List[str], k_values: List[int] = None):
 
 # ---------------------------------------------------------------------------
 
+def guard_partial_overwrite(out_dir: str, default_dir: str, partial_reasons: list, force: bool):
+    """
+    Un run partiel ne doit jamais écraser les sorties versionnées.
+
+    Ces fichiers portent les chiffres cités dans le README et l'étude de cas. Un
+    `--max-items 3 --no-judge` lancé pour vérifier que la chaîne tourne les remplaçait
+    silencieusement par 3 questions sans verdict — et le prochain `git commit -a` publiait
+    ça comme le résultat officiel.
+    """
+    if force or not partial_reasons:
+        return
+    if os.path.abspath(out_dir) != os.path.abspath(default_dir):
+        return
+    raise SystemExit(
+        "Refus d'écrire un run partiel (" + ", ".join(partial_reasons) + ") dans les sorties\n"
+        f"versionnées ({default_dir}).\n"
+        "  --out-dir /tmp/eval-essai   pour un essai jetable\n"
+        "  --force-overwrite           si vous voulez vraiment remplacer les chiffres publiés"
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(description="Évaluation FinanceBench du RAG agentique")
     parser.add_argument("--dataset", default=str(HERE / "dataset.jsonl"))
@@ -446,7 +467,18 @@ def main():
     parser.add_argument("--per-doc", action="store_true",
                         help="Un index par document au lieu d'un index combiné (plus facile)")
     parser.add_argument("--verbose", action="store_true", help="N'étouffe pas les logs du pipeline")
+    parser.add_argument("--force-overwrite", action="store_true",
+                        help="Autorise un run partiel à écraser les sorties versionnées")
     args = parser.parse_args()
+
+    partial = []
+    if args.max_items:
+        partial.append(f"--max-items {args.max_items}")
+    if args.no_judge:
+        partial.append("--no-judge")
+    if args.docs:
+        partial.append(f"--docs {args.docs}")
+    guard_partial_overwrite(args.out_dir, str(HERE / "outputs"), partial, args.force_overwrite)
 
     dataset = load_dataset(args.dataset)
     if args.docs:

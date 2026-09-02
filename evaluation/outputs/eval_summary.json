@@ -1,110 +1,177 @@
 {
+  "dataset": "dataset.jsonl",
+  "n_questions": 40,
+  "judge": "financebench",
   "baseline": {
     "count": 40,
-    "mean_f1": 0.196,
-    "context_hit_rate": 0.85,
+    "failed": 0,
+    "rate_limited": 0,
+    "attempted": 40,
+    "mean_generation_sec": 7.9,
+    "mean_retrieval_sec": 0.63,
+    "mean_f1": 0.2402,
+    "context_hit_rate": 0.9,
     "supported_rate": null,
     "relevant_rate": null,
     "hallucination_rate": null,
     "retrieval": {
-      "recall@5": 0.3897,
-      "mrr@5": 0.8816,
-      "ndcg@5": 0.776,
-      "recall@10": 0.5918,
-      "mrr@10": 0.8853,
-      "ndcg@10": 0.7561,
-      "recall@20": 0.8058,
-      "mrr@20": 0.8853,
-      "ndcg@20": 0.7902
+      "recall@5": 0.4869,
+      "mrr@5": 0.9079,
+      "ndcg@5": 0.8381,
+      "recall@10": 0.7452,
+      "mrr@10": 0.9079,
+      "ndcg@10": 0.854,
+      "recall@20": 0.9613,
+      "mrr@20": 0.9079,
+      "ndcg@20": 0.8892
     },
-    "llm_judge": {
-      "mean_correctness": 4.3,
-      "mean_faithfulness": 4.28,
-      "mean_completeness": 4.1,
-      "hallucination_rate": 0.075,
-      "perfect_faithfulness_rate": 0.8
+    "financebench": {
+      "count": 40,
+      "errors": 0,
+      "counts": {
+        "correct": 35,
+        "refusal": 3,
+        "hallucination": 2
+      },
+      "accuracy": 0.875,
+      "refusal_rate": 0.075,
+      "hallucination_rate": 0.05,
+      "accuracy_ci95": [
+        0.7389,
+        0.9454
+      ],
+      "refusal_rate_ci95": [
+        0.0258,
+        0.1986
+      ],
+      "hallucination_rate_ci95": [
+        0.0138,
+        0.165
+      ],
+      "mean_faithfulness": 4.95
     }
   },
   "agentic": {
     "count": 40,
-    "mean_f1": 0.2009,
-    "context_hit_rate": 0.85,
-    "supported_rate": 0.8947,
-    "relevant_rate": 1.0,
-    "hallucination_rate": 0.1,
+    "failed": 0,
+    "rate_limited": 0,
+    "attempted": 40,
+    "mean_generation_sec": 6.49,
+    "mean_retrieval_sec": 0.63,
+    "mean_f1": 0.2354,
+    "context_hit_rate": 0.925,
+    "supported_rate": null,
+    "relevant_rate": 0.95,
+    "hallucination_rate": null,
     "retrieval": {
-      "recall@5": 0.3897,
-      "mrr@5": 0.8816,
-      "ndcg@5": 0.776,
-      "recall@10": 0.5918,
-      "mrr@10": 0.8853,
-      "ndcg@10": 0.7561,
-      "recall@20": 0.8058,
-      "mrr@20": 0.8853,
-      "ndcg@20": 0.7902
+      "recall@5": 0.4869,
+      "mrr@5": 0.9079,
+      "ndcg@5": 0.8381,
+      "recall@10": 0.7452,
+      "mrr@10": 0.9079,
+      "ndcg@10": 0.854,
+      "recall@20": 0.9613,
+      "mrr@20": 0.9079,
+      "ndcg@20": 0.8892
     },
-    "llm_judge": {
-      "mean_correctness": 4.0,
-      "mean_faithfulness": 4.55,
-      "mean_completeness": 3.9,
+    "financebench": {
+      "count": 40,
+      "errors": 0,
+      "counts": {
+        "correct": 36,
+        "refusal": 3,
+        "hallucination": 1
+      },
+      "accuracy": 0.9,
+      "refusal_rate": 0.075,
       "hallucination_rate": 0.025,
-      "perfect_faithfulness_rate": 0.875
-    }
+      "accuracy_ci95": [
+        0.7695,
+        0.9604
+      ],
+      "refusal_rate_ci95": [
+        0.0258,
+        0.1986
+      ],
+      "hallucination_rate_ci95": [
+        0.0044,
+        0.1288
+      ],
+      "mean_faithfulness": 4.95
+    },
+    "corrective_rate": 0.05
   },
-  "elapsed_sec": 4808.71,
+  "elapsed_sec": 648.82,
+  "truncated": false,
   "delta": {
-    "mean_f1": 0.0049,
-    "context_hit_rate": 0.0
+    "mean_f1": -0.0048,
+    "context_hit_rate": 0.025,
+    "accuracy": 0.025,
+    "correct_questions": 1
   },
   "percent": {
     "baseline": {
-      "mean_f1": 19.6,
-      "context_hit_rate": 85.0,
+      "mean_f1": 24.02,
+      "context_hit_rate": 90.0,
       "supported_rate": null,
       "relevant_rate": null,
       "hallucination_rate": null,
       "retrieval": {
-        "recall@5": 38.97,
-        "mrr@5": 88.16,
-        "ndcg@5": 77.6,
-        "recall@10": 59.18,
-        "mrr@10": 88.53,
-        "ndcg@10": 75.61,
-        "recall@20": 80.58,
-        "mrr@20": 88.53,
-        "ndcg@20": 79.02
+        "recall@5": 48.69,
+        "mrr@5": 90.79,
+        "ndcg@5": 83.81,
+        "recall@10": 74.52,
+        "mrr@10": 90.79,
+        "ndcg@10": 85.4,
+        "recall@20": 96.13,
+        "mrr@20": 90.79,
+        "ndcg@20": 88.92
       },
-      "llm_judge": {
-        "mean_correctness": 4.3,
-        "mean_faithfulness": 4.28,
-        "mean_completeness": 4.1,
-        "hallucination_rate": 7.5,
-        "perfect_faithfulness_rate": 80.0
+      "financebench": {
+        "accuracy": 87.5,
+        "hallucination_rate": 5.0,
+        "refusal_rate": 7.5,
+        "counts": {
+          "correct": 35,
+          "refusal": 3,
+          "hallucination": 2
+        },
+        "accuracy_ci95": [
+          73.89,
+          94.54
+        ]
       }
     },
     "agentic": {
-      "mean_f1": 20.09,
-      "context_hit_rate": 85.0,
-      "supported_rate": 89.47,
-      "relevant_rate": 100.0,
-      "hallucination_rate": 10.0,
+      "mean_f1": 23.54,
+      "context_hit_rate": 92.5,
+      "supported_rate": null,
+      "relevant_rate": 95.0,
+      "hallucination_rate": null,
       "retrieval": {
-        "recall@5": 38.97,
-        "mrr@5": 88.16,
-        "ndcg@5": 77.6,
-        "recall@10": 59.18,
-        "mrr@10": 88.53,
-        "ndcg@10": 75.61,
-        "recall@20": 80.58,
-        "mrr@20": 88.53,
-        "ndcg@20": 79.02
+        "recall@5": 48.69,
+        "mrr@5": 90.79,
+        "ndcg@5": 83.81,
+        "recall@10": 74.52,
+        "mrr@10": 90.79,
+        "ndcg@10": 85.4,
+        "recall@20": 96.13,
+        "mrr@20": 90.79,
+        "ndcg@20": 88.92
       },
-      "llm_judge": {
-        "mean_correctness": 4.0,
-        "mean_faithfulness": 4.55,
-        "mean_completeness": 3.9,
+      "financebench": {
+        "accuracy": 90.0,
         "hallucination_rate": 2.5,
-        "perfect_faithfulness_rate": 87.5
+        "refusal_rate": 7.5,
+        "counts": {
+          "correct": 36,
+          "refusal": 3,
+          "hallucination": 1
+        },
+        "accuracy_ci95": [
+          76.95,
+          96.04
+        ]
       }
     }
   }

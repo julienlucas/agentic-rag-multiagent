@@ -19,7 +19,7 @@ dans `evaluation/financebench/outputs/` — [résultats et limites](#évaluation
 ### 2. **Agent de Recherche Corrective**
 Si les passages sont insuffisants (`relevance != CAN_ANSWER`) **et** que le score max du reranker passe sous `CORRECTIVE_RERANK_THRESHOLD` (0,5), il réécrit la question dans le vocabulaire du document (ex. « legal battles » → *litigation*) et relance la recherche avant de répondre ou de refuser.
 
-> ⚠️ **Ce déclencheur ne se déclenche jamais sur FinanceBench** : `corrective_rate` = 0 % sur tous les runs. Les questions classées `PARTIAL` ont un score de reranker au-dessus du seuil. L'agent est implémenté et couvert par des tests, mais ce corpus ne l'exerce pas — à recalibrer, ou à mesurer sur un corpus où le retrieval décroche vraiment.
+> ⚠️ **Une seule des deux voies de déclenchement fonctionne en pratique.** Sur le jeu interne, l'agent part sur les 2 questions classées `NO_MATCH` (`corrective_rate` = 5 %) — les questions hors-contexte du jeu, conçues pour ça : correction tentée, rien trouvé, refus assumé. En revanche il ne part **jamais** par la voie du score de reranker : sur les 13 questions `PARTIAL` du jeu interne et les 8-9 de FinanceBench, le score reste toujours au-dessus de 0,5. Or c'est justement sur les `PARTIAL` que le mode agentic perd des réponses. Le seuil est à recalibrer.
 
 ### 3. **Agent de Recherche**
 Génère la réponse finale, contrainte aux seuls passages récupérés — refuse explicitement quand l'information n'y est pas.
@@ -75,27 +75,59 @@ LANGSMITH_PROJECT=agentic_rag_multi_agent
 uv run python manage.py runserver
 ```
 
-## Évaluation (pertinence + avant/après)
+## Évaluation sur le jeu interne (généralisation + non-régression)
 
-> ⚠️ **Les résultats versionnés dans `evaluation/outputs/` datent du 3 avril 2026** et ont été
-> mesurés avec un `VerificationAgent` retiré du pipeline le 22 avril 2026. Ils ne décrivent plus
-> le code de ce dépôt et ne sont conservés que comme historique : relancer la commande ci-dessous
-> (~80 min) avant de citer le moindre chiffre de cette section. Les chiffres à jour sont ceux de
-> l'évaluation FinanceBench, plus bas.
+40 questions en **français** sur 2 documents non financiers (rapport technique DeepSeek, rapport
+environnemental Google 2024), réparties en factuelles / numériques / synthèse / multi-passages /
+hors-contexte.
 
-**Lancer l'évaluation** :
+> **Ce jeu ne produit pas un chiffre publiable** : sa vérité terrain est rédigée à la main, on ne
+> se fait pas noter sur un examen qu'on a écrit soi-même. C'est FinanceBench (annotation experte
+> externe, plus bas) qui porte le score. Celui-ci sert à deux choses que FinanceBench ne couvre
+> pas : vérifier que le pipeline tient **hors du domaine financier**, et le mesurer **en
+> français** — la langue d'usage réelle.
+
+**Lancer l'évaluation** (~11 min) :
 ```bash
-uv run python evaluation/run_eval.py \
-  --dataset evaluation/dataset.jsonl \
-  --mode both \
-  --out-dir evaluation/outputs
+uv run python evaluation/run_eval.py --mode both --out-dir evaluation/outputs
 ```
+
+Options utiles : `--workers 1` en cas de rate limits, `--judge detailed` pour l'ancien juge à
+3 axes (correctness / faithfulness / completeness, 3 appels LLM par question au lieu d'un),
+`--max-items N` / `--no-judge` pour un essai rapide.
+
+> Un run partiel refuse d'écrire dans `evaluation/outputs/` : il remplacerait les chiffres
+> publiés ci-dessous par un échantillon. Pour un essai :
+> `uv run python evaluation/run_eval.py --max-items 3 --no-judge --out-dir /tmp/eval-essai`
+
+**Résultats** — run du 2 septembre 2026, 40 questions, même juge et même protocole que
+FinanceBench pour que les deux jeux soient lisibles côte à côte :
+
+| | Correctes | Hallucinations | Refus |
+|---|---|---|---|
+| Avec les agents | 90,0 % (36/40) — IC95 [77-96 %] | 1/40 | 3/40 |
+| Sans les agents | 87,5 % (35/40) — IC95 [74-95 %] | 2/40 | 3/40 |
+
+Retrieval : `recall@10` 74,5 %, `mrr@10` 90,8 %, `context_hit_rate` 92,5 %.
+
+Ce corpus est nettement plus facile que FinanceBench (2 documents d'une trentaine de pages contre
+3 filings de 150 à 260), d'où l'écart de score — c'est attendu, et c'est pourquoi ce jeu ne sert
+pas de vitrine. Deux choses qu'il montre et que FinanceBench ne montre pas :
+
+- **Les 3 refus sont légitimes**, dont les 2 questions hors-contexte que le jeu contient exprès
+  (« le prix d'un abonnement DeepSeek Pro » dans un rapport technique). Le système ne les invente
+  pas : il classe `NO_MATCH`, déclenche la recherche corrective, ne trouve rien, et refuse.
+- **La même régression que sur FinanceBench s'y reproduit** : l'unique réponse perdue par le mode
+  agentic (`gg-6`) est classée `PARTIAL`. Deux corpus, deux langues, le même symptôme — le signal
+  `PARTIAL` dégrade la génération. C'est le correctif prioritaire.
+
 Les résultats sont dans `evaluation/outputs/` (`eval_summary.json` et `eval_results.json`).
 
 Métriques suivies :
 - Retrieval : `recall@k`, `mrr@k`, `ndcg@k`
 - Réponse : `mean_f1`, `context_hit_rate`
-- Juge LLM : `mean_correctness`, `mean_faithfulness`, `hallucination_rate`
+- Juge : `accuracy`, `hallucination_rate`, `refusal_rate`, avec comptages bruts et IC95
+  (`--judge detailed` donne à la place `mean_correctness` / `mean_faithfulness` / `mean_completeness`)
 - Vérification : `relevant_rate` (issu du rapport du pipeline)
 
 > `supported_rate` et le `hallucination_rate` hors juge LLM sont à `null` depuis le
@@ -148,10 +180,11 @@ d'ordre de grandeur, pas un match à armes égales.
   agentic 16/20). L'écart change de signe d'un run à l'autre : à 21 questions, c'est du bruit.
   Ce qui porte le résultat, c'est le retrieval hybride + reranking et la génération contrainte,
   pas la couche multi-agent.
-- **La recherche corrective ne s'est déclenchée sur aucune question**, dans aucun run
+- **La recherche corrective ne s'est déclenchée sur aucune question de FinanceBench**
   (`corrective_rate` = 0 %). Elle exige `relevance != CAN_ANSWER` **et** un score de reranker
-  max < 0,5 ; les 8-9 questions classées `PARTIAL` ont toutes un score au-dessus du seuil. Elle
-  est implémentée et testée, elle n'est pas exercée par ce corpus.
+  max < 0,5 ; les 8-9 questions classées `PARTIAL` ont toutes un score au-dessus du seuil. Sur le
+  jeu interne elle part bien, mais uniquement par l'autre voie (`NO_MATCH`) : le seuil de reranker
+  n'a encore jamais rien déclenché, sur aucun des deux corpus.
 - **Les 2 questions perdues par le mode agentic sont toutes les deux classées `PARTIAL`** par le
   vérificateur de pertinence, avec la preuve pourtant transmise au modèle. Le signal `PARTIAL`
   dégrade la réponse sans déclencher la correction censée le compenser : c'est le prochain

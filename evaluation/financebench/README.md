@@ -181,7 +181,12 @@ raisonnement le système décroche.
 ## Sorties
 
 Dans `evaluation/financebench/outputs/` (**versionnés** : ce sont les chiffres cités dans le
-README et l'étude de cas, ils doivent être vérifiables sans relancer l'éval) :
+README et l'étude de cas, ils doivent être vérifiables sans relancer l'éval).
+
+> Un run partiel (`--max-items`, `--no-judge`, `--docs`) **refuse** d'écrire dans ce répertoire :
+> il remplacerait les chiffres publiés par un échantillon de trois questions sans verdict. Utilisez
+> `--out-dir /tmp/...` pour un essai, `--force-overwrite` si le remplacement est voulu.
+
 
 - `financebench_summary.json` — métriques agrégées par mode, deltas, ventilations
 - `financebench_results.json` — le détail par question (réponse, verdict, raison du juge, latences)
