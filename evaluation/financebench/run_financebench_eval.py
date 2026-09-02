@@ -343,6 +343,29 @@ def print_report(summary: Dict, modes: List[str], k_values: List[int] = None):
     """Tableau de synthèse lisible, dans le format des chiffres publics de Mistral."""
     lines = ["", "=" * 78, "RÉSULTATS — FinanceBench (protocole Patronus AI)", "=" * 78]
 
+    # Un bloc entier de tirets n'apprend rien à personne : quand les verdicts manquent,
+    # la première chose à dire est POURQUOI, et quelle commande donne le vrai résultat.
+    n_run = summary.get("n_questions") or 0
+    has_verdicts = any((summary.get(m) or {}).get("financebench") for m in modes)
+    if not has_verdicts:
+        lines += [
+            "",
+            "⚠️  AUCUN VERDICT — les métriques du protocole (accuracy, hallucinations, refus)",
+            "    sont vides parce que le juge LLM n'a pas tourné (--no-judge, ou aucune",
+            "    réponse jugeable). Ce run ne mesure que le retrieval et la latence.",
+            "",
+            "    Pour le résultat complet :",
+            "      uv run python evaluation/financebench/run_financebench_eval.py --mode both",
+            "=" * 78,
+        ]
+    elif n_run and n_run < 21:
+        lines += [
+            "",
+            f"⚠️  RUN PARTIEL — {n_run} question(s) sur les 21 du protocole. Les pourcentages",
+            "    ci-dessous ne sont pas comparables aux chiffres publiés du projet.",
+            "=" * 78,
+        ]
+
     header = f"{'Métrique':<34}" + "".join(f"{m:>14}" for m in modes)
     lines.append(header)
     lines.append("-" * 78)
@@ -368,16 +391,17 @@ def print_report(summary: Dict, modes: List[str], k_values: List[int] = None):
         bounds = fb(block).get(f"{key}_ci95")
         return "—" if not bounds else f"[{bounds[0] * 100:.0f}-{bounds[1] * 100:.0f}%]"
 
-    row("Accuracy (CORRECT)", lambda b: _pct(fb(b).get("accuracy")))
-    row("  questions", lambda b: _count(b, "correct"))
-    row("  IC95 %", lambda b: _ci(b, "accuracy"))
-    row("Hallucinations (INCORRECT)", lambda b: _pct(fb(b).get("hallucination_rate")))
-    row("  questions", lambda b: _count(b, "hallucination"))
-    row("  IC95 %", lambda b: _ci(b, "hallucination_rate"))
-    row("Refus (REFUSAL)", lambda b: _pct(fb(b).get("refusal_rate")))
-    row("  questions", lambda b: _count(b, "refusal"))
-    row("Faithfulness moyenne /5", lambda b: str(fb(b).get("mean_faithfulness") or "—"))
-    lines.append("-" * 78)
+    if has_verdicts:
+        row("Accuracy (CORRECT)", lambda b: _pct(fb(b).get("accuracy")))
+        row("  questions", lambda b: _count(b, "correct"))
+        row("  IC95 %", lambda b: _ci(b, "accuracy"))
+        row("Hallucinations (INCORRECT)", lambda b: _pct(fb(b).get("hallucination_rate")))
+        row("  questions", lambda b: _count(b, "hallucination"))
+        row("  IC95 %", lambda b: _ci(b, "hallucination_rate"))
+        row("Refus (REFUSAL)", lambda b: _pct(fb(b).get("refusal_rate")))
+        row("  questions", lambda b: _count(b, "refusal"))
+        row("Faithfulness moyenne /5", lambda b: str(fb(b).get("mean_faithfulness") or "—"))
+        lines.append("-" * 78)
     row("Preuve transmise au LLM", lambda b: _pct(b.get("evidence_seen_rate")))
     row("Recherche corrective déclenchée", lambda b: _pct(b.get("corrective_rate")))
     lines.append("-" * 78)
