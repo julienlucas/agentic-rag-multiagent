@@ -41,14 +41,14 @@ Code : github.com/julienlucas/agentic-rag-multiagent
 - **Retrieval exact** — pages de preuve annotées : `page_hit@k` et `page_recall@k`, sans matching flou.
 - **Juge LLM** — verdict ternaire CORRECT / INCORRECT / REFUSAL, protocole officiel du papier.
 - **Métrique reine** — `hallucination_rate` : un refus est gérable, une réponse fausse ne l'est pas. Publiée avec son comptage brut.
-- **Comparaison honnête** — baseline et agentic partagent le même retrieval initial, donc le delta isole l'apport des agents. Avant les correctifs de la boucle corrective, il était nul (les deux modes exécutaient le même code). Après : la preuve atteint le modèle sur 17 questions au lieu de 14, et le mode agentic est au niveau ou au-dessus de la baseline à chaque run.
-- **Diagnostic clé** — quand la preuve atteint le modèle, il répond juste 15 fois sur 17. Quand elle ne l'atteint pas, tout repose sur la génération contrainte. **Le goulot, c'est le retrieval**, pas la génération.
+- **Comparaison honnête** — baseline et agentic partagent le même retrieval initial, donc le delta isole l'apport des agents. Avant les correctifs de la boucle corrective, il était nul (les deux modes exécutaient le même code). Après : la preuve atteint le modèle sur 16 à 17 questions au lieu de 14, et le mode agentic est au niveau ou au-dessus de la baseline à chaque run.
+- **Diagnostic clé** — quand la preuve atteint le modèle, il répond juste 14 fois sur 16. Quand elle ne l'atteint pas, tout repose sur la génération contrainte. **Le goulot, c'est le retrieval**, pas la génération.
 - **Coût maîtrisé** — caches OCR / chunks / embeddings : ~0,20 $ par run en 3 min, relançable à chaque commit.
 
 **Ce que l'éval a fait changer dans le code**
 
 - **Fusion RRF** — elle éjectait du top-10 des preuves aux rangs 2 et 6. Le top-5 initial est devenu intouchable.
-- **Boucle corrective** — elle ne partait jamais : le vérificateur est biaisé vers « partiel », et le seuil de reranker censé compenser n'a jamais rien déclenché. L'éval a montré que les deux modes exécutaient le même code — le verdict du vérificateur était calculé puis jeté. Trois correctifs mesurés un par un : `PARTIAL` déclenche la correction (0 → 43 % des questions) ; les requêtes réécrites en langage naturel au lieu du booléen que produisait le modèle ; les passages ajoutés reclassés contre la question d'origine et placés **après** les 10 initiaux, jamais à leur place. Preuve transmise au modèle : 14 → 17 questions sur 21.
+- **Boucle corrective** — elle ne partait jamais : le vérificateur est biaisé vers « partiel », et le seuil de reranker censé compenser n'a jamais rien déclenché. L'éval a montré que les deux modes exécutaient le même code — le verdict du vérificateur était calculé puis jeté. Trois correctifs mesurés un par un : `PARTIAL` déclenche la correction (0 → 43 % des questions) ; les requêtes réécrites en langage naturel au lieu du booléen que produisait le modèle ; les passages ajoutés reclassés contre la question d'origine et placés **après** les 10 initiaux, jamais à leur place. Preuve transmise au modèle : 14 → 16-17 questions sur 21.
 - **Juge LLM** — il classait « refus » toute réponse *contenant* une phrase de refus, même complète et correcte. Les 6 refus d'un run portaient sur des réponses de 300 à 1 900 caractères. Corrigé et couvert par un test : le refus doit constituer toute la réponse.
 - **HyDE** — dégradait le retrieval. Désactivé malgré la hype. Idem pour la décomposition de requête : implémentés, mesurés, écartés.
 

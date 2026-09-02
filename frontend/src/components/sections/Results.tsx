@@ -86,7 +86,7 @@ const levers = [
   },
   {
     title: "Agent vérificateur de pertinence",
-    text: "Les passages sont classés CAN_ANSWER / PARTIAL / NO_MATCH avant génération. Sur PARTIAL ou NO_MATCH, la question est réécrite dans le vocabulaire du document et jusqu'à 5 passages sont ajoutés après les 10 initiaux — jamais à leur place. La preuve atteint le modèle sur 17 questions sur 21, contre 14 sans.",
+    text: "Les passages sont classés CAN_ANSWER / PARTIAL / NO_MATCH avant génération. Sur PARTIAL ou NO_MATCH, la question est réécrite dans le vocabulaire du document et jusqu'à 5 passages sont ajoutés après les 10 initiaux — jamais à leur place. La preuve atteint le modèle sur 16 à 17 questions sur 21 selon le run, contre 14 sans.",
   },
   {
     title: "Génération contrainte",

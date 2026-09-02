@@ -19,7 +19,7 @@ dans `evaluation/financebench/outputs/` — [résultats et limites](#évaluation
 ### 2. **Agent de Recherche Corrective**
 Si le vérificateur classe les passages `PARTIAL` ou `NO_MATCH`, il réécrit la question dans le vocabulaire du document (ex. « legal battles » → *litigation*), relance la recherche, et **ajoute** jusqu'à 5 passages — reclassés par Cohere contre la question d'origine — après les 10 initiaux, sans jamais les remplacer.
 
-> Trois règles, chacune tirée d'un run FinanceBench où son absence coûtait des réponses : les requêtes réécrites sont en langage naturel (le modèle produisait du booléen `"x" AND "y"`, inutilisable) ; les passages ajoutés sont reclassés contre la question d'origine, pas contre la réécriture ; les 10 passages initiaux sont intouchables. Résultat : la preuve atteint le modèle sur 17 questions sur 21 au lieu de 14.
+> Trois règles, chacune tirée d'un run FinanceBench où son absence coûtait des réponses : les requêtes réécrites sont en langage naturel (le modèle produisait du booléen `"x" AND "y"`, inutilisable) ; les passages ajoutés sont reclassés contre la question d'origine, pas contre la réécriture ; les 10 passages initiaux sont intouchables. Résultat : la preuve atteint le modèle sur 16 à 17 questions sur 21 selon le run, au lieu de 14.
 
 ### 3. **Agent de Recherche**
 Génère la réponse finale, contrainte aux seuls passages récupérés — refuse explicitement quand l'information n'y est pas.
@@ -173,19 +173,19 @@ d'ordre de grandeur, pas un match à armes égales.
 
 ### Ce que ce run dit, et ce qu'il ne dit pas
 
-- **Le chiffre solide, c'est la preuve transmise au modèle : 17 questions sur 21, contre 14 sans
-  les agents.** Il ne dépend pas des humeurs du LLM — c'est du retrieval — et il est stable sur
-  les trois derniers runs. La recherche corrective se déclenche sur 9 questions (`corrective_rate`
+- **Le chiffre solide, c'est la preuve transmise au modèle : 16 à 17 questions sur 21 selon le
+  run, contre 14 sans les agents.** Il ne dépend pas des humeurs du LLM — c'est du retrieval — et
+  il tient sur les quatre derniers runs. La recherche corrective se déclenche sur 9 questions (`corrective_rate`
   42,9 %) et ramène de la preuve sur 3 d'entre elles.
 - **Le +3 en accuracy est à lire avec prudence.** Mistral Large n'est pas déterministe à
   température 0 : la baseline oscille entre 15 et 19 bonnes réponses d'un run à l'autre sur un
   contexte strictement identique. Ce qui tient d'un run à l'autre : depuis les trois correctifs
   de la recherche corrective, le mode agentic est au niveau ou au-dessus de la baseline à chaque
-  run (18, 17, 17), alors qu'il était derrière avant (12, 15).
+  run (18, 18, 17, 17), alors qu'il était derrière avant (12, 15).
 - **Le prix : la génération est deux fois plus lente** (10,3 s contre 5,4 s par question),
   le coût des réécritures et de la seconde recherche sur les questions `PARTIAL`.
 - **Le facteur limitant reste le retrieval.** Quand la preuve atteint le modèle, il répond juste
-  15 fois sur 17 ; quand elle ne l'atteint pas, 3 fois sur 4 seulement — et ce sont des questions
+  14 fois sur 16 ; quand elle ne l'atteint pas, 4 fois sur 5 seulement — et ce sont des questions
   à réponse négative. L'éval le mesure directement : `page_hit@k` / `page_recall@k`, exacts grâce
   aux pages annotées.
 
