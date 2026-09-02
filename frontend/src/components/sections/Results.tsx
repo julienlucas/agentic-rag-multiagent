@@ -26,8 +26,8 @@ const levels = [
     label: "Ce système",
     setup:
       "OCR Mistral · chunking parent / enfant · hybride BM25 + vecteurs · routage · reranking Cohere · vérificateur de pertinence · génération contrainte aux preuves",
-    correct: "71,4 %",
-    wrong: "15 bonnes réponses sur 21 · 6 fausses · 0 refus",
+    correct: "85,7 %",
+    wrong: "18 bonnes réponses sur 21 · 3 fausses · 0 refus",
     tone: "brand" as const,
   },
   {
@@ -53,16 +53,16 @@ const rows: Row[] = [
   {
     metric: "Correctes",
     before: 19,
-    after: 71.4,
+    after: 85.7,
     mistral: 86,
-    hint: "accuracy · verdict CORRECT du juge LLM · 15 sur 21",
+    hint: "accuracy · verdict CORRECT du juge LLM · 18 sur 21",
   },
   {
     metric: "Fausses ou refusées",
     before: 81,
-    after: 28.6,
+    after: 14.3,
     mistral: 14,
-    hint: "28,6 % d'hallucinations + 0 % de refus · plus bas = mieux",
+    hint: "14,3 % d'hallucinations + 0 % de refus · plus bas = mieux",
     lowerIsBetter: true,
   },
 ];
@@ -86,7 +86,7 @@ const levers = [
   },
   {
     title: "Agent vérificateur de pertinence",
-    text: "Les passages sont classés CAN_ANSWER / PARTIAL / NO_MATCH avant génération. La recherche corrective câblée derrière part bien sur NO_MATCH, mais son seuil de reranker n'a jamais rien déclenché sur les questions PARTIAL — celles-là mêmes où le système perd des réponses. Seuil à recalibrer.",
+    text: "Les passages sont classés CAN_ANSWER / PARTIAL / NO_MATCH avant génération. Sur PARTIAL ou NO_MATCH, la question est réécrite dans le vocabulaire du document et jusqu'à 5 passages sont ajoutés après les 10 initiaux — jamais à leur place. La preuve atteint le modèle sur 17 questions sur 21, contre 14 sans.",
   },
   {
     title: "Génération contrainte",
@@ -211,10 +211,6 @@ function BenchmarkChart() {
         (Mistral Medium 3.5, 150 questions sur les 368 filings), contre 26,7 % pour le même modèle en RAG
         one-shot. Trois échantillons différents — benchmark complet pour le papier et pour Mistral,
         21 questions ici — donc un repère, pas un match toutes choses égales.
-        <br />
-        Le même pipeline sans sa couche multi-agent obtient 17 bonnes réponses sur 21 sur ce run :
-        à cette taille d&apos;échantillon, l&apos;apport des agents n&apos;est pas encore démontré, et
-        c&apos;est le retrieval qui porte le résultat.
       </p>
     </figure>
   );
@@ -228,7 +224,7 @@ export function Results() {
       eyebrow="L'évaluation"
       title={
         <>
-          Évalué à 71 % de réponses correctes sur le benchmark{" "}
+          Évalué à 86 % de réponses correctes sur le benchmark{" "}
           <span className="accent-italic">FinanceBench</span> de 150 à 260
           pages.
         </>

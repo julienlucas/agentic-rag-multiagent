@@ -28,7 +28,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from backend.agents.workflow import AgentState, AgentWorkflow
+from backend.agents.workflow import AgentState, AgentWorkflow, effective_top_k
 from backend.agents.research_agent import ResearchAgent
 from evaluation.utils import (
     build_retriever_for_file,
@@ -307,7 +307,7 @@ def evaluate_example(
                 result["relevance"] = final_state.get("relevance", "")
                 result["corrective_rounds"] = final_state.get("corrective_rounds", 0)
                 # La recherche corrective a pu changer les documents : c'est ce qu'on mesure.
-                llm_docs = (final_state.get("documents") or docs)[:top_k]
+                llm_docs = (final_state.get("documents") or docs)[:effective_top_k(final_state)]
         except Exception as e:
             result.update({
                 "failed": True,

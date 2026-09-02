@@ -163,16 +163,17 @@ class CorrectiveRetrieval:
             d for d in self._merge([current_docs[protect:]] + new_lists, top_n)
             if hashlib.md5(d.page_content.encode()).hexdigest() not in head_keys
         ]
-        merged = head + tail[: max(0, top_n - len(head))]
 
         # La fusion RRF classe les nouveaux passages selon les requêtes RÉÉCRITES. Le
-        # modèle, lui, répond à la question d'origine : on reclasse tout l'ensemble
-        # contre elle. Sans ça, un passage bien trouvé au rang 6 par le retrieval initial
-        # se faisait éjecter du top 10 par des passages pertinents pour la réécriture
-        # mais pas pour la question (FinanceBench, 2 sept. 2026 : CORRECT -> INCORRECT).
+        # modèle, lui, répond à la question d'origine : on reclasse la queue contre elle.
+        # La tête, elle, n'est PAS reclassée : ce sont les passages que le modèle aurait
+        # vus sans correction, dans le même ordre. La correction ajoute, elle ne remplace
+        # pas — reclasser l'ensemble changeait le contexte autour d'une preuve déjà
+        # présente et perturbait la génération (FinanceBench, 2 sept. 2026).
         reranker = _find_reranker(retriever)
-        if reranker is not None:
-            merged = reranker.rerank(question, merged, top_n=top_n)
+        if reranker is not None and tail:
+            tail = reranker.rerank(question, tail, top_n=max(0, top_n - len(head)))
+        merged = head + tail[: max(0, top_n - len(head))]
 
         logger.info(
             f"CorrectiveRetrieval: {len(queries)} requêtes réécrites -> "

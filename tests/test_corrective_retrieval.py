@@ -113,7 +113,12 @@ def test_merged_set_is_reranked_against_the_original_question():
 
     cr = CorrectiveRetrieval()
     cr.rewrite = lambda q: ["rewritten"]
-    current = [make_doc("top1"), make_doc("evidence")]
-    out = cr.expand("original question", Routed(), current, top_n=10)
+    protect = settings.CORRECTIVE_PROTECT_TOP
+    head = [make_doc(f"initial{i}") for i in range(protect)]
+    current = head + [make_doc("noise"), make_doc("evidence")]
+    out = cr.expand("original question", Routed(), current, top_n=protect + 5)
     assert calls["query"] == "original question"
-    assert out["documents"][0].page_content == "evidence"
+    # La tête (ce que le modèle aurait vu sans correction) est conservée telle quelle...
+    assert [d.page_content for d in out["documents"][:protect]] == [d.page_content for d in head]
+    # ...et la queue est reclassée contre la question d'origine, pas la réécriture.
+    assert out["documents"][protect].page_content == "evidence"

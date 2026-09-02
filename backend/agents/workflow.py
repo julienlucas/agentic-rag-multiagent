@@ -45,7 +45,7 @@ def build_verification_report(state: "AgentState") -> str:
     if relevance:
         lines.append(f"**Pertinence des passages:** {relevance} — {rel_labels.get(relevance, '')}")
 
-    docs = (state.get("documents") or [])[:settings.RESEARCH_TOP_K]
+    docs = (state.get("documents") or [])[:effective_top_k(state)]
 
     # Confiance retrieval : meilleur score du reranker sur les passages transmis
     scores = [
@@ -91,6 +91,17 @@ def build_verification_report(state: "AgentState") -> str:
         lines.append(f"**Sources utilisées:** {' · '.join(parts)} — {len(docs)} passages transmis au modèle")
 
     return "\n".join(lines)
+
+
+
+def effective_top_k(state) -> int:
+    """
+    Nombre de passages transmis au modèle. Après une recherche corrective, on ajoute
+    CORRECTIVE_EXTRA_DOCS aux RESEARCH_TOP_K initiaux : les passages corrigés viennent
+    en plus des initiaux, jamais à leur place.
+    """
+    extra = settings.CORRECTIVE_EXTRA_DOCS if state.get("corrective_rounds") else 0
+    return settings.RESEARCH_TOP_K + extra
 
 
 class AgentWorkflow:
@@ -255,7 +266,7 @@ class AgentWorkflow:
     def _research_step(self, state: AgentState) -> Dict:
         print(f"[DEBUG] Entrée dans _research_step avec question='{state['question']}'")
         # Limiter le contexte aux meilleurs documents (dilution vs couverture)
-        top_docs = state["documents"][:settings.RESEARCH_TOP_K]
+        top_docs = state["documents"][:effective_top_k(state)]
         print(f"[DEBUG] Utilisation de {len(top_docs)} docs (sur {len(state['documents'])} récupérés)")
         try:
             result = self.researcher.generate(state["question"], top_docs)

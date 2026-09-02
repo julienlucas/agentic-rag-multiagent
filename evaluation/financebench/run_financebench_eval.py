@@ -29,7 +29,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from backend.agents.research_agent import ResearchAgent
 from backend.config.settings import settings
-from backend.agents.workflow import AgentState, AgentWorkflow
+from backend.agents.workflow import AgentState, AgentWorkflow, effective_top_k
 from evaluation.financebench.prepare import load_cached_chunks, store_dir_for
 from evaluation.llm_judge import FinanceBenchJudge, aggregate_financebench_verdicts
 from evaluation.run_eval import (
@@ -221,7 +221,7 @@ def evaluate_example(
         # Documents effectivement transmis au LLM pour CE mode. En agentic, la
         # recherche corrective a pu les changer : c'est précisément ce qu'on mesure.
         if mode == "agentic":
-            llm_docs = (final_state.get("documents") or docs)[:top_k]
+            llm_docs = (final_state.get("documents") or docs)[:effective_top_k(final_state)]
             row["corrective_rounds"] = final_state.get("corrective_rounds", 0)
             row["corrective_queries"] = final_state.get("corrective_queries", [])
             row["relevance"] = final_state.get("relevance", "")

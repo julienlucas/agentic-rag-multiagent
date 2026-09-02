@@ -66,7 +66,12 @@ class Settings(BaseSettings):
     # Les N premiers documents du retrieval initial sont intouchables : la recherche
     # corrective ne peut qu'ajouter après eux. Éval FinanceBench : la fusion RRF naïve
     # éjectait du top-10 des preuves initialement aux rangs 2 et 6.
-    CORRECTIVE_PROTECT_TOP: int = 5
+    # = RESEARCH_TOP_K : la correction ne remplace JAMAIS un passage que le modèle aurait vu
+    # sans elle. À 5, elle remplaçait les rangs 6-10 et perturbait la génération sur des
+    # questions dont la preuve était déjà là (FinanceBench, 2 sept. 2026 : 2 CORRECT -> INCORRECT).
+    CORRECTIVE_PROTECT_TOP: int = 10
+    # Passages supplémentaires transmis au modèle après une correction, en plus des initiaux.
+    CORRECTIVE_EXTRA_DOCS: int = 5
     # Déclencheur : score max du reranker Cohere sous ce seuil = le retrieval a
     # probablement raté -> corriger. (NO_MATCH du checker déclenche toujours ;
     # le checker seul ne suffit pas : son prompt le biaise vers PARTIAL et il ne

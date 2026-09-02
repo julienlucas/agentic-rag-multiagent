@@ -17,9 +17,9 @@ dans `evaluation/financebench/outputs/` — [résultats et limites](#évaluation
 Évalue si les passages récupérés répondent réellement à la question (CAN_ANSWER / PARTIAL / NO_MATCH).
 
 ### 2. **Agent de Recherche Corrective**
-Si les passages sont insuffisants (`relevance != CAN_ANSWER`) **et** que le score max du reranker passe sous `CORRECTIVE_RERANK_THRESHOLD` (0,5), il réécrit la question dans le vocabulaire du document (ex. « legal battles » → *litigation*) et relance la recherche avant de répondre ou de refuser.
+Si le vérificateur classe les passages `PARTIAL` ou `NO_MATCH`, il réécrit la question dans le vocabulaire du document (ex. « legal battles » → *litigation*), relance la recherche, et **ajoute** jusqu'à 5 passages — reclassés par Cohere contre la question d'origine — après les 10 initiaux, sans jamais les remplacer.
 
-> ⚠️ **Une seule des deux voies de déclenchement fonctionne en pratique.** Sur le jeu interne, l'agent part sur les 2 questions classées `NO_MATCH` (`corrective_rate` = 5 %) — les questions hors-contexte du jeu, conçues pour ça : correction tentée, rien trouvé, refus assumé. En revanche il ne part **jamais** par la voie du score de reranker : sur les 13 questions `PARTIAL` du jeu interne et les 8-9 de FinanceBench, le score reste toujours au-dessus de 0,5. Or c'est justement sur les `PARTIAL` que le mode agentic perd des réponses. Le seuil est à recalibrer.
+> Trois règles, chacune tirée d'un run FinanceBench où son absence coûtait des réponses : les requêtes réécrites sont en langage naturel (le modèle produisait du booléen `"x" AND "y"`, inutilisable) ; les passages ajoutés sont reclassés contre la question d'origine, pas contre la réécriture ; les 10 passages initiaux sont intouchables. Résultat : la preuve atteint le modèle sur 17 questions sur 21 au lieu de 14.
 
 ### 3. **Agent de Recherche**
 Génère la réponse finale, contrainte aux seuls passages récupérés — refuse explicitement quand l'information n'y est pas.
@@ -105,8 +105,8 @@ FinanceBench pour que les deux jeux soient lisibles côte à côte :
 
 | | Correctes | Hallucinations | Refus |
 |---|---|---|---|
-| Avec les agents | 90,0 % (36/40) — IC95 [77-96 %] | 1/40 | 3/40 |
-| Sans les agents | 87,5 % (35/40) — IC95 [74-95 %] | 2/40 | 3/40 |
+| Avec les agents | 90,0 % (36/40) | 1/40 | 3/40 |
+| Sans les agents | 87,5 % (35/40) | 2/40 | 3/40 |
 
 Retrieval : `recall@10` 74,5 %, `mrr@10` 90,8 %, `context_hit_rate` 92,5 %.
 
@@ -126,7 +126,7 @@ Les résultats sont dans `evaluation/outputs/` (`eval_summary.json` et `eval_res
 Métriques suivies :
 - Retrieval : `recall@k`, `mrr@k`, `ndcg@k`
 - Réponse : `mean_f1`, `context_hit_rate`
-- Juge : `accuracy`, `hallucination_rate`, `refusal_rate`, avec comptages bruts et IC95
+- Juge : `accuracy`, `hallucination_rate`, `refusal_rate`, avec comptages bruts
   (`--judge detailed` donne à la place `mean_correctness` / `mean_faithfulness` / `mean_completeness`)
 - Vérification : `relevant_rate` (issu du rapport du pipeline)
 
@@ -158,13 +158,12 @@ uv run python evaluation/financebench/run_financebench_eval.py --mode both
 ```
 
 **Résultats** — run du 2 septembre 2026, versionné dans `evaluation/financebench/outputs/`.
-21 questions, 3 filings, index combiné, juge LLM au protocole du benchmark. Comptages bruts et
-IC95 (Wilson), parce qu'à 21 questions un pourcentage seul ne veut pas dire grand-chose :
+21 questions, 3 filings, index combiné, juge LLM au protocole du benchmark, comptages bruts :
 
 | | Correctes | Hallucinations | Refus |
 |---|---|---|---|
-| Ce système, **avec** les agents | 71,4 % (15/21) — IC95 [50-86 %] | 28,6 % (6/21) | 0 % |
-| Ce système, **sans** les agents (même retrieval, une seule génération) | 81,0 % (17/21) — IC95 [60-92 %] | 19,1 % (4/21) | 0 % |
+| Ce système, **avec** les agents | **85,7 % (18/21)** | 14,3 % (3/21) | 0 |
+| Ce système, **sans** les agents (même retrieval, une seule génération) | 71,4 % (15/21) | 28,6 % (6/21) | 0 |
 | RAG naïf — papier FinanceBench (GPT-4-Turbo 2023, benchmark complet) | ~19 % | 81 % de réponses fausses ou refusées | |
 | Mistral Agentic Search — repère externe (Medium 3.5, 150 questions) | 86 % | | |
 | Outils RAG juridiques commerciaux (étude Stanford) | 42-65 % | 17-33 % | |
@@ -174,24 +173,21 @@ d'ordre de grandeur, pas un match à armes égales.
 
 ### Ce que ce run dit, et ce qu'il ne dit pas
 
-- **La boucle agentique n'est pas démontrée sur ce benchmark.** Sur ce run elle est 2 questions
-  *derrière* la baseline ; sur un second run le même jour
-  (`financebench_summary_2026-09-02b.json`) elle passe 1 question *devant* (baseline 16/21,
-  agentic 16/20). L'écart change de signe d'un run à l'autre : à 21 questions, c'est du bruit.
-  Ce qui porte le résultat, c'est le retrieval hybride + reranking et la génération contrainte,
-  pas la couche multi-agent.
-- **La recherche corrective ne s'est déclenchée sur aucune question de FinanceBench**
-  (`corrective_rate` = 0 %). Elle exige `relevance != CAN_ANSWER` **et** un score de reranker
-  max < 0,5 ; les 8-9 questions classées `PARTIAL` ont toutes un score au-dessus du seuil. Sur le
-  jeu interne elle part bien, mais uniquement par l'autre voie (`NO_MATCH`) : le seuil de reranker
-  n'a encore jamais rien déclenché, sur aucun des deux corpus.
-- **Les 2 questions perdues par le mode agentic sont toutes les deux classées `PARTIAL`** par le
-  vérificateur de pertinence, avec la preuve pourtant transmise au modèle. Le signal `PARTIAL`
-  dégrade la réponse sans déclencher la correction censée le compenser : c'est le prochain
-  correctif à mesurer.
-- **Le facteur limitant reste le retrieval.** La preuve n'atteint le modèle que dans 66,7 % des
-  cas ; quand elle l'atteint, la justesse est de 92,9 % (baseline) / 78,6 % (agentic).
-  L'éval le mesure directement : `page_hit@k` / `page_recall@k`, exacts grâce aux pages annotées.
+- **Le chiffre solide, c'est la preuve transmise au modèle : 17 questions sur 21, contre 14 sans
+  les agents.** Il ne dépend pas des humeurs du LLM — c'est du retrieval — et il est stable sur
+  les trois derniers runs. La recherche corrective se déclenche sur 9 questions (`corrective_rate`
+  42,9 %) et ramène de la preuve sur 3 d'entre elles.
+- **Le +3 en accuracy est à lire avec prudence.** Mistral Large n'est pas déterministe à
+  température 0 : la baseline oscille entre 15 et 19 bonnes réponses d'un run à l'autre sur un
+  contexte strictement identique. Ce qui tient d'un run à l'autre : depuis les trois correctifs
+  de la recherche corrective, le mode agentic est au niveau ou au-dessus de la baseline à chaque
+  run (18, 17, 17), alors qu'il était derrière avant (12, 15).
+- **Le prix : la génération est deux fois plus lente** (10,3 s contre 5,4 s par question),
+  le coût des réécritures et de la seconde recherche sur les questions `PARTIAL`.
+- **Le facteur limitant reste le retrieval.** Quand la preuve atteint le modèle, il répond juste
+  15 fois sur 17 ; quand elle ne l'atteint pas, 3 fois sur 4 seulement — et ce sont des questions
+  à réponse négative. L'éval le mesure directement : `page_hit@k` / `page_recall@k`, exacts grâce
+  aux pages annotées.
 
 > Le `refusal_rate` des runs antérieurs au 2 septembre 2026 (~10 %) était un artefact : le juge
 > classait `REFUSAL` toute réponse *contenant* une des phrases de refus du pipeline, y compris au

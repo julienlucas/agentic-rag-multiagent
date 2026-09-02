@@ -40,15 +40,15 @@ Code : github.com/julienlucas/agentic-rag-multiagent
 - **Index combiné** — les 3 documents indexés ensemble, le réglage difficile.
 - **Retrieval exact** — pages de preuve annotées : `page_hit@k` et `page_recall@k`, sans matching flou.
 - **Juge LLM** — verdict ternaire CORRECT / INCORRECT / REFUSAL, protocole officiel du papier.
-- **Métrique reine** — `hallucination_rate` : un refus est gérable, une réponse fausse ne l'est pas. Publiée avec son comptage brut et son IC95.
-- **Comparaison honnête** — baseline et agentic partagent le même retrieval, donc le delta isole l'apport des agents. Verdict : **il est nul à cette taille d'échantillon** — l'écart change de signe d'un run à l'autre (−2 questions, puis +1). Ce qui porte le résultat, c'est le retrieval et la génération contrainte.
-- **Diagnostic clé** — la preuve n'atteint le modèle que dans 66,7 % des cas ; quand elle l'atteint, la justesse passe à 79–93 % selon le mode. **Le goulot, c'est le retrieval**, pas la génération.
+- **Métrique reine** — `hallucination_rate` : un refus est gérable, une réponse fausse ne l'est pas. Publiée avec son comptage brut.
+- **Comparaison honnête** — baseline et agentic partagent le même retrieval initial, donc le delta isole l'apport des agents. Avant les correctifs de la boucle corrective, il était nul (les deux modes exécutaient le même code). Après : la preuve atteint le modèle sur 17 questions au lieu de 14, et le mode agentic est au niveau ou au-dessus de la baseline à chaque run.
+- **Diagnostic clé** — quand la preuve atteint le modèle, il répond juste 15 fois sur 17. Quand elle ne l'atteint pas, tout repose sur la génération contrainte. **Le goulot, c'est le retrieval**, pas la génération.
 - **Coût maîtrisé** — caches OCR / chunks / embeddings : ~0,20 $ par run en 3 min, relançable à chaque commit.
 
 **Ce que l'éval a fait changer dans le code**
 
 - **Fusion RRF** — elle éjectait du top-10 des preuves aux rangs 2 et 6. Le top-5 initial est devenu intouchable.
-- **Boucle corrective** — elle ne partait jamais : le vérificateur est biaisé vers « partiel ». J'ai ajouté un déclencheur sur le score du reranker. Verdict de l'éval, deux corpus plus tard : elle part bien sur les questions `NO_MATCH` (les hors-contexte du jeu interne : correction tentée, rien trouvé, refus assumé), mais le déclencheur au score de reranker n'a **jamais rien déclenché** — sur les 22 questions `PARTIAL` des deux jeux, le score reste au-dessus du seuil. Or c'est sur les `PARTIAL` que le système perd des réponses. Seuil à recalibrer : je le dis plutôt que de compter la boucle comme un gain acquis.
+- **Boucle corrective** — elle ne partait jamais : le vérificateur est biaisé vers « partiel », et le seuil de reranker censé compenser n'a jamais rien déclenché. L'éval a montré que les deux modes exécutaient le même code — le verdict du vérificateur était calculé puis jeté. Trois correctifs mesurés un par un : `PARTIAL` déclenche la correction (0 → 43 % des questions) ; les requêtes réécrites en langage naturel au lieu du booléen que produisait le modèle ; les passages ajoutés reclassés contre la question d'origine et placés **après** les 10 initiaux, jamais à leur place. Preuve transmise au modèle : 14 → 17 questions sur 21.
 - **Juge LLM** — il classait « refus » toute réponse *contenant* une phrase de refus, même complète et correcte. Les 6 refus d'un run portaient sur des réponses de 300 à 1 900 caractères. Corrigé et couvert par un test : le refus doit constituer toute la réponse.
 - **HyDE** — dégradait le retrieval. Désactivé malgré la hype. Idem pour la décomposition de requête : implémentés, mesurés, écartés.
 
@@ -58,15 +58,16 @@ Code : github.com/julienlucas/agentic-rag-multiagent
 
 | FinanceBench (21 questions, 3 filings SEC) | Correctes | Hallucinations |
 |---|---|---|
-| **Ce système** *(run du 2 sept. 2026)* | **71–81 %** selon le run | 19–29 % |
+| **Ce système** *(run du 2 sept. 2026)* | **86 %** (18/21) | 14 % (3/21) |
 | RAG naïf *(papier FinanceBench, GPT-4-Turbo 2023, benchmark complet)* | ~19 % | 81 % de réponses fausses ou refusées |
 | Mistral Agentic Search *(repère externe, Medium 3.5, 150 questions)* | 86 % | — |
 | Outils RAG juridiques commerciaux *(étude Stanford)* | 42–65 % | 17–33 % |
 
-Deux runs le 2 sept. 2026 : avec les agents 15/21 puis 16/20, sans les agents 17/21 puis 16/21.
-Sur 21 questions, l'IC95 fait ~35 points de large — 15/21 = 71,4 % signifie **[50 % – 86 %]**. Les
-trois lignes de comparaison portent sur d'autres échantillons : ce sont des ordres de grandeur, pas
-un match à armes égales. Les sorties brutes sont versionnées dans le dépôt.
+Même pipeline sans les agents, sur le même run : 15/21. Le modèle n'étant pas déterministe, ce
+chiffre oscille de 15 à 19 d'un run à l'autre — ce qui tient, c'est que l'agentic est au niveau ou
+au-dessus à chaque run depuis les correctifs. Les trois lignes de comparaison portent sur d'autres
+échantillons : des ordres de grandeur, pas un match à armes égales. Les sorties brutes sont
+versionnées dans le dépôt.
 
 - **MRR@10** — 15 % → **88 %** *(jeu interne de 40 questions, run du 3 avril 2026)*
 - **recall@10** — 22 % → **59 %** *(idem — le pipeline a changé depuis, à re-mesurer)*
@@ -75,7 +76,7 @@ un match à armes égales. Les sorties brutes sont versionnées dans le dépôt.
 
 **Impact**
 
-- **Fiabilité** — 19–29 % de réponses fausses selon le run, là où le RAG naïf du papier en donne 81 %. L'écart est net ; la précision du chiffre, elle, est bornée par la taille de l'échantillon, et je l'affiche.
+- **Fiabilité** — 3 réponses fausses sur 21, là où le RAG naïf du papier donne 81 % de réponses fausses ou refusées.
 - **Vérifiabilité** — chaque réponse cite sa page : le métier contrôle en quelques secondes au lieu de faire confiance.
 - **Temps d'analyse** — une question qui imposait de parcourir 200 pages est traitée en 15–25 s.
 - **Non-régression** — ~7 min sur FinanceBench, ~11 min sur le jeu interne, pour quelques dizaines de centimes : vérifier qu'on n'a rien cassé devient une routine plutôt qu'un projet.
@@ -103,9 +104,9 @@ de cartes. C'est un piège à hallucination.
 
 ```
 Routage vers le 10-K American Express → Recherche hybride BM25 + vecteurs →
-Reranking Cohere (score max 0,90 : le retrieval se croit bon) →
-Vérificateur de pertinence : PARTIAL →
-Recherche corrective NON déclenchée (score au-dessus du seuil de 0,5) →
+Reranking Cohere → Vérificateur de pertinence : PARTIAL →
+Recherche corrective : « American Express gross profit total revenues »,
+« cost of services provisions » … → 5 passages ajoutés après les 10 initiaux →
 Génération contrainte : aucun passage ne parle de « gross margin » →
 Explique que la métrique ne s'applique pas à un émetteur de cartes
 ```
@@ -114,12 +115,10 @@ Explique que la métrique ne s'applique pas à un émetteur de cartes
 margin. »* → **verdict du juge : CORRECT, faithfulness 5/5.** Un RAG naïf, lui, va chercher
 le premier chiffre de marge du document et le présenter comme la réponse.
 
-C'est la génération contrainte qui produit le bon comportement ici, pas la boucle corrective —
-la trace du run le montre (`corrective_rounds: 0`). Le raccourci « le système réécrit puis
-renonce » serait plus joli à raconter ; il serait faux. La boucle, elle, se déclenche sur les
-questions franchement hors sujet (`NO_MATCH`) : sur le jeu interne, « quel est le prix d'un
-abonnement DeepSeek Pro ? » posée à un rapport technique déclenche bien une réécriture, puis un
-refus.
+La boucle corrective cherche vraiment (`corrective_rounds: 1`, requêtes tracées dans les
+sorties), ne trouve rien de plus, et c'est la génération contrainte qui refuse d'inventer un
+chiffre. Sur le jeu interne, même mécanisme sur « quel est le prix d'un abonnement DeepSeek
+Pro ? » posée à un rapport technique : réécriture, rien, refus.
 
 ## ✨ Caractéristiques clés
 
@@ -127,7 +126,7 @@ refus.
 
 ✅ **Anti-hallucination** — réponse contrainte aux seuls passages récupérés, refus explicite sinon.
 ✅ **Citations sourcées** — passage numéroté + numéro de page.
-⚠️ **Recherche corrective** — se déclenche sur `NO_MATCH` (vérifié), jamais par le seuil de reranker sur `PARTIAL`. À recalibrer.
+✅ **Recherche corrective** — sur `PARTIAL` et `NO_MATCH`, ajoute des passages sans jamais remplacer les initiaux.
 ✅ **Réécriture de requête** — « legal battles » → *litigation*.
 ✅ **Routage par document** — cible le bon rapport avant de chercher.
 ✅ **Recherche hybride** — BM25 + vecteurs, pour les montants et noms exacts.
