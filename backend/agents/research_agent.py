@@ -2,6 +2,9 @@ from typing import Dict, List
 from langchain_core.documents import Document
 from langchain_mistralai import ChatMistralAI
 from ..config.settings import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ResearchAgent:
     def __init__(self):
@@ -9,7 +12,7 @@ class ResearchAgent:
         Initialiser l'agent de recherche avec Mistral ChatMistralAI.
         """
 
-        print("Initialisation de ResearchAgent avec Mistral ChatMistralAI...")
+        logger.info("Initialisation de ResearchAgent avec Mistral ChatMistralAI...")
         self.model = ChatMistralAI(
             model=settings.MODEL_ID,
             api_key=settings.MISTRALAI_API_KEY,
@@ -18,7 +21,7 @@ class ResearchAgent:
             timeout=settings.LLM_TIMEOUT,
             max_retries=settings.LLM_MAX_RETRIES,
         )
-        print("ModelInference initialisé avec succès.")
+        logger.info("ModelInference initialisé avec succès.")
 
     def sanitize_response(self, response_text: str) -> str:
         """
@@ -86,39 +89,39 @@ class ResearchAgent:
         """
         Générer une réponse initiale en utilisant les documents fournis.
         """
-        print(f"ResearchAgent.generate appelé avec question='{question}' et {len(documents)} documents.")
+        logger.debug(f"ResearchAgent.generate appelé avec question='{question}' et {len(documents)} documents.")
 
         # Numéroter les passages : le modèle doit pouvoir rattacher chaque affirmation
         # à un extrait précis (règle 6 du prompt), et le frontend afficher la source
         # derrière chaque marqueur [n].
         context, citations = self.build_numbered_context(documents)
-        print(f"Longueur du contexte combiné: {len(context)} caractères, {len(citations)} passages numérotés.")
+        logger.debug(f"Longueur du contexte combiné: {len(context)} caractères, {len(citations)} passages numérotés.")
 
         # Créer un prompt pour le LLM
         prompt = self.generate_prompt(question, context)
-        print("Prompt créé pour le LLM.")
+        logger.debug("Prompt créé pour le LLM.")
 
         # Appeler le LLM pour générer la réponse
         try:
-            print("Envoi du prompt au modèle...")
+            logger.debug("Envoi du prompt au modèle...")
             response = self.model.invoke(prompt)
-            print("Réponse du LLM reçue.")
+            logger.debug("Réponse du LLM reçue.")
         except Exception as e:
-            print(f"Erreur lors de l'inférence du modèle: {e}")
+            logger.error(f"Erreur lors de l'inférence du modèle: {e}")
             raise RuntimeError("Échec de la génération de réponse en raison d'une erreur de modèle.") from e
 
         # Extraire et traiter la réponse du LLM
         try:
             llm_response = response.content.strip()
-            print(f"Réponse brute du LLM:\n{llm_response}")
+            logger.debug(f"Réponse brute du LLM:\n{llm_response}")
         except (IndexError, KeyError) as e:
-            print(f"Structure de réponse inattendue: {e}")
+            logger.error(f"Structure de réponse inattendue: {e}")
             llm_response = "Je ne peux pas répondre à cette question basée sur les documents fournis."
 
         # Nettoyer la réponse
         draft_answer = self.sanitize_response(llm_response) if llm_response else "Je ne peux pas répondre à cette question basée sur les documents fournis."
 
-        print(f"Réponse générée: {draft_answer}")
+        logger.debug(f"Réponse générée: {draft_answer}")
 
         return {
             "draft_answer": draft_answer,

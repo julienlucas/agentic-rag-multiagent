@@ -74,8 +74,6 @@ class RelevanceChecker:
             logger.error(f"Structure de réponse inattendue: {e}")
             return "NO_MATCH"
 
-        print(f"Réponse du vérificateur: {llm_response}")
-
         # Valider la réponse
         valid_labels = {"CAN_ANSWER", "PARTIAL", "NO_MATCH"}
         if llm_response not in valid_labels:

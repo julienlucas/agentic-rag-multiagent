@@ -205,7 +205,7 @@ class AgentWorkflow:
             decision = "relevant"
         else:
             decision = "irrelevant"
-        print(f"[DEBUG] _decide_after_relevance_check ({relevance}, round {rounds}) -> {decision}")
+        logger.debug(f"_decide_after_relevance_check ({relevance}, round {rounds}) -> {decision}")
         return decision
 
     def _corrective_retrieval_step(self, state: AgentState) -> Dict:
@@ -228,7 +228,7 @@ class AgentWorkflow:
 
     def full_pipeline(self, question: str, retriever: EnsembleRetriever):
         try:
-            print(f"[DEBUG] Démarrage du pipeline complet avec question='{question}'")
+            logger.debug(f"Démarrage du pipeline complet avec question='{question}'")
             documents = retriever.invoke(question)
             logger.info(f"Récupéré {len(documents)} documents pertinents (depuis .invoke)")
 
@@ -264,13 +264,13 @@ class AgentWorkflow:
             }
 
     def _research_step(self, state: AgentState) -> Dict:
-        print(f"[DEBUG] Entrée dans _research_step avec question='{state['question']}'")
+        logger.debug(f"Entrée dans _research_step avec question='{state['question']}'")
         # Limiter le contexte aux meilleurs documents (dilution vs couverture)
         top_docs = state["documents"][:effective_top_k(state)]
-        print(f"[DEBUG] Utilisation de {len(top_docs)} docs (sur {len(state['documents'])} récupérés)")
+        logger.debug(f"Utilisation de {len(top_docs)} docs (sur {len(state['documents'])} récupérés)")
         try:
             result = self.researcher.generate(state["question"], top_docs)
-            print("[DEBUG] Le chercheur a retourné une réponse provisoire.")
+            logger.debug("Le chercheur a retourné une réponse provisoire.")
             return {
                 "draft_answer": result["draft_answer"],
                 "verification_report": build_verification_report(state),
