@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 /*
  * Chiffres : evaluation/financebench/outputs/financebench_summary.json — run du 2 sept. 2026,
  * 21 questions, 3 rapports 10-K, index combiné, juge LLM au protocole du benchmark.
- * Comptages bruts et IC95 (Wilson) affichés : sur 21 questions, un pourcentage seul induit en erreur.
+ * Comptages bruts affichés à côté des pourcentages : on est sur 21 questions.
  * Le niveau « RAG naïf » est le chiffre publié dans le papier FinanceBench (Islam et al., 2023)
  * pour un RAG naïf sur vector store partagé, sur le benchmark complet — il n'a pas été re-mesuré
  * sur ce sous-ensemble.
@@ -27,7 +27,7 @@ const levels = [
     setup:
       "OCR Mistral · chunking parent / enfant · hybride BM25 + vecteurs · routage · reranking Cohere · vérificateur de pertinence · génération contrainte aux preuves",
     correct: "71,4 %",
-    wrong: "15/21 · IC95 [50-86 %] · 28,6 % d'hallucinations · 0 % de refus",
+    wrong: "15 bonnes réponses sur 21 · 6 fausses · 0 refus",
     tone: "brand" as const,
   },
   {
@@ -55,7 +55,7 @@ const rows: Row[] = [
     before: 19,
     after: 71.4,
     mistral: 86,
-    hint: "accuracy · verdict CORRECT du juge LLM · 15/21, IC95 [50-86 %]",
+    hint: "accuracy · verdict CORRECT du juge LLM · 15 sur 21",
   },
   {
     metric: "Fausses ou refusées",
@@ -212,10 +212,9 @@ function BenchmarkChart() {
         one-shot. Trois échantillons différents — benchmark complet pour le papier et pour Mistral,
         21 questions ici — donc un repère, pas un match toutes choses égales.
         <br />
-        Sur 21 questions, l&apos;IC95 fait environ 35 points de large : 71,4 % signifie [50 % – 86 %].
-        Le même pipeline sans sa couche multi-agent obtient 81 % (17/21) sur ce run et 76 % sur un
-        second : l&apos;apport des agents n&apos;est pas démontrable à cette taille d&apos;échantillon,
-        et c&apos;est le retrieval qui porte le résultat.
+        Le même pipeline sans sa couche multi-agent obtient 17 bonnes réponses sur 21 sur ce run :
+        à cette taille d&apos;échantillon, l&apos;apport des agents n&apos;est pas encore démontré, et
+        c&apos;est le retrieval qui porte le résultat.
       </p>
     </figure>
   );

@@ -11,6 +11,7 @@ banque qui ne publie que *pretax income* ; « effective tax rate » qu'il faut a
 sous *provision for income taxes*.
 """
 import hashlib
+import re
 from typing import Dict, List, Optional
 
 from langchain_core.documents import Document
@@ -30,9 +31,44 @@ La recherche documentaire n'a PAS trouvé de passage répondant à la question c
 
 Chaque requête doit inclure le nom de l'entreprise ou de l'entité mentionnée dans la question, si elle en mentionne une.
 
+FORMAT — impératif, la recherche est sémantique et lexicale, PAS booléenne :
+- une phrase courte en langage naturel, 3 à 10 mots
+- AUCUN opérateur booléen (AND, OR, NOT), AUCUN guillemet, AUCUNE parenthèse
+- UNE seule idée par requête ; pour couvrir plusieurs lignes comptables, faire plusieurs requêtes
+- les {count} requêtes doivent viser des angles DIFFÉRENTS, pas être des variantes de la même
+
+Exemples de bonnes requêtes :
+AMD total operating income fiscal 2022
+AMD cost of sales and gross profit 2022
+American Express legal proceedings litigation
+
 Question : {question}
 
 Réponds UNIQUEMENT avec les {count} requêtes, une par ligne, sans numérotation ni explication."""
+
+
+# Le modèle retombe régulièrement dans la syntaxe de moteur de recherche booléen malgré
+# la consigne ("x" AND "y" AND "z"). Une telle chaîne ne veut rien dire pour la recherche
+# vectorielle, et BM25 tokenise les AND et les guillemets comme des mots : la requête
+# réécrite était pire que l'originale. On la ramène en langage naturel.
+def _to_natural_query(line: str) -> str:
+    line = re.sub(r'\s+\b(?:AND|OR|NOT)\b\s+', " ", line, flags=re.IGNORECASE)
+    line = line.replace('"', " ").replace("'", " ").replace("(", " ").replace(")", " ")
+    return " ".join(line.split()).strip()
+
+
+
+def _find_reranker(retriever):
+    """Descend la chaîne de wrappers (routeur -> rerank -> ...) jusqu'à un objet qui sait
+    reclasser. Retourne None si le pipeline n'a pas de reranker."""
+    seen = 0
+    node = retriever
+    while node is not None and seen < 8:
+        if hasattr(node, "rerank") and callable(getattr(node, "rerank")):
+            return node
+        node = getattr(node, "retriever", None)
+        seen += 1
+    return None
 
 
 class CorrectiveRetrieval:
@@ -64,7 +100,8 @@ class CorrectiveRetrieval:
             return []
         queries = []
         for line in content.splitlines():
-            line = line.strip().lstrip("-•*0123456789.) ").strip().strip('"')
+            line = line.strip().lstrip("-•*0123456789.) ").strip()
+            line = _to_natural_query(line)
             if line and line.lower() != question.lower():
                 queries.append(line)
         return queries[: self.query_count]
@@ -127,9 +164,20 @@ class CorrectiveRetrieval:
             if hashlib.md5(d.page_content.encode()).hexdigest() not in head_keys
         ]
         merged = head + tail[: max(0, top_n - len(head))]
+
+        # La fusion RRF classe les nouveaux passages selon les requêtes RÉÉCRITES. Le
+        # modèle, lui, répond à la question d'origine : on reclasse tout l'ensemble
+        # contre elle. Sans ça, un passage bien trouvé au rang 6 par le retrieval initial
+        # se faisait éjecter du top 10 par des passages pertinents pour la réécriture
+        # mais pas pour la question (FinanceBench, 2 sept. 2026 : CORRECT -> INCORRECT).
+        reranker = _find_reranker(retriever)
+        if reranker is not None:
+            merged = reranker.rerank(question, merged, top_n=top_n)
+
         logger.info(
             f"CorrectiveRetrieval: {len(queries)} requêtes réécrites -> "
             f"{sum(len(l) for l in new_lists)} docs -> top-{protect} initial protégé "
             f"+ {len(merged) - len(head)} fusionnés"
+            + (", reclassés contre la question" if reranker is not None else "")
         )
         return {"documents": merged, "queries": queries}

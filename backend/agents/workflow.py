@@ -153,23 +153,38 @@ class AgentWorkflow:
         relevance = state.get("relevance", "")
         rounds = state.get("corrective_rounds", 0)
 
-        # Déclencheur de la recherche corrective :
-        # - NO_MATCH du checker (rare : son prompt le biaise vers PARTIAL), OU
-        # - score max du reranker faible = signal continu que le retrieval a raté.
-        #   (CAN_ANSWER du checker fait foi : il a vu les passages, on ne corrige pas.)
-        weak_retrieval = False
+        # Déclencheur de la recherche corrective. Le checker ne renvoie que trois valeurs,
+        # et NO_MATCH est rare (son prompt le biaise vers PARTIAL) : la correction ne doit
+        # donc pas dépendre du seul NO_MATCH.
+        #
+        # PARTIAL déclenche désormais la correction. Auparavant il fallait *en plus* que le
+        # score max du reranker passe sous CORRECTIVE_RERANK_THRESHOLD, et cette condition
+        # n'a jamais été remplie : 0 déclenchement sur les 22 questions PARTIAL des deux jeux
+        # d'éval. Conséquence, le mode agentic appelait exactement le même generate() que la
+        # baseline sur toutes les questions — le verdict du checker était calculé puis jeté.
+        # Or c'est un bon détecteur : sur 3 runs FinanceBench, les 8 divergences de verdict
+        # entre les deux modes tombaient toutes sur des questions PARTIAL (p ≈ 0,0004).
+        #
+        # CAN_ANSWER continue de faire foi : le checker a vu les passages, on ne corrige pas.
+        # Le garde-fou reste CORRECTIVE_MAX_ROUNDS, et CORRECTIVE_PROTECT_TOP empêche la
+        # fusion d'éjecter les meilleurs passages déjà trouvés.
+        needs_correction = relevance in ("NO_MATCH", "PARTIAL")
+
+        # Filet supplémentaire : un retrieval au score anormalement bas, même jugé
+        # CAN_ANSWER. Désactivé par défaut (seuil à 0) — activer en connaissance de cause.
         threshold = settings.CORRECTIVE_RERANK_THRESHOLD
-        if threshold > 0 and relevance != "CAN_ANSWER":
+        if not needs_correction and threshold > 0:
             scores = [
                 d.metadata.get("rerank_score")
                 for d in (state.get("documents") or [])[:5]
                 if getattr(d, "metadata", None) and d.metadata.get("rerank_score") is not None
             ]
-            weak_retrieval = bool(scores) and max(scores) < threshold
-            if weak_retrieval:
+            if scores and max(scores) < threshold:
                 logger.info(f"Retrieval faible (rerank max={max(scores):.3f} < {threshold}), correction")
+                needs_correction = True
+
         if (
-            (relevance == "NO_MATCH" or weak_retrieval)
+            needs_correction
             and settings.CORRECTIVE_RETRIEVAL_ENABLED
             and rounds < settings.CORRECTIVE_MAX_ROUNDS
             and state.get("retriever") is not None

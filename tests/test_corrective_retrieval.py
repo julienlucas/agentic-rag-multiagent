@@ -70,3 +70,50 @@ def test_expand_uses_scope_when_retriever_supports_it():
     cr = CorrectiveRetrieval(llm=FakeLLM(contents=["q1"]))
     cr.expand("question", r, [], scope=["AMD_2022_10K.pdf"])
     assert r.scopes == [["AMD_2022_10K.pdf"]]
+
+
+def test_boolean_syntax_is_brought_back_to_natural_language():
+    """Le modèle retombait dans la syntaxe booléenne ("x" AND "y"), inutilisable en
+    recherche vectorielle et cassée pour BM25, qui tokenise AND et guillemets comme des mots.
+    Sur le run FinanceBench du 2 sept. 2026, la correction se déclenchait sur 8 questions
+    et n'apportait aucune preuve nouvelle à cause de ça."""
+    from backend.agents.corrective_retrieval import _to_natural_query
+    assert _to_natural_query(
+        '"operating income" AND "total revenues" AND "cost of sales" AND "AMD" AND "FY22"'
+    ) == "operating income total revenues cost of sales AMD FY22"
+    assert _to_natural_query('AMD (Liquidity and Capital Resources) OR "quick ratio"') == \
+        "AMD Liquidity Capital Resources quick ratio"
+    assert _to_natural_query("AMD total operating income fiscal 2022") == \
+        "AMD total operating income fiscal 2022"
+
+
+def test_merged_set_is_reranked_against_the_original_question():
+    """Les passages ajoutés étaient classés selon les requêtes réécrites et éjectaient des
+    preuves bien trouvées par le retrieval initial. Le reranker doit recevoir la question
+    d'origine, et son ordre fait foi."""
+    from backend.agents.corrective_retrieval import CorrectiveRetrieval
+    from conftest import make_doc
+
+    calls = {}
+
+    class Reranking:
+        def invoke(self, q):
+            return [make_doc("noise for rewritten query")]
+
+        def rerank(self, query, docs, top_n=None):
+            calls["query"] = query
+            return sorted(docs, key=lambda d: d.page_content != "evidence")
+
+    class Routed:  # wrapper de routage au-dessus du reranker
+        def __init__(self):
+            self.retriever = Reranking()
+
+        def invoke(self, q):
+            return self.retriever.invoke(q)
+
+    cr = CorrectiveRetrieval()
+    cr.rewrite = lambda q: ["rewritten"]
+    current = [make_doc("top1"), make_doc("evidence")]
+    out = cr.expand("original question", Routed(), current, top_n=10)
+    assert calls["query"] == "original question"
+    assert out["documents"][0].page_content == "evidence"

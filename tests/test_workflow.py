@@ -10,7 +10,7 @@ from conftest import FakeRetriever, make_doc
 def wf(monkeypatch):
     monkeypatch.setattr(settings, "CORRECTIVE_RETRIEVAL_ENABLED", True)
     monkeypatch.setattr(settings, "CORRECTIVE_MAX_ROUNDS", 1)
-    monkeypatch.setattr(settings, "CORRECTIVE_RERANK_THRESHOLD", 0.5)
+    monkeypatch.setattr(settings, "CORRECTIVE_RERANK_THRESHOLD", 0.0)
     w = AgentWorkflow()
     w.researcher.generate = lambda q, docs: {"draft_answer": f"answer from {len(docs)} docs", "citations": [{"n": 1}]}
     w.corrective.expand = lambda q, r, docs, scope=None: {"documents": docs + [make_doc("corrected", rerank=0.9)], "queries": ["q'"]}
@@ -44,16 +44,29 @@ def test_no_match_twice_stops_after_max_rounds_with_refusal(wf):
     assert "**Pertinent:** Non" in out["verification_report"]
 
 
-def test_partial_with_weak_rerank_corrects_but_strong_rerank_does_not(wf):
+def test_partial_always_corrects_whatever_the_rerank_score(wf):
+    """Le verdict PARTIAL du checker suffit. Avant, il fallait en plus un score de reranker
+    sous le seuil — jamais atteint sur les 22 questions PARTIAL des deux jeux d'éval : le
+    mode agentic appelait donc le même generate() que la baseline, et le verdict du checker
+    ne servait à rien."""
     weak = _run(wf, ["PARTIAL", "PARTIAL"], [make_doc("a", rerank=0.2)])
     assert "déclenchée" in weak["verification_report"]
-    strong = _run(wf, ["PARTIAL"], [make_doc("a", rerank=0.8)])
-    assert "non nécessaire" in strong["verification_report"]
+    strong = _run(wf, ["PARTIAL", "CAN_ANSWER"], [make_doc("a", rerank=0.95)])
+    assert "déclenchée" in strong["verification_report"]
 
 
 def test_can_answer_is_trusted_even_with_weak_rerank(wf):
+    """Le checker a vu les passages : son CAN_ANSWER fait foi, on ne corrige pas."""
     out = _run(wf, ["CAN_ANSWER"], [make_doc("a", rerank=0.1)])
     assert "non nécessaire" in out["verification_report"]
+
+
+def test_rerank_threshold_is_an_opt_in_safety_net_on_can_answer(wf, monkeypatch):
+    """Seuil à 0 par défaut. Activé, il rattrape un retrieval au score anormalement bas
+    que le checker a pourtant jugé suffisant."""
+    monkeypatch.setattr(settings, "CORRECTIVE_RERANK_THRESHOLD", 0.5)
+    out = _run(wf, ["CAN_ANSWER", "CAN_ANSWER"], [make_doc("a", rerank=0.1)])
+    assert "déclenchée" in out["verification_report"]
 
 
 def test_verification_report_lists_sources_and_pages():

@@ -71,7 +71,10 @@ class Settings(BaseSettings):
     # probablement raté -> corriger. (NO_MATCH du checker déclenche toujours ;
     # le checker seul ne suffit pas : son prompt le biaise vers PARTIAL et il ne
     # renvoie pratiquement jamais NO_MATCH.) 0 = désactive ce critère.
-    CORRECTIVE_RERANK_THRESHOLD: float = 0.5
+    # Filet pour un retrieval au score anormalement bas malgré un CAN_ANSWER.
+    # À 0 = désactivé : PARTIAL et NO_MATCH suffisent à déclencher la correction, et ce
+    # seuil-ci n'avait jamais rien déclenché sur les deux jeux d'éval.
+    CORRECTIVE_RERANK_THRESHOLD: float = 0.0
 
     # Nombre de documents (parents) transmis au LLM pour la génération.
     # Éval FinanceBench : à 5, 3 questions sur 21 avaient leur preuve au rang 6-20.

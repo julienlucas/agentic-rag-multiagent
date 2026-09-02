@@ -226,7 +226,15 @@ class RerankRetriever:
 
     def invoke(self, query: str):
         """Reranke les documents via l'API Cohere Rerank."""
-        docs = self.retriever.invoke(query)
+        return self.rerank(query, self.retriever.invoke(query))
+
+    def rerank(self, query: str, docs, top_n: int = None):
+        """
+        Reclasse `docs` selon `query`. Exposé séparément de invoke() pour que la recherche
+        corrective puisse reclasser un ensemble fusionné contre la question d'ORIGINE :
+        classés selon les requêtes réécrites, les passages ajoutés éjectaient des preuves
+        que le retrieval initial avait bien trouvées.
+        """
         if not docs or not settings.RERANK_ENABLED:
             return docs
 
@@ -244,7 +252,7 @@ class RerankRetriever:
                 model=settings.RERANK_MODEL,
                 query=query,
                 documents=[d.page_content for d in docs],
-                top_n=min(settings.RERANK_TOP_K, num_to_rerank),
+                top_n=min(top_n or settings.RERANK_TOP_K, num_to_rerank),
             )
 
             # Reconstruire la liste ordonnée par score de reranking
