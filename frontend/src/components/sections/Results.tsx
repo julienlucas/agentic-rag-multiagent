@@ -27,7 +27,7 @@ const levels = [
     setup:
       "OCR Mistral · chunking parent / enfant · hybride BM25 + vecteurs · routage · reranking Cohere · vérificateur de pertinence · génération contrainte aux preuves",
     correct: "85,7 %",
-    wrong: "18 bonnes réponses sur 21 · 3 fausses · 0 refus",
+    wrong: "18 bonnes réponses sur 21 questions",
     tone: "brand" as const,
   },
   {
@@ -35,7 +35,7 @@ const levels = [
     setup:
       "Mistral Medium 3.5, boucle agentique + navigation · 150 questions sur les 368 filings du benchmark complet",
     correct: "86 %",
-    wrong: "one-shot RAG du même modèle : 26,7 %",
+    wrong: "évalué sur 150 questions sur FinanceBench",
     tone: "ref" as const,
   },
 ];
@@ -206,12 +206,6 @@ function BenchmarkChart() {
           </div>
         </>
       )}
-      <p className="mt-5 border-t border-border pt-3 text-xs leading-relaxed text-muted-foreground">
-        Repère externe : Mistral publie 86 % de réponses correctes avec Agentic Search sur FinanceBench
-        (Mistral Medium 3.5, 150 questions sur les 368 filings), contre 26,7 % pour le même modèle en RAG
-        one-shot. Trois échantillons différents — benchmark complet pour le papier et pour Mistral,
-        21 questions ici — donc un repère, pas un match toutes choses égales.
-      </p>
     </figure>
   );
 }
@@ -274,11 +268,11 @@ export function Results() {
         <div>
           <span className="eyebrow">Ce que les chiffres autorisent à dire</span>
           <blockquote className="display-md mt-3 text-ink">
-            Sur un sous-ensemble de FinanceBench (3 filings, <strong className="font-medium text-ink">21 questions</strong>, index combiné), le
+            Sur un sous-ensemble de FinanceBench (3 filings, <strong className="font-semibold text-ink">21 questions</strong>, index combiné), le
             système répond correctement à{" "}
             <span className="accent-italic">17-18 questions selon le run</span>, avec 3 réponses
             fausses et aucun refus. Le RAG naïf du papier est à ~19 % sur le benchmark complet ;
-            Mistral Agentic Search annonce 86 % sur <strong className="font-medium text-ink">150 questions</strong> et 368 filings — un périmètre
+            Mistral Agentic Search annonce 86 % sur <strong className="font-semibold text-ink">150 questions</strong> et 368 filings — un périmètre
             bien plus large, qui n&apos;est pas comparable directement.
           </blockquote>
         </div>
@@ -308,7 +302,7 @@ export function Results() {
           <ul className="mt-5 space-y-2">
             {[
               "Sur 4 questions sur 21, la page de preuve n'atteint toujours pas le modèle, même après correction.",
-              "Le modèle n'est pas déterministe : à contexte identique, une réponse sur cinq change de verdict d'un run à l'autre.",
+              "Le modèle n'est pas déterministe : à contexte identique, environ une réponse sur dix change de verdict d'un run à l'autre.",
               "La recherche corrective double la latence de génération (10 s contre 5 s par question).",
             ].map((point) => (
               <li key={point} className="flex gap-2.5 text-sm leading-relaxed text-ink-muted">
