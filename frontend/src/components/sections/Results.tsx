@@ -258,8 +258,17 @@ export function Results() {
           </div>
         ))}
       </div>
+      {/* Ce que les chiffres autorisent à dire — et pas plus. Hors de la carte, exprès. */}
+      <blockquote className="mt-14 max-w-3xl border-l-2 border-brand pl-5 text-base leading-relaxed text-ink-muted">
+        Sur un sous-ensemble de FinanceBench (3 filings, 21 questions, index combiné), le système
+        répond correctement à 17-18 questions selon le run, avec 3 réponses fausses et aucun refus.
+        Le RAG naïf du papier est à ~19 % sur le benchmark complet ; Mistral Agentic Search annonce
+        86 % sur 150 questions et 368 filings — un périmètre bien plus large, qui n&apos;est pas
+        comparable directement.
+      </blockquote>
+
       {/* RAG naïf vs système agentique */}
-      <div className="mt-14">
+      <div className="mt-8">
         <BenchmarkChart />
       </div>
 
