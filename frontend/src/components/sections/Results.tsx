@@ -274,11 +274,11 @@ export function Results() {
         <div>
           <span className="eyebrow">Ce que les chiffres autorisent à dire</span>
           <blockquote className="display-md mt-3 text-ink">
-            Sur un sous-ensemble de FinanceBench (3 filings, 21 questions, index combiné), le
+            Sur un sous-ensemble de FinanceBench (3 filings, <strong className="font-medium text-ink">21 questions</strong>, index combiné), le
             système répond correctement à{" "}
             <span className="accent-italic">17-18 questions selon le run</span>, avec 3 réponses
             fausses et aucun refus. Le RAG naïf du papier est à ~19 % sur le benchmark complet ;
-            Mistral Agentic Search annonce 86 % sur 150 questions et 368 filings — un périmètre
+            Mistral Agentic Search annonce 86 % sur <strong className="font-medium text-ink">150 questions</strong> et 368 filings — un périmètre
             bien plus large, qui n&apos;est pas comparable directement.
           </blockquote>
         </div>
