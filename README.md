@@ -1,4 +1,4 @@
-![RAG Agentique multi-agent Header](./static/header.png)
+![RAG Agentique multi-agent Header](./static/header-b.png)
 
 # RAG Agentique multi-agent haute précision, anti-hallucinations (évalué sur FinanceBench)
 
