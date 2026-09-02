@@ -4,7 +4,7 @@
 
 Ce système RAG agentique combine des agents spécialisés et un récupérateur avancé (BM25 + embeddings + reranking) pour une haute précision dans la recherche de documents — mesurée sur [FinanceBench](https://github.com/patronus-ai/financebench), le benchmark utilisé par Mistral pour évaluer Agentic Search.
 
-## Architecture IA
+## Architecture IA à la base avant améliorations
 
 ![Projet Overview](./static/project-overview.jpg)
 
