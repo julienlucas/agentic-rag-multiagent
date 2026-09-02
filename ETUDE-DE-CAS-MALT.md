@@ -1,9 +1,10 @@
-# RAG agentique anti-hallucinations, évalué sur FinanceBench
+# RAG agentique multi-agent, évalué sur FinanceBench
 
-Un système RAG multi-agent qui répond avec précision sur des documents longs et
-denses en tableaux (rapports SEC de 150 à 260 pages) — et qui refuse plutôt que
-d'inventer. Évalué sur **FinanceBench**, le benchmark que Mistral utilise pour
-mesurer son produit Agentic Search.
+Un système RAG multi-agent qui répond sur des documents longs et denses en tableaux
+(rapports SEC de 150 à 260 pages), avec une réponse contrainte aux seuls passages
+récupérés et une citation de page à chaque affirmation. Évalué sur **FinanceBench**,
+le benchmark que Mistral utilise pour mesurer son produit Agentic Search — chiffres,
+intervalles de confiance et limites au complet plus bas.
 
 Code : github.com/julienlucas/agentic-rag-multiagent
 
@@ -39,35 +40,42 @@ Code : github.com/julienlucas/agentic-rag-multiagent
 - **Index combiné** — les 3 documents indexés ensemble, le réglage difficile.
 - **Retrieval exact** — pages de preuve annotées : `page_hit@k` et `page_recall@k`, sans matching flou.
 - **Juge LLM** — verdict ternaire CORRECT / INCORRECT / REFUSAL, protocole officiel du papier.
-- **Métrique reine** — `hallucination_rate` : un refus est gérable, une réponse fausse ne l'est pas.
-- **Comparaison honnête** — baseline et agentic partagent le même retrieval : le delta isole l'apport des agents.
-- **Diagnostic clé** — la preuve n'atteint le modèle que dans 67 % des cas ; quand elle l'atteint, 80 % de justesse. **Le goulot, c'est le retrieval.**
+- **Métrique reine** — `hallucination_rate` : un refus est gérable, une réponse fausse ne l'est pas. Publiée avec son comptage brut et son IC95.
+- **Comparaison honnête** — baseline et agentic partagent le même retrieval, donc le delta isole l'apport des agents. Verdict : **il est nul à cette taille d'échantillon** — l'écart change de signe d'un run à l'autre (−2 questions, puis +1). Ce qui porte le résultat, c'est le retrieval et la génération contrainte.
+- **Diagnostic clé** — la preuve n'atteint le modèle que dans 66,7 % des cas ; quand elle l'atteint, la justesse passe à 79–93 % selon le mode. **Le goulot, c'est le retrieval**, pas la génération.
 - **Coût maîtrisé** — caches OCR / chunks / embeddings : ~0,20 $ par run en 3 min, relançable à chaque commit.
 
 **Ce que l'éval a fait changer dans le code**
 
 - **Fusion RRF** — elle éjectait du top-10 des preuves aux rangs 2 et 6. Le top-5 initial est devenu intouchable.
-- **Boucle corrective** — elle ne partait jamais : le vérificateur est biaisé vers « partiel ». Ajout d'un déclencheur sur le score du reranker.
+- **Boucle corrective** — elle ne partait jamais : le vérificateur est biaisé vers « partiel ». J'ai ajouté un déclencheur sur le score du reranker — et l'éval montre qu'elle ne part **toujours pas** (`corrective_rate` = 0 %) : sur ce corpus, les scores restent au-dessus du seuil. Implémentée, testée, non exercée : je le dis plutôt que de la compter comme un gain.
+- **Juge LLM** — il classait « refus » toute réponse *contenant* une phrase de refus, même complète et correcte. Les 6 refus d'un run portaient sur des réponses de 300 à 1 900 caractères. Corrigé et couvert par un test : le refus doit constituer toute la réponse.
 - **HyDE** — dégradait le retrieval. Désactivé malgré la hype. Idem pour la décomposition de requête : implémentés, mesurés, écartés.
 
 ## 📊 Résultats & impact
 
 *Mesurés sur un benchmark public, pas sur des exemples choisis.*
 
-| FinanceBench (21 questions, filings SEC) | Correctes | Hallucinations |
+| FinanceBench (21 questions, 3 filings SEC) | Correctes | Hallucinations |
 |---|---|---|
-| **Ce système** | **76 %** | **14 %** |
-| RAG naïf *(baseline publiée dans le papier FinanceBench)* | ~19 % | 81 % de réponses fausses ou refusées |
+| **Ce système** *(run du 2 sept. 2026)* | **71–81 %** selon le run | 19–29 % |
+| RAG naïf *(papier FinanceBench, GPT-4-Turbo 2023, benchmark complet)* | ~19 % | 81 % de réponses fausses ou refusées |
+| Mistral Agentic Search *(repère externe, Medium 3.5, 150 questions)* | 86 % | — |
 | Outils RAG juridiques commerciaux *(étude Stanford)* | 42–65 % | 17–33 % |
 
-- **MRR@10** — 15 % → **88 %**
-- **recall@10** — 22 % → **59 %**
-- **Hallucinations** — 12,5 % → **2,5 %**
+Deux runs le 2 sept. 2026 : avec les agents 15/21 puis 16/20, sans les agents 17/21 puis 16/21.
+Sur 21 questions, l'IC95 fait ~35 points de large — 15/21 = 71,4 % signifie **[50 % – 86 %]**. Les
+trois lignes de comparaison portent sur d'autres échantillons : ce sont des ordres de grandeur, pas
+un match à armes égales. Les sorties brutes sont versionnées dans le dépôt.
+
+- **MRR@10** — 15 % → **88 %** *(jeu interne de 40 questions, run du 3 avril 2026)*
+- **recall@10** — 22 % → **59 %** *(idem — le pipeline a changé depuis, à re-mesurer)*
 - **Latence** — plus de 3 min → **15–25 s** par question
+- **Refus** — **0 %** sur le dernier run ; les ~10 % annoncés auparavant étaient un bug du juge
 
 **Impact**
 
-- **Fiabilité** — 14 % d'hallucinations, là où un RAG naïf donne 81 % de réponses fausses ou refusées.
+- **Fiabilité** — 19–29 % de réponses fausses selon le run, là où le RAG naïf du papier en donne 81 %. L'écart est net ; la précision du chiffre, elle, est bornée par la taille de l'échantillon, et je l'affiche.
 - **Vérifiabilité** — chaque réponse cite sa page : le métier contrôle en quelques secondes au lieu de faire confiance.
 - **Temps d'analyse** — une question qui imposait de parcourir 200 pages est traitée en 15–25 s.
 - **Non-régression** — ~0,20 $ et 3 min par run d'éval : vérifier qu'on n'a rien cassé devient une routine.
@@ -95,15 +103,20 @@ de cartes. C'est un piège à hallucination.
 
 ```
 Routage vers le 10-K American Express → Recherche hybride BM25 + vecteurs →
-Reranking Cohere → Aucun passage ne parle de « gross margin » →
-Réécriture de la question dans le vocabulaire du filing → Toujours rien →
-Refus d'inventer un chiffre → Explique que la métrique ne s'applique pas
-à un émetteur de cartes
+Reranking Cohere (score max 0,90 : le retrieval se croit bon) →
+Vérificateur de pertinence : PARTIAL →
+Recherche corrective NON déclenchée (score au-dessus du seuil de 0,5) →
+Génération contrainte : aucun passage ne parle de « gross margin » →
+Explique que la métrique ne s'applique pas à un émetteur de cartes
 ```
 
 **Réponse attendue par le benchmark :** *« Performance is not measured through gross
-margin. »* → **verdict du juge : CORRECT.** Un RAG naïf, lui, va chercher le premier
-chiffre de marge du document et le présenter comme la réponse.
+margin. »* → **verdict du juge : CORRECT, faithfulness 5/5.** Un RAG naïf, lui, va chercher
+le premier chiffre de marge du document et le présenter comme la réponse.
+
+C'est la génération contrainte qui produit le bon comportement ici, pas la boucle corrective —
+la trace du run le montre (`corrective_rounds: 0`). Le raccourci « le système réécrit puis
+renonce » serait plus joli à raconter ; il serait faux.
 
 ## ✨ Caractéristiques clés
 
@@ -111,7 +124,7 @@ chiffre de marge du document et le présenter comme la réponse.
 
 ✅ **Anti-hallucination** — réponse contrainte aux seuls passages récupérés, refus explicite sinon.
 ✅ **Citations sourcées** — passage numéroté + numéro de page.
-✅ **Recherche corrective** — relancée uniquement quand le retrieval a raté.
+⚠️ **Recherche corrective** — implémentée et testée, jamais déclenchée sur ce benchmark : le seuil de reranker n'est pas atteint. À recalibrer.
 ✅ **Réécriture de requête** — « legal battles » → *litigation*.
 ✅ **Routage par document** — cible le bon rapport avant de chercher.
 ✅ **Recherche hybride** — BM25 + vecteurs, pour les montants et noms exacts.

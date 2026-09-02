@@ -1,0 +1,293 @@
+{
+  "dataset": "dataset.jsonl",
+  "documents": [
+    "AMD_2022_10K",
+    "AMERICANEXPRESS_2022_10K",
+    "BOEING_2022_10K"
+  ],
+  "index": "combined",
+  "n_questions": 21,
+  "elapsed_sec": 429.32,
+  "truncated": false,
+  "errors": 0,
+  "baseline": {
+    "count": 21,
+    "failed": 0,
+    "rate_limited": 0,
+    "attempted": 21,
+    "mean_f1": 0.1514,
+    "context_hit_rate": 0.4762,
+    "mean_generation_sec": 8.67,
+    "mean_retrieval_sec": 1.03,
+    "evidence_seen_rate": 0.6667,
+    "retrieval": {
+      "recall@5": 0.4175,
+      "mrr@5": 0.5317,
+      "ndcg@5": 0.4701,
+      "page_hit@5": 0.5714,
+      "page_recall@5": 0.5714,
+      "recall@10": 0.5663,
+      "mrr@10": 0.5476,
+      "ndcg@10": 0.5142,
+      "page_hit@10": 0.6667,
+      "page_recall@10": 0.6667,
+      "recall@20": 0.6492,
+      "mrr@20": 0.5476,
+      "ndcg@20": 0.5552,
+      "page_hit@20": 0.7143,
+      "page_recall@20": 0.6825
+    },
+    "financebench": {
+      "count": 21,
+      "errors": 0,
+      "counts": {
+        "correct": 17,
+        "refusal": 0,
+        "hallucination": 4
+      },
+      "accuracy": 0.8095,
+      "refusal_rate": 0.0,
+      "hallucination_rate": 0.1905,
+      "accuracy_ci95": [
+        0.6,
+        0.9233
+      ],
+      "refusal_rate_ci95": [
+        0.0,
+        0.1546
+      ],
+      "hallucination_rate_ci95": [
+        0.0767,
+        0.4
+      ],
+      "mean_faithfulness": 4.86
+    },
+    "by_question_type": {
+      "domain-relevant": {
+        "count": 14,
+        "accuracy": 0.7857,
+        "hallucination_rate": 0.2143,
+        "refusal_rate": 0.0,
+        "page_hit@20": 0.6429,
+        "mean_f1": 0.1578
+      },
+      "novel-generated": {
+        "count": 7,
+        "accuracy": 0.8571,
+        "hallucination_rate": 0.1429,
+        "refusal_rate": 0.0,
+        "page_hit@20": 0.8571,
+        "mean_f1": 0.1386
+      }
+    },
+    "by_reasoning": {
+      "Information extraction": {
+        "count": 5,
+        "accuracy": 0.8,
+        "hallucination_rate": 0.2,
+        "refusal_rate": 0.0,
+        "page_hit@20": 0.8,
+        "mean_f1": 0.1734
+      },
+      "Information extraction OR Logical reasoning": {
+        "count": 1,
+        "accuracy": 1.0,
+        "hallucination_rate": 0.0,
+        "refusal_rate": 0.0,
+        "page_hit@20": 1.0,
+        "mean_f1": 0.3433
+      },
+      "Logical reasoning (based on numerical reasoning)": {
+        "count": 1,
+        "accuracy": 1.0,
+        "hallucination_rate": 0.0,
+        "refusal_rate": 0.0,
+        "page_hit@20": 1.0,
+        "mean_f1": 0.1212
+      },
+      "Logical reasoning (based on numerical reasoning) OR Logical reasoning": {
+        "count": 1,
+        "accuracy": 0.0,
+        "hallucination_rate": 1.0,
+        "refusal_rate": 0.0,
+        "page_hit@20": 1.0,
+        "mean_f1": 0.0392
+      },
+      "Logical reasoning (based on numerical reasoning) OR Numerical reasoning OR Logical reasoning": {
+        "count": 2,
+        "accuracy": 1.0,
+        "hallucination_rate": 0.0,
+        "refusal_rate": 0.0,
+        "page_hit@20": 0.5,
+        "mean_f1": 0.1036
+      },
+      "Numerical reasoning": {
+        "count": 2,
+        "accuracy": 1.0,
+        "hallucination_rate": 0.0,
+        "refusal_rate": 0.0,
+        "page_hit@20": 0.5,
+        "mean_f1": 0.2171
+      },
+      "Numerical reasoning OR information extraction": {
+        "count": 2,
+        "accuracy": 0.5,
+        "hallucination_rate": 0.5,
+        "refusal_rate": 0.0,
+        "page_hit@20": 0.0,
+        "mean_f1": 0.099
+      },
+      "unknown": {
+        "count": 7,
+        "accuracy": 0.8571,
+        "hallucination_rate": 0.1429,
+        "refusal_rate": 0.0,
+        "page_hit@20": 0.8571,
+        "mean_f1": 0.1386
+      }
+    }
+  },
+  "agentic": {
+    "count": 21,
+    "failed": 0,
+    "rate_limited": 0,
+    "attempted": 21,
+    "mean_f1": 0.1479,
+    "context_hit_rate": 0.4762,
+    "mean_generation_sec": 10.72,
+    "mean_retrieval_sec": 1.03,
+    "evidence_seen_rate": 0.6667,
+    "corrective_rate": 0.0,
+    "retrieval": {
+      "recall@5": 0.4175,
+      "mrr@5": 0.5317,
+      "ndcg@5": 0.4701,
+      "page_hit@5": 0.5714,
+      "page_recall@5": 0.5714,
+      "recall@10": 0.5663,
+      "mrr@10": 0.5476,
+      "ndcg@10": 0.5142,
+      "page_hit@10": 0.6667,
+      "page_recall@10": 0.6667,
+      "recall@20": 0.6492,
+      "mrr@20": 0.5476,
+      "ndcg@20": 0.5552,
+      "page_hit@20": 0.7143,
+      "page_recall@20": 0.6825
+    },
+    "financebench": {
+      "count": 21,
+      "errors": 0,
+      "counts": {
+        "correct": 15,
+        "refusal": 0,
+        "hallucination": 6
+      },
+      "accuracy": 0.7143,
+      "refusal_rate": 0.0,
+      "hallucination_rate": 0.2857,
+      "accuracy_ci95": [
+        0.5004,
+        0.8619
+      ],
+      "refusal_rate_ci95": [
+        0.0,
+        0.1546
+      ],
+      "hallucination_rate_ci95": [
+        0.1381,
+        0.4996
+      ],
+      "mean_faithfulness": 4.71
+    },
+    "by_question_type": {
+      "domain-relevant": {
+        "count": 14,
+        "accuracy": 0.6429,
+        "hallucination_rate": 0.3571,
+        "refusal_rate": 0.0,
+        "page_hit@20": 0.6429,
+        "mean_f1": 0.1472
+      },
+      "novel-generated": {
+        "count": 7,
+        "accuracy": 0.8571,
+        "hallucination_rate": 0.1429,
+        "refusal_rate": 0.0,
+        "page_hit@20": 0.8571,
+        "mean_f1": 0.1492
+      }
+    },
+    "by_reasoning": {
+      "Information extraction": {
+        "count": 5,
+        "accuracy": 0.4,
+        "hallucination_rate": 0.6,
+        "refusal_rate": 0.0,
+        "page_hit@20": 0.8,
+        "mean_f1": 0.1479
+      },
+      "Information extraction OR Logical reasoning": {
+        "count": 1,
+        "accuracy": 1.0,
+        "hallucination_rate": 0.0,
+        "refusal_rate": 0.0,
+        "page_hit@20": 1.0,
+        "mean_f1": 0.3404
+      },
+      "Logical reasoning (based on numerical reasoning)": {
+        "count": 1,
+        "accuracy": 1.0,
+        "hallucination_rate": 0.0,
+        "refusal_rate": 0.0,
+        "page_hit@20": 1.0,
+        "mean_f1": 0.1065
+      },
+      "Logical reasoning (based on numerical reasoning) OR Logical reasoning": {
+        "count": 1,
+        "accuracy": 0.0,
+        "hallucination_rate": 1.0,
+        "refusal_rate": 0.0,
+        "page_hit@20": 1.0,
+        "mean_f1": 0.0769
+      },
+      "Logical reasoning (based on numerical reasoning) OR Numerical reasoning OR Logical reasoning": {
+        "count": 2,
+        "accuracy": 1.0,
+        "hallucination_rate": 0.0,
+        "refusal_rate": 0.0,
+        "page_hit@20": 0.5,
+        "mean_f1": 0.0796
+      },
+      "Numerical reasoning": {
+        "count": 2,
+        "accuracy": 1.0,
+        "hallucination_rate": 0.0,
+        "refusal_rate": 0.0,
+        "page_hit@20": 0.5,
+        "mean_f1": 0.2172
+      },
+      "Numerical reasoning OR information extraction": {
+        "count": 2,
+        "accuracy": 0.5,
+        "hallucination_rate": 0.5,
+        "refusal_rate": 0.0,
+        "page_hit@20": 0.0,
+        "mean_f1": 0.102
+      },
+      "unknown": {
+        "count": 7,
+        "accuracy": 0.8571,
+        "hallucination_rate": 0.1429,
+        "refusal_rate": 0.0,
+        "page_hit@20": 0.8571,
+        "mean_f1": 0.1492
+      }
+    }
+  },
+  "delta": {
+    "accuracy": -0.0952,
+    "hallucination_rate": 0.0952,
+    "mean_f1": -0.0035
+  }
+}

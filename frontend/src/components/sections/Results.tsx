@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 /*
- * Chiffres : evaluation/financebench/outputs/financebench_summary.json (21 questions, 3 rapports 10-K,
- * juge LLM au protocole du benchmark). Le niveau « RAG naïf » est le chiffre publié dans le papier
- * FinanceBench (Islam et al., 2023) pour un RAG naïf sur vector store partagé, sur le benchmark complet —
- * il n'a pas été re-mesuré sur ce sous-ensemble.
+ * Chiffres : evaluation/financebench/outputs/financebench_summary.json — run du 2 sept. 2026,
+ * 21 questions, 3 rapports 10-K, index combiné, juge LLM au protocole du benchmark.
+ * Comptages bruts et IC95 (Wilson) affichés : sur 21 questions, un pourcentage seul induit en erreur.
+ * Le niveau « RAG naïf » est le chiffre publié dans le papier FinanceBench (Islam et al., 2023)
+ * pour un RAG naïf sur vector store partagé, sur le benchmark complet — il n'a pas été re-mesuré
+ * sur ce sous-ensemble.
  */
 const levels = [
   {
@@ -21,11 +23,11 @@ const levels = [
     tone: "muted" as const,
   },
   {
-    label: "Ce RAG Agentique",
+    label: "Ce système",
     setup:
-      "OCR Mistral · chunking parent / enfant · hybride BM25 + vecteurs · routage · reranking Cohere + agent vérificateur de pertinence · recherche corrective · génération contrainte aux preuves",
-    correct: "76,2 %",
-    wrong: "14,3 % d'hallucinations · 9,5 % de refus",
+      "OCR Mistral · chunking parent / enfant · hybride BM25 + vecteurs · routage · reranking Cohere · vérificateur de pertinence · génération contrainte aux preuves",
+    correct: "71,4 %",
+    wrong: "15/21 · IC95 [50-86 %] · 28,6 % d'hallucinations · 0 % de refus",
     tone: "brand" as const,
   },
   {
@@ -51,16 +53,16 @@ const rows: Row[] = [
   {
     metric: "Correctes",
     before: 19,
-    after: 76.2,
+    after: 71.4,
     mistral: 86,
-    hint: "accuracy · verdict CORRECT du juge LLM",
+    hint: "accuracy · verdict CORRECT du juge LLM · 15/21, IC95 [50-86 %]",
   },
   {
     metric: "Fausses ou refusées",
     before: 81,
-    after: 23.8,
+    after: 28.6,
     mistral: 14,
-    hint: "14,3 % d'hallucinations + 9,5 % de refus · plus bas = mieux",
+    hint: "28,6 % d'hallucinations + 0 % de refus · plus bas = mieux",
     lowerIsBetter: true,
   },
 ];
@@ -83,8 +85,8 @@ const levers = [
     text: "40 candidats rescorés, 30 conservés : les distracteurs sortent du top. Le plus gros gain du projet.",
   },
   {
-    title: "Agent vérificateur + recherche corrective",
-    text: "Les passages sont classés avant génération ; si le score est faible, la question est réécrite et la recherche relancée.",
+    title: "Agent vérificateur de pertinence",
+    text: "Les passages sont classés CAN_ANSWER / PARTIAL / NO_MATCH avant génération. La recherche corrective câblée derrière ne s'est déclenchée sur aucune question du benchmark : son seuil de reranker n'est jamais atteint.",
   },
   {
     title: "Génération contrainte",
@@ -207,6 +209,11 @@ function BenchmarkChart() {
         (Mistral Medium 3.5, 150 questions sur les 368 filings), contre 26,7 % pour le même modèle en RAG
         one-shot. Trois échantillons différents — benchmark complet pour le papier et pour Mistral,
         21 questions ici — donc un repère, pas un match toutes choses égales.
+        <br />
+        Sur 21 questions, l&apos;IC95 fait environ 35 points de large : 71,4 % signifie [50 % – 86 %].
+        Le même pipeline sans sa couche multi-agent obtient 81 % (17/21) sur ce run et 76 % sur un
+        second : l&apos;apport des agents n&apos;est pas démontrable à cette taille d&apos;échantillon,
+        et c&apos;est le retrieval qui porte le résultat.
       </p>
     </figure>
   );
@@ -220,7 +227,7 @@ export function Results() {
       eyebrow="L'évaluation"
       title={
         <>
-          Évalué à 76 % de réponses correctes sur le benchmark{" "}
+          Évalué à 71 % de réponses correctes sur le benchmark{" "}
           <span className="accent-italic">FinanceBench</span> de 150 à 260
           pages.
         </>

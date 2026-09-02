@@ -357,9 +357,25 @@ def print_report(summary: Dict, modes: List[str], k_values: List[int] = None):
     k_values = k_values or [5, 10]
     k_small, k_large = min(k_values), max(k_values)
     fb = lambda b: b.get("financebench") or {}
+
+    def _count(block, key):
+        """Le comptage brut : 16/21 se discute, « 76,2 % » se subit."""
+        counts = fb(block).get("counts") or {}
+        k, n = counts.get(key), fb(block).get("count")
+        return "—" if k is None or not n else f"{k}/{n}"
+
+    def _ci(block, key):
+        bounds = fb(block).get(f"{key}_ci95")
+        return "—" if not bounds else f"[{bounds[0] * 100:.0f}-{bounds[1] * 100:.0f}%]"
+
     row("Accuracy (CORRECT)", lambda b: _pct(fb(b).get("accuracy")))
+    row("  questions", lambda b: _count(b, "correct"))
+    row("  IC95 %", lambda b: _ci(b, "accuracy"))
     row("Hallucinations (INCORRECT)", lambda b: _pct(fb(b).get("hallucination_rate")))
+    row("  questions", lambda b: _count(b, "hallucination"))
+    row("  IC95 %", lambda b: _ci(b, "hallucination_rate"))
     row("Refus (REFUSAL)", lambda b: _pct(fb(b).get("refusal_rate")))
+    row("  questions", lambda b: _count(b, "refusal"))
     row("Faithfulness moyenne /5", lambda b: str(fb(b).get("mean_faithfulness") or "—"))
     lines.append("-" * 78)
     row("Preuve transmise au LLM", lambda b: _pct(b.get("evidence_seen_rate")))
@@ -393,6 +409,19 @@ def print_report(summary: Dict, modes: List[str], k_values: List[int] = None):
         lines.append("    Détail: evaluation/financebench/outputs/financebench_errors.json")
     if summary.get("truncated"):
         lines.append("⚠️  Run interrompu par --time-budget : résultats partiels.")
+
+    # Garde-fou : c'est exactement la lecture abusive que ce tableau invite à faire.
+    if len(modes) == 2:
+        b_n = ((summary.get("baseline") or {}).get("financebench") or {}).get("counts") or {}
+        a_n = ((summary.get("agentic") or {}).get("financebench") or {}).get("counts") or {}
+        if b_n.get("correct") is not None and a_n.get("correct") is not None:
+            gap = a_n["correct"] - b_n["correct"]
+            lines.append("")
+            lines.append(f"ℹ️  Écart agentic − baseline : {gap:+d} question(s) correcte(s) sur "
+                         f"{fb(summary.get('agentic') or {}).get('count')}.")
+            if abs(gap) <= 2:
+                lines.append("    Les IC95 se recouvrent largement : à cette taille d'échantillon,")
+                lines.append("    ce n'est pas une amélioration démontrable. Ne pas le citer comme telle.")
     lines.append("")
     print("\n".join(lines), file=_REAL_STDOUT, flush=True)
 

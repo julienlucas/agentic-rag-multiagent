@@ -26,3 +26,17 @@ dependencies = [
     "pypdf (>=6.6.0,<7.0.0)",
     "cohere>=5.20.2",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"

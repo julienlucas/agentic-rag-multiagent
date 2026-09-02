@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
-from pydantic_settings import BaseSettings
+from typing import Optional
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 load_dotenv()
 
@@ -17,14 +18,14 @@ class Settings(BaseSettings):
     LLM_MAX_RETRIES: int = 2
 
     # Tracking LangSmith (si besoin)
-    LANGSMITH_API_KEY: str = os.getenv("LANGSMITH_API_KEY")
+    LANGSMITH_API_KEY: Optional[str] = None  # optionnel : le README le dit, le code ne le permettait pas
 
     # Paramètres optionnels avec valeurs par défaut
 
     CHROMA_COLLECTION_NAME: str = "documents"
 
     # Cohere API (pour reranking)
-    COHERE_API_KEY: str = os.getenv("COHERE_API_KEY")
+    COHERE_API_KEY: Optional[str] = None
 
     # Paramètres d'embeddings
 
@@ -97,9 +98,6 @@ class Settings(BaseSettings):
     # Répertoire des exemples
     EXAMPLES_DIR: str = "./static"
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        extra = "ignore"
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 settings = Settings()

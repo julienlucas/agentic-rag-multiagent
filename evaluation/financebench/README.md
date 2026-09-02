@@ -123,6 +123,22 @@ Chaque réponse reçoit un verdict ternaire d'un juge LLM :
 - **`refusal_rate`** — réponses `REFUSAL` : le système déclare ne pas savoir. Un refus n'est pas
   une bonne réponse, mais il n'est pas dangereux.
 
+Chaque taux est publié avec son **comptage brut** (`counts`) et son **intervalle de confiance à
+95 %** (Wilson, `*_ci95`), et le tableau de synthèse les affiche.
+
+> ⚠️ **21 questions, c'est peu.** L'IC95 d'une accuracy autour de 75 % fait environ **35 points de
+> large** : 15/21 et 16/21 ne sont pas distinguables. Une différence d'une ou deux questions entre
+> deux configurations n'est pas une amélioration, c'est du bruit — le run l'écrit explicitement en
+> fin de rapport. Ne citer un gain que s'il tient sur plusieurs questions **et** que les intervalles
+> ne se recouvrent quasiment plus.
+
+Pour recalculer un intervalle à la main, ou l'obtenir depuis un résumé déjà écrit :
+
+```bash
+uv run python evaluation/financebench/confidence.py 16 21
+uv run python evaluation/financebench/confidence.py --summary evaluation/financebench/outputs/financebench_summary.json
+```
+
 Les refus sont détectés **sans appel LLM** quand le pipeline renvoie un de ses messages figés
 (`backend/agents/research_agent.py`, `backend/agents/workflow.py`), ce qui économise du budget.
 Les erreurs techniques (timeout, LLM indisponible) sont comptées à part et exclues du
@@ -164,7 +180,8 @@ raisonnement le système décroche.
 
 ## Sorties
 
-Dans `evaluation/financebench/outputs/` :
+Dans `evaluation/financebench/outputs/` (**versionnés** : ce sont les chiffres cités dans le
+README et l'étude de cas, ils doivent être vérifiables sans relancer l'éval) :
 
 - `financebench_summary.json` — métriques agrégées par mode, deltas, ventilations
 - `financebench_results.json` — le détail par question (réponse, verdict, raison du juge, latences)

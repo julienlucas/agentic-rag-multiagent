@@ -212,8 +212,12 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-# Évaluation FinanceBench : PDF, caches OCR/chunks, index vectoriel, résultats
+# Évaluation FinanceBench : PDF, caches OCR/chunks, index vectoriel
+# Les résultats (outputs/) sont versionnés : ce sont les chiffres cités dans le README
+# et l'étude de cas, ils doivent être vérifiables sans relancer l'éval.
 evaluation/financebench/pdfs/
 evaluation/financebench/cache/
 evaluation/financebench/chroma/
-evaluation/financebench/outputs/
+
+# Build du frontend : reconstruit par le Dockerfile et par Vercel
+frontend/dist/

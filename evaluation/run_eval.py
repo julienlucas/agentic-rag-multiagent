@@ -220,7 +220,15 @@ def evaluate_example(example: Dict, retriever, mode: str, llm_judge: Optional[LL
     result["supported"] = supported
     result["relevant"] = relevant
     if mode == "agentic":
-        result["hallucinated"] = bool((supported is False) or (has_unsupported is True))
+        # Ces deux signaux venaient du VerificationAgent, retiré en avril 2026 : le rapport
+        # ne contient plus les lignes "**Supporté:**" / "**Affirmations non supportées:**".
+        # Sans ce None, bool(None is False) valait False sur chaque question et le rapport
+        # annonçait un « 0 % d'hallucinations » que rien n'avait mesuré. La métrique
+        # d'hallucination vivante est celle du juge LLM (judge_is_hallucination).
+        if supported is None and has_unsupported is None:
+            result["hallucinated"] = None
+        else:
+            result["hallucinated"] = bool((supported is False) or (has_unsupported is True))
     result["gold_passages"] = gold_passages
 
     # LLM-as-a-Judge évaluation
