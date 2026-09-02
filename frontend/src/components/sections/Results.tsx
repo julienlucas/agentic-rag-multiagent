@@ -189,9 +189,11 @@ function BenchmarkChart() {
           </div>
           <div className="mt-5 space-y-5">
             {rows.map((r) => (
-              <div key={r.metric} className="grid gap-1 sm:grid-cols-[8rem_1fr]">
+              <div key={r.metric} className="grid gap-1 sm:grid-cols-[11rem_1fr]">
                 <div>
-                  <span className="text-sm font-medium">{r.metric}</span>
+                  {/* nowrap : « Fausses ou refusées » passait à la ligne et désalignait
+                      les deux libellés. La colonne est commune, donc ils restent alignés. */}
+                  <span className="whitespace-nowrap text-sm font-medium">{r.metric}</span>
                   <span className="mt-0.5 block text-[0.7rem] leading-snug text-muted-foreground">{r.hint}</span>
                 </div>
                 <div className="relative space-y-0.5 border-l border-border pl-3">
