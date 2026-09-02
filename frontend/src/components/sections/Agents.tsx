@@ -15,7 +15,7 @@ const agents = [
     index: "A2",
     title: "Agent de recherche corrective",
     model: "mistral-small",
-    text: "Si les passages sont insuffisants, ou si le score maximal du reranker passe sous 0,50, il réécrit la question dans le vocabulaire du document (« legal battles » → litigation), relance la recherche et fusionne en protégeant le top 5 initial. Un tour au plus.",
+    text: "Si le vérificateur classe les passages PARTIAL ou NO_MATCH, il réécrit la question dans le vocabulaire du document (« legal battles » → litigation), relance la recherche et ajoute jusqu'à 5 passages — reclassés contre la question d'origine — après les 10 initiaux, sans jamais les remplacer. Un tour au plus.",
   },
   {
     icon: <Sparkles />,

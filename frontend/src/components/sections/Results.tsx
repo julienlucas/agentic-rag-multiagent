@@ -281,14 +281,6 @@ export function Results() {
             Mistral Agentic Search annonce 86 % sur 150 questions et 368 filings — un périmètre
             bien plus large, qui n&apos;est pas comparable directement.
           </blockquote>
-          <figcaption className="mono-xs mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 text-ink-muted">
-            <span className="h-px w-8 bg-brand" />
-            <span>FinanceBench · Patronus AI</span>
-            <span aria-hidden>·</span>
-            <span>run du 2 sept. 2026</span>
-            <span aria-hidden>·</span>
-            <span>evaluation/financebench/outputs</span>
-          </figcaption>
         </div>
       </figure>
 
@@ -315,9 +307,9 @@ export function Results() {
           <p className="display-md mt-3">Ce qui limite encore</p>
           <ul className="mt-5 space-y-2">
             {[
-              "Dans un tiers des cas, la page de preuve n'atteint jamais le modèle.",
-              "Il ne peut pas répondre juste à partir d'une preuve qu'il n'a pas vue.",
-              "Les prochains gains sont dans le reranker et le routage, pas dans un modèle plus gros.",
+              "Sur 4 questions sur 21, la page de preuve n'atteint toujours pas le modèle, même après correction.",
+              "Le modèle n'est pas déterministe : à contexte identique, une réponse sur cinq change de verdict d'un run à l'autre.",
+              "La recherche corrective double la latence de génération (10 s contre 5 s par question).",
             ].map((point) => (
               <li key={point} className="flex gap-2.5 text-sm leading-relaxed text-ink-muted">
                 <span aria-hidden className="mt-2 size-1 shrink-0 rounded-full bg-brand" />
@@ -326,8 +318,8 @@ export function Results() {
             ))}
           </ul>
           <p className="mt-4 border-t border-sand pt-3 text-xs leading-relaxed text-muted-foreground">
-            21 questions d'évaluation : assez pour repérer les modes d'échec,
-            trop peu pour des intervalles de confiance serrés.
+            21 questions d'évaluation sur 3 filings : assez pour repérer les modes d'échec,
+            trop peu pour se comparer à un benchmark complet.
           </p>
         </div>
       </div>
