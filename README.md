@@ -120,7 +120,7 @@ uv run python evaluation/financebench/run_financebench_eval.py --mode both
 | | Correctes | Hallucinations | Refus |
 |---|---|---|---|
 | Ce système (agentic) | **~71-76 %** | **~14 %** | ~10 % |
-| GPT-4-Turbo + retrieval (papier FinanceBench) | ~19 % | 81 % de réponses fausses ou refusées | |
+| RAG naïf (baseline du papier FinanceBench) | ~19 % | 81 % de réponses fausses ou refusées | |
 | Outils RAG juridiques commerciaux (étude Stanford) | 42-65 % | 17-33 % | |
 
 Quand la preuve atteint le LLM, la justesse monte à ~80 % — le facteur limitant est le retrieval,

@@ -8,14 +8,14 @@ import { cn } from "@/lib/utils";
 /*
  * Chiffres : evaluation/financebench/outputs/financebench_summary.json (21 questions, 3 rapports 10-K,
  * juge LLM au protocole du benchmark). Le niveau « RAG naïf » est le chiffre publié dans le papier
- * FinanceBench (Islam et al., 2023) pour GPT-4-Turbo + vector store partagé, sur le benchmark complet —
+ * FinanceBench (Islam et al., 2023) pour un RAG naïf sur vector store partagé, sur le benchmark complet —
  * il n'a pas été re-mesuré sur ce sous-ensemble.
  */
 const levels = [
   {
     label: "RAG naïf",
     setup:
-      "GPT-4-Turbo + vector store partagé · chiffre du papier FinanceBench, benchmark complet",
+      "Vector store partagé, sans agents · chiffre du papier FinanceBench, benchmark complet",
     correct: "~19 %",
     wrong: "81 % de réponses fausses ou refusées",
     tone: "muted" as const,
