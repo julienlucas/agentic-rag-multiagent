@@ -264,13 +264,33 @@ export function Results() {
       </div>
 
       {/* Ce que les chiffres autorisent à dire — et pas plus. Hors de la carte, exprès. */}
-      <blockquote className="mt-8 max-w-3xl border-l-2 border-brand pl-5 text-base leading-relaxed text-ink-muted">
-        Sur un sous-ensemble de FinanceBench (3 filings, 21 questions, index combiné), le système
-        répond correctement à 17-18 questions selon le run, avec 3 réponses fausses et aucun refus.
-        Le RAG naïf du papier est à ~19 % sur le benchmark complet ; Mistral Agentic Search annonce
-        86 % sur 150 questions et 368 filings — un périmètre bien plus large, qui n&apos;est pas
-        comparable directement.
-      </blockquote>
+      <figure className="mt-12 grid max-w-4xl gap-x-6 sm:grid-cols-[3.5rem_1fr]">
+        <span
+          aria-hidden
+          className="display-xl -mt-3 hidden select-none leading-none text-brand sm:block"
+        >
+          &ldquo;
+        </span>
+        <div>
+          <span className="eyebrow">Ce que les chiffres autorisent à dire</span>
+          <blockquote className="display-md mt-3 text-ink">
+            Sur un sous-ensemble de FinanceBench (3 filings, 21 questions, index combiné), le
+            système répond correctement à{" "}
+            <span className="accent-italic">17-18 questions selon le run</span>, avec 3 réponses
+            fausses et aucun refus. Le RAG naïf du papier est à ~19 % sur le benchmark complet ;
+            Mistral Agentic Search annonce 86 % sur 150 questions et 368 filings — un périmètre
+            bien plus large, qui n&apos;est pas comparable directement.
+          </blockquote>
+          <figcaption className="mono-xs mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 text-ink-muted">
+            <span className="h-px w-8 bg-brand" />
+            <span>FinanceBench · Patronus AI</span>
+            <span aria-hidden>·</span>
+            <span>run du 2 sept. 2026</span>
+            <span aria-hidden>·</span>
+            <span>evaluation/financebench/outputs</span>
+          </figcaption>
+        </div>
+      </figure>
 
       <div className="mt-14">
         <h3 className="display-md max-w-3xl">Ce qui a été fait pour passer du RAG naïf à ce résultat</h3>
