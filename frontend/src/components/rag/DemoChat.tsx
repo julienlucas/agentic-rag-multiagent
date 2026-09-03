@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowUp, ChevronDown, Clock, RotateCcw, ShieldAlert, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -22,23 +22,30 @@ const MAX_ANSWER_H = 130;
 function CollapsibleAnswer({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [overflows, setOverflows] = useState(false);
+  const [fullHeight, setFullHeight] = useState(0);
   const inner = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  /* mesure avant peinture : sinon le bloc s'affiche déplié puis se referme */
+  useLayoutEffect(() => {
     const el = inner.current;
     if (!el) return;
-    const check = () => setOverflows(el.scrollHeight > MAX_ANSWER_H + 8);
+    const check = () => {
+      setFullHeight(el.scrollHeight);
+      setOverflows(el.scrollHeight > MAX_ANSWER_H + 8);
+    };
     check();
     const ro = new ResizeObserver(check);
     ro.observe(el);
     return () => ro.disconnect();
   }, [children]);
 
+  const collapsed = !fullHeight || (overflows && !open);
+
   return (
     <div>
       <div
         className="relative overflow-hidden transition-[max-height] duration-300"
-        style={{ maxHeight: open || !overflows ? `${inner.current?.scrollHeight ?? 9999}px` : MAX_ANSWER_H }}
+        style={{ maxHeight: collapsed ? MAX_ANSWER_H : fullHeight }}
       >
         <div ref={inner}>{children}</div>
         {overflows && !open ? (
