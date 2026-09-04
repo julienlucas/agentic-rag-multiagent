@@ -5,9 +5,10 @@
 Ce système RAG combine un récupérateur hybride (BM25 + embeddings + reranking Cohere), un routage
 par document et des agents spécialisés, sur des rapports SEC de 150 à 260 pages. Il est **mesuré**
 sur [FinanceBench](https://github.com/patronus-ai/financebench), le benchmark utilisé par Mistral
-pour évaluer Agentic Search : 71-81 % de réponses correctes selon le run, contre ~19 % pour le
-RAG naïf du papier. Tous les chiffres cités ici sont reproductibles à partir des sorties versionnées
-dans `evaluation/financebench/outputs/` — [résultats et limites](#évaluation-financebench-documents-financiers-difficiles).
+pour évaluer Agentic Search : **81,0 % de réponses correctes** sur le run versionné (81 à 86 %
+selon le run), contre ~19 % pour le RAG naïf du papier. Tous les chiffres cités ici sont
+reproductibles à partir des sorties versionnées dans `evaluation/financebench/outputs/` —
+[résultats et limites](#évaluation-financebench-documents-financiers-difficiles).
 
 ## Architecture IA à la base avant améliorations
 
@@ -19,7 +20,7 @@ dans `evaluation/financebench/outputs/` — [résultats et limites](#évaluation
 ### 2. **Agent de Recherche Corrective**
 Si le vérificateur classe les passages `PARTIAL` ou `NO_MATCH`, il réécrit la question dans le vocabulaire du document (ex. « legal battles » → *litigation*), relance la recherche, et **ajoute** jusqu'à 5 passages — reclassés par Cohere contre la question d'origine — après les 10 initiaux, sans jamais les remplacer.
 
-> Trois règles, chacune tirée d'un run FinanceBench où son absence coûtait des réponses : les requêtes réécrites sont en langage naturel (le modèle produisait du booléen `"x" AND "y"`, inutilisable) ; les passages ajoutés sont reclassés contre la question d'origine, pas contre la réécriture ; les 10 passages initiaux sont intouchables. Résultat : la preuve atteint le modèle sur 16 à 17 questions sur 21 selon le run, au lieu de 14.
+> Trois règles, chacune tirée d'un run FinanceBench où son absence coûtait des réponses : les requêtes réécrites sont en langage naturel (le modèle produisait du booléen `"x" AND "y"`, inutilisable) ; les passages ajoutés sont reclassés contre la question d'origine, pas contre la réécriture ; les 10 passages initiaux sont intouchables. Résultat : la preuve atteint le modèle sur 15 à 17 questions sur 21 selon le run, au lieu de 14.
 
 ### 3. **Agent de Recherche**
 Génère la réponse finale, contrainte aux seuls passages récupérés — refuse explicitement quand l'information n'y est pas.
@@ -91,13 +92,13 @@ uv run python evaluation/financebench/prepare.py
 uv run python evaluation/financebench/run_financebench_eval.py --mode both
 ```
 
-**Résultats** — run du 2 septembre 2026, versionné dans `evaluation/financebench/outputs/`.
+**Résultats** — run du 4 septembre 2026, versionné dans `evaluation/financebench/outputs/`.
 21 questions, 3 filings, index combiné, juge LLM au protocole du benchmark, comptages bruts :
 
 | | Correctes | Hallucinations | Refus |
 |---|---|---|---|
-| Ce système, **avec** les agents | **85,7 % (18/21)** | 14,3 % (3/21) | 0 |
-| Ce système, **sans** les agents (même retrieval, une seule génération) | 71,4 % (15/21) | 28,6 % (6/21) | 0 |
+| Ce système, **avec** les agents | **81,0 % (17/21)** | 19,0 % (4/21) | 0 |
+| Ce système, **sans** les agents (même retrieval, une seule génération) | 76,2 % (16/21) | 23,8 % (5/21) | 0 |
 | RAG naïf — papier FinanceBench (GPT-4-Turbo 2023, benchmark complet) | ~19 % | 81 % de réponses fausses ou refusées | |
 | Mistral Agentic Search — repère externe (Medium 3.5, 150 questions) | 86 % | | |
 | Outils RAG juridiques commerciaux (étude Stanford) | 42-65 % | 17-33 % | |
@@ -107,19 +108,21 @@ d'ordre de grandeur, pas un match à armes égales.
 
 ### Ce que ce run dit, et ce qu'il ne dit pas
 
-- **Le chiffre solide, c'est la preuve transmise au modèle : 16 à 17 questions sur 21 selon le
+- **Le chiffre solide, c'est la preuve transmise au modèle : 15 à 17 questions sur 21 selon le
   run, contre 14 sans les agents.** Il ne dépend pas des humeurs du LLM — c'est du retrieval — et
-  il tient sur les quatre derniers runs. La recherche corrective se déclenche sur 9 questions (`corrective_rate`
-  42,9 %) et ramène de la preuve sur 3 d'entre elles.
-- **Le +3 en accuracy est à lire avec prudence.** Mistral Large n'est pas déterministe à
-  température 0 : la baseline oscille entre 15 et 19 bonnes réponses d'un run à l'autre sur un
-  contexte strictement identique. Ce qui tient d'un run à l'autre : depuis les trois correctifs
-  de la recherche corrective, le mode agentic est au niveau ou au-dessus de la baseline à chaque
-  run (18, 18, 17, 17), alors qu'il était derrière avant (12, 15).
-- **Le prix : la génération est deux fois plus lente** (10,3 s contre 5,4 s par question),
+  il tient sur les cinq derniers runs. La recherche corrective se déclenche sur 8 questions
+  (`corrective_rate` 38,1 %) et ramène de la preuve sur 1 d'entre elles sur ce run.
+- **L'écart d'accuracy avec la baseline est à lire avec prudence** — +1 question sur ce run
+  (17 contre 16). Mistral Large n'est pas déterministe à température 0 : sur un contexte
+  strictement identique, la baseline oscille entre 15 et 19 bonnes réponses d'un run à l'autre,
+  et trois questions ont changé de verdict entre les deux derniers runs sans qu'un seul passage
+  ne change. Ce qui tient d'un run à l'autre : depuis les trois correctifs de la recherche
+  corrective, le mode agentic est au niveau ou au-dessus de la baseline à chaque run
+  (18, 18, 17, 17, 17), alors qu'il était derrière avant (12, 15).
+- **Le prix : la génération est deux fois plus lente** (7,7 s contre 4,0 s par question),
   le coût des réécritures et de la seconde recherche sur les questions `PARTIAL`.
 - **Le facteur limitant reste le retrieval.** Quand la preuve atteint le modèle, il répond juste
-  14 fois sur 16 ; quand elle ne l'atteint pas, 4 fois sur 5 seulement — et ce sont des questions
+  13 fois sur 15 ; quand elle ne l'atteint pas, 4 fois sur 6 seulement — et ce sont des questions
   à réponse négative. L'éval le mesure directement : `page_hit@k` / `page_recall@k`, exacts grâce
   aux pages annotées.
 

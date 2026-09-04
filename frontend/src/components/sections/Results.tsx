@@ -26,8 +26,8 @@ const levels = [
     label: "Ce système",
     setup:
       "OCR Mistral · chunking parent / enfant · hybride BM25 + vecteurs · routage · reranking Cohere · vérificateur de pertinence · génération contrainte aux preuves",
-    correct: "85,7 %",
-    wrong: "18 bonnes réponses sur 21 questions",
+    correct: "81,0 %",
+    wrong: "17 bonnes réponses sur 21 questions",
     tone: "brand" as const,
   },
   {
@@ -53,16 +53,16 @@ const rows: Row[] = [
   {
     metric: "Correctes",
     before: 19,
-    after: 85.7,
+    after: 81.0,
     mistral: 86,
-    hint: "accuracy · verdict CORRECT du juge LLM · 18 sur 21",
+    hint: "accuracy · verdict CORRECT du juge LLM · 17 sur 21",
   },
   {
     metric: "Fausses ou refusées",
     before: 81,
-    after: 14.3,
+    after: 19.0,
     mistral: 14,
-    hint: "14,3 % d'hallucinations + 0 % de refus · plus bas = mieux",
+    hint: "19,0 % d'hallucinations + 0 % de refus · plus bas = mieux",
     lowerIsBetter: true,
   },
 ];
