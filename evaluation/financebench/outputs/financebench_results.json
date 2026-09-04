@@ -7,7 +7,7 @@
     "question_type": "domain-relevant",
     "question_reasoning": "Logical reasoning (based on numerical reasoning) OR Logical reasoning",
     "mode": "baseline",
-    "retrieval_sec": 1.24,
+    "retrieval_sec": 1.11,
     "n_docs": 30,
     "recall@5": 0.0,
     "mrr@5": 0.0,
@@ -108,13 +108,13 @@
     ],
     "gold_rank": 7,
     "evidence_seen": true,
-    "answer": "Cette information n'est pas disponible dans le document.\n\nLe contexte fourni ne contient **aucune mention explicite du quick ratio** (ou ratio de liquidité immédiate) pour l'exercice fiscal 2022 (FY22) d'AMD, ni d'indications sur sa pertinence pour mesurer la liquidité. [1][2][3][4][5][6][7][8][9][10]",
-    "generation_sec": 3.05,
+    "answer": "Le document ne fournit **pas explicitement** le quick ratio d'AMD pour l'exercice fiscal 2022 (FY22). Par conséquent, il n'est pas possible de déterminer si AMD a un profil de liquidité sain basé sur ce ratio.\n\nLe quick ratio est un indicateur de liquidité qui mesure la capacité d'une entreprise à couvrir ses passifs courants avec ses actifs les plus liquides (généralement les actifs courants moins les stocks). Comme le document ne mentionne **ni le quick ratio, ni les passifs courants, ni les stocks** pour FY22, cette information n'est pas disponible pour évaluer la pertinence ou la valeur du quick ratio dans ce contexte. [Aucun passage pertinent]\n\nSi vous souhaitez une analyse de la liquidité basée sur d'autres métriques présentes dans le document (comme les flux de trésorerie ou les actifs liquides), celles-ci devraient être explicitement demandées.",
+    "generation_sec": 3.35,
     "context_hit": false,
-    "answer_f1": 0.07692307692307693,
+    "answer_f1": 0.023809523809523808,
     "verdict": "INCORRECT",
     "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée déclare à tort que l'information n'est pas disponible, alors que la référence fournit un quick ratio calculable à partir des données du document (cash, équivalents de trésorerie, investissements à court terme, créances et passifs courants). Le refus est injustifié, car les éléments nécessaires au calcul sont présents."
+    "judge_reason": "La réponse générée déclare à tort que le quick ratio n'est pas disponible dans le document, alors que la référence fournit explicitement ce ratio (1,57) calculé à partir des données du document. Le système n'a pas identifié ou calculé le ratio malgré les éléments nécessaires (actifs liquides et passifs courants) présents indirectement dans les extraits."
   },
   {
     "id": "financebench_id_00222",
@@ -124,7 +124,7 @@
     "question_type": "domain-relevant",
     "question_reasoning": "Logical reasoning (based on numerical reasoning) OR Logical reasoning",
     "mode": "agentic",
-    "retrieval_sec": 1.24,
+    "retrieval_sec": 1.11,
     "n_docs": 30,
     "recall@5": 0.0,
     "mrr@5": 0.0,
@@ -232,250 +232,13 @@
     ],
     "relevance": "PARTIAL",
     "evidence_seen": true,
-    "answer": "Le document ne fournit pas explicitement le **quick ratio** d'AMD pour l'exercice fiscal 2022 (FY22). Par conséquent, il n'est pas possible de déterminer si AMD a un profil de liquidité \"raisonnablement sain\" sur la base de ce ratio.\n\nLe **quick ratio** (ou ratio de liquidité immédiate) se calcule généralement comme suit :\n**Quick Ratio = (Actifs courants – Stocks) / Passifs courants**\n\nBien que les données nécessaires pour calculer ce ratio soient partiellement disponibles dans le contexte (par exemple, les **actifs courants** et les **stocks** [11]), les **passifs courants totaux** ne sont pas explicitement détaillés dans leur intégralité (seuls certains postes comme les *accounts payable*, *payables to related parties*, et *accrued liabilities* sont mentionnés [11]). Sans la somme totale des passifs courants, le calcul du quick ratio ne peut pas être effectué.\n\n**Pourquoi le quick ratio pourrait ne pas être le meilleur indicateur de liquidité pour AMD ?**\n1. Le contexte souligne que la liquidité d'AMD repose sur :\n   - **$5,9 milliards** de cash, équivalents de cash et investissements à court terme [1][12].\n   - Un **accès à une ligne de crédit revolving de $3,0 milliards** [3][6].\n   - Des **flux de trésorerie opérationnels positifs** ($3,565 milliards en 2022) [1].\n   - Une **capacité à lever des fonds** (ex. : émission de dette en 2022 pour $1,0 milliard) [12].\n\n2. Le quick ratio ignore des éléments clés de la liquidité d'AMD, comme :\n   - Les **investissements à court terme** (qui peuvent être rapidement convertis en cash) [11].\n   - Les **lignes de crédit disponibles** (non incluses dans les passifs courants) [3][6].\n   - La **flexibilité financière** (ex. : capacité à émettre de la dette ou à ajuster les dépenses en capital) [12].\n\nAinsi, bien que le quick ratio soit un indicateur standard, il pourrait sous-estimer la liquidité réelle d'AMD en ne tenant pas compte de ces",
-    "generation_sec": 16.69,
+    "answer": "Le document ne fournit pas explicitement le **quick ratio** d'AMD pour l'exercice fiscal 2022 (FY22). Par conséquent, il n'est pas possible de déterminer si AMD a un profil de liquidité \"raisonnablement sain\" basé sur ce ratio.\n\nLe **quick ratio** (ou *ratio de liquidité immédiate*) se calcule généralement comme suit :\n\\[\n\\text{Quick Ratio} = \\frac{\\text{Actifs courants liquides (cash + équivalents + placements à court terme + créances)}}{\\text{Passifs courants}}\n\\]\nCependant, le contexte ne donne **pas les valeurs nécessaires** pour effectuer ce calcul (par exemple, les créances et passifs courants ne sont pas détaillés de manière à isoler les actifs liquides exclus des stocks).\n\nSi le quick ratio n'est pas pertinent pour mesurer la liquidité dans ce cas, le document ne le précise pas non plus. Il mentionne uniquement :\n- Les **actifs courants totaux** (15 019 millions $ en 2022) [11].\n- Les **passifs courants totaux** (non explicitement détaillés dans les extraits fournis, mais partiellement listés : comptes fournisseurs, dettes à court terme, etc.) [11].\n- La **trésorerie et équivalents** (4 835 millions $) et **placements à court terme** (1 020 millions $) [11].\n- Une **capacité de financement** via une ligne de crédit revolving de 3,0 milliards $ [6] et un programme de papier commercial [3].\n\n**Conclusion** :\nCette information n'est pas disponible dans le document pour évaluer le quick ratio ou son adéquation comme indicateur de liquidité. [11][6][3]",
+    "generation_sec": 11.07,
     "context_hit": false,
-    "answer_f1": 0.06172839506172839,
+    "answer_f1": 0.039999999999999994,
     "verdict": "INCORRECT",
     "judge_faithfulness": 4.0,
-    "judge_reason": "La réponse générée affirme à tort que le quick ratio n'est pas fourni dans le document, alors que la référence indique clairement un quick ratio de 1,57 pour FY22. Cependant, ses explications sur les limites du quick ratio et les autres éléments de liquidité d'AMD sont globalement fidèles aux extraits fournis."
-  },
-  {
-    "id": "financebench_id_00995",
-    "doc_name": "AMD_2022_10K",
-    "question": "What are the major products and services that AMD sells as of FY22?",
-    "expected_answer": "AMD sells server microprocessors (CPUs) and graphics processing units (GPUs), data processing units (DPUs), Field Programmable Gate Arrays (FPGAs), and Adaptive System-on-Chip (SoC) products for data centers; CPUs, accelerated processing units (APUs) that integrate CPUs and GPUs, and chipsets for desktop and notebook personal computers; discrete GPUs, and semi-custom SoC products and development services; and embedded CPUs, GPUs, APUs, FPGAs, and Adaptive SoC products.",
-    "question_type": "domain-relevant",
-    "question_reasoning": "Information extraction",
-    "mode": "baseline",
-    "retrieval_sec": 0.66,
-    "n_docs": 30,
-    "recall@5": 1.0,
-    "mrr@5": 1.0,
-    "ndcg@5": 1.0,
-    "page_hit@5": 1.0,
-    "page_recall@5": 1.0,
-    "recall@10": 1.0,
-    "mrr@10": 1.0,
-    "ndcg@10": 1.0,
-    "page_hit@10": 1.0,
-    "page_recall@10": 1.0,
-    "recall@20": 1.0,
-    "mrr@20": 1.0,
-    "ndcg@20": 1.0,
-    "page_hit@20": 1.0,
-    "page_recall@20": 1.0,
-    "retrieved": [
-      [
-        "AMD_2022_10K",
-        59
-      ],
-      [
-        "AMD_2022_10K",
-        3
-      ],
-      [
-        "AMD_2022_10K",
-        10
-      ],
-      [
-        "AMD_2022_10K",
-        10
-      ],
-      [
-        "AMD_2022_10K",
-        42
-      ],
-      [
-        "AMD_2022_10K",
-        5
-      ],
-      [
-        "AMD_2022_10K",
-        43
-      ],
-      [
-        "AMD_2022_10K",
-        7
-      ],
-      [
-        "AMD_2022_10K",
-        43
-      ],
-      [
-        "AMD_2022_10K",
-        11
-      ],
-      [
-        "AMD_2022_10K",
-        7
-      ],
-      [
-        "AMD_2022_10K",
-        8
-      ],
-      [
-        "AMD_2022_10K",
-        6
-      ],
-      [
-        "AMD_2022_10K",
-        30
-      ],
-      [
-        "AMD_2022_10K",
-        109
-      ],
-      [
-        "AMD_2022_10K",
-        66
-      ],
-      [
-        "AMD_2022_10K",
-        12
-      ],
-      [
-        "AMD_2022_10K",
-        3
-      ],
-      [
-        "AMD_2022_10K",
-        42
-      ],
-      [
-        "AMD_2022_10K",
-        59
-      ]
-    ],
-    "gold_rank": 2,
-    "evidence_seen": true,
-    "answer": "As of FY22, AMD sells the following major products and services:\n\n**Microprocessors (CPUs) and related products:**\n- x86 microprocessors (CPUs) [1]\n- Server microprocessors (AMD EPYC processors) [2][3][4]\n- CPUs for desktop and notebook personal computers (e.g., AMD Ryzen, AMD Ryzen PRO, Ryzen Threadripper, Ryzen Threadripper PRO, AMD Athlon, AMD Athlon PRO, AMD PRO A-Series) [2][3][8]\n- Embedded processors (e.g., low-power versions of AMD Athlon, AMD Geode, AMD Ryzen, AMD EPYC, AMD R-Series, and G-Series processors) [2][4]\n\n**Graphics Processing Units (GPUs) and related products:**\n- Graphics processing units (GPUs) [1]\n- Discrete GPUs (e.g., AMD Radeon graphics for consumer market, AMD Embedded Radeon graphics for embedded market, AMD Radeon PRO graphics for professional market) [2][3]\n- Data center GPUs (e.g., Radeon Instinct, Radeon PRO V-series, AMD Instinct accelerators) [3]\n- Accelerated processing units (APUs) that integrate CPUs and GPUs [1][2]\n\n**Data center and professional products:**\n- Data processing units (DPUs) [1][2][5][6]\n- Field Programmable Gate Arrays (FPGAs) (e.g., Virtex-6, Virtex-7, Virtex UltraScale+, Kintex-7, Kintex UltraScale, Kintex UltraScale+, Artix-7, Artix UltraScale+, Spartan-6, Spartan-7) [1][2][4][5]\n- Adaptive System-on-Chip (SoC) products (e.g., Zynq-7000, Zynq UltraScale+ MPSoC, Zynq UltraScale+ RFSoCs, Versal HBM, Versal Premium, Versal Prime, Versal AI Core, Versal AI Edge) [1][2][4][5]\n- Adaptive Compute Acceleration Platform (ACAP) products [5]\n- Compute and network acceleration board products (Alveo brand) [4]\n\n**Other products and services:**\n- Chipsets [1][3",
-    "generation_sec": 8.66,
-    "context_hit": true,
-    "answer_f1": 0.37579617834394907,
-    "verdict": "CORRECT",
-    "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée couvre tous les éléments de la référence (CPUs, GPUs, APUs, DPUs, FPGAs, Adaptive SoC, etc.) sans contradiction et avec des détails supplémentaires non contradictoires. Toutes les affirmations sont appuyées par les extraits fournis."
-  },
-  {
-    "id": "financebench_id_00995",
-    "doc_name": "AMD_2022_10K",
-    "question": "What are the major products and services that AMD sells as of FY22?",
-    "expected_answer": "AMD sells server microprocessors (CPUs) and graphics processing units (GPUs), data processing units (DPUs), Field Programmable Gate Arrays (FPGAs), and Adaptive System-on-Chip (SoC) products for data centers; CPUs, accelerated processing units (APUs) that integrate CPUs and GPUs, and chipsets for desktop and notebook personal computers; discrete GPUs, and semi-custom SoC products and development services; and embedded CPUs, GPUs, APUs, FPGAs, and Adaptive SoC products.",
-    "question_type": "domain-relevant",
-    "question_reasoning": "Information extraction",
-    "mode": "agentic",
-    "retrieval_sec": 0.66,
-    "n_docs": 30,
-    "recall@5": 1.0,
-    "mrr@5": 1.0,
-    "ndcg@5": 1.0,
-    "page_hit@5": 1.0,
-    "page_recall@5": 1.0,
-    "recall@10": 1.0,
-    "mrr@10": 1.0,
-    "ndcg@10": 1.0,
-    "page_hit@10": 1.0,
-    "page_recall@10": 1.0,
-    "recall@20": 1.0,
-    "mrr@20": 1.0,
-    "ndcg@20": 1.0,
-    "page_hit@20": 1.0,
-    "page_recall@20": 1.0,
-    "retrieved": [
-      [
-        "AMD_2022_10K",
-        59
-      ],
-      [
-        "AMD_2022_10K",
-        3
-      ],
-      [
-        "AMD_2022_10K",
-        10
-      ],
-      [
-        "AMD_2022_10K",
-        10
-      ],
-      [
-        "AMD_2022_10K",
-        42
-      ],
-      [
-        "AMD_2022_10K",
-        5
-      ],
-      [
-        "AMD_2022_10K",
-        43
-      ],
-      [
-        "AMD_2022_10K",
-        7
-      ],
-      [
-        "AMD_2022_10K",
-        43
-      ],
-      [
-        "AMD_2022_10K",
-        11
-      ],
-      [
-        "AMD_2022_10K",
-        7
-      ],
-      [
-        "AMD_2022_10K",
-        8
-      ],
-      [
-        "AMD_2022_10K",
-        6
-      ],
-      [
-        "AMD_2022_10K",
-        30
-      ],
-      [
-        "AMD_2022_10K",
-        109
-      ],
-      [
-        "AMD_2022_10K",
-        66
-      ],
-      [
-        "AMD_2022_10K",
-        12
-      ],
-      [
-        "AMD_2022_10K",
-        3
-      ],
-      [
-        "AMD_2022_10K",
-        42
-      ],
-      [
-        "AMD_2022_10K",
-        59
-      ]
-    ],
-    "gold_rank": 2,
-    "corrective_rounds": 0,
-    "corrective_queries": [],
-    "relevance": "CAN_ANSWER",
-    "evidence_seen": true,
-    "answer": "As of FY22, AMD sells the following major products and services:\n\n**Microprocessors (CPUs) and related products:**\n- x86 microprocessors (CPUs) [1]\n- Server microprocessors (AMD EPYC processors) [2][3][4]\n- Client processors (AMD Ryzen, AMD Ryzen PRO, Ryzen Threadripper, Ryzen Threadripper PRO, AMD Athlon, AMD Athlon PRO, AMD PRO A-Series) for desktop and notebook personal computers [2][3][8]\n- Embedded processors (low-power versions of AMD Athlon, AMD Geode, AMD Ryzen, AMD EPYC, AMD R-Series, and G-Series) [2][4]\n\n**Graphics Processing Units (GPUs) and related products:**\n- Graphics processing units (GPUs) [1]\n- Discrete GPUs (AMD Radeon graphics for consumer market, AMD Embedded Radeon graphics for embedded market, AMD Radeon PRO graphics for professional graphics) [2][3]\n- Data center graphics (Radeon Instinct, Radeon PRO V-series, AMD Instinct accelerators for servers) [3]\n- Accelerated processing units (APUs) that integrate CPUs and GPUs [1][2]\n\n**Data Center and Professional Products:**\n- Data processing units (DPUs) [1][2][5][6]\n- Chipsets [1][3]\n- Professional GPUs [1]\n\n**Field Programmable Gate Arrays (FPGAs) and Adaptive SoC Products:**\n- FPGAs (Virtex-6, Virtex-7, Virtex UltraScale+, Kintex-7, Kintex UltraScale, Kintex UltraScale+, Artix-7, Artix UltraScale+, Spartan-6, Spartan-7) [4][5][6]\n- Adaptive SoCs (Zynq-7000, Zynq UltraScale+ MPSoC, Zynq UltraScale+ RFSoCs, Versal HBM, Versal Premium, Versal Prime, Versal AI Core, Versal AI Edge) [4][5][6]\n- Adaptive Compute Acceleration Platform (ACAP) products [5]\n- Compute and network acceleration board products (Alveo brand) [4]\n\n**Semi-Custom and Development Services:**\n- Semi-custom System",
-    "generation_sec": 6.37,
-    "context_hit": true,
-    "answer_f1": 0.3870967741935483,
-    "verdict": "CORRECT",
-    "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée couvre tous les éléments de la référence (CPUs, GPUs, APUs, DPUs, FPGAs, Adaptive SoCs, semi-custom SoCs, etc.) et les détaille sans les contredire. Toutes les affirmations sont appuyées par les extraits fournis."
+    "judge_reason": "La réponse générée affirme à tort que le quick ratio n'est pas calculable avec les données du document, alors que la référence fournit explicitement ce ratio (1.57). Les extraits contiennent les éléments nécessaires (cash, équivalents, placements à court terme, créances et passifs courants) pour le calculer, même si le système n'a pas su les extraire ou les combiner correctement. La faithfulness est élevée car les affirmations sur l'absence de données sont partiellement appuyées, mais erronées."
   },
   {
     "id": "financebench_id_00917",
@@ -485,7 +248,7 @@
     "question_type": "domain-relevant",
     "question_reasoning": "Logical reasoning (based on numerical reasoning) OR Numerical reasoning OR Logical reasoning",
     "mode": "baseline",
-    "retrieval_sec": 1.23,
+    "retrieval_sec": 1.08,
     "n_docs": 30,
     "recall@5": 0.6,
     "mrr@5": 1.0,
@@ -577,22 +340,22 @@
       ],
       [
         "AMD_2022_10K",
-        45
+        3
       ],
       [
         "AMD_2022_10K",
-        3
+        45
       ]
     ],
     "gold_rank": 1,
     "evidence_seen": true,
-    "answer": "The operating margin change for AMD in FY22 was driven by the following factors:\n\n1. **Decrease in operating income**: AMD's operating income decreased to **$1.3 billion in 2022** from **$3.6 billion in 2021** [1].\n2. **Increase in operating expenses**:\n   - **Research and development (R&D)**: Increased to **$5,005 million** in 2022 from **$2,845 million** in 2021 [2].\n   - **Marketing, general and administrative (MG&A)**: Increased to **$2,336 million** in 2022 from **$1,448 million** in 2021 [2].\n   - **Amortization of acquisition-related intangibles**: **$2,100 million** in 2022 (no comparable amount in 2021) [2].\n3. **Gross margin decline**: Gross margin decreased to **45% in 2022** from **48% in 2021**, primarily due to **amortization of intangible assets associated with the Xilinx acquisition** [1][2].\n4. **Other factors**:\n   - **Stock-based compensation expense**: Increased to **$1,081 million** in 2022 from **$379 million** in 2021 [8].\n   - **Acquisition-related costs**: Increased to **$452 million** in 2022 from **$42 million** in 2021 [8].\n   - **Total amortization of acquisition-related intangibles (All Other category)**: **$3,548 million** in 2022 (no comparable amount in 2021) [8].\n\n### Is operating margin a useful metric for AMD?\nThe context does not explicitly state whether operating margin is a useful metric for AMD. However, the significant impact of **amortization of acquisition-related intangibles** (a non-cash, non-operational expense) on operating income suggests that **operating margin may be less meaningful** in FY22 due to the one-time effects of the Xilinx acquisition [1][2][8]. The document does not provide further commentary",
-    "generation_sec": 6.85,
+    "answer": "The operating margin change for AMD in FY22 was driven by the following factors:\n\n1. **Decrease in operating income**: Operating income for 2022 was **$1.3 billion**, compared to **$3.6 billion** in 2021, representing a significant decline [1].\n2. **Increase in operating expenses**:\n   - **Research and development (R&D)**: Increased from **$2,845 million** in 2021 to **$5,005 million** in 2022 [2].\n   - **Marketing, general and administrative (MG&A)**: Increased from **$1,448 million** in 2021 to **$2,336 million** in 2022 [2].\n   - **Amortization of acquisition-related intangibles**: **$2,100 million** in 2022 (no comparable expense in 2021) due to the Xilinx acquisition [2].\n   - **Stock-based compensation expense**: Increased from **$379 million** in 2021 to **$1,081 million** in 2022 [8].\n   - **Acquisition-related costs**: Increased from **$42 million** in 2021 to **$452 million** in 2022 [8].\n3. **Gross margin decline**: Gross margin decreased from **48%** in 2021 to **45%** in 2022, primarily due to **amortization of intangible assets associated with the Xilinx acquisition** [1][2].\n4. **Offsetting factors**:\n   - A **licensing gain** of **$102 million** in 2022 (compared to **$12 million** in 2021) partially mitigated the decline [2][8].\n\n### Is operating margin a useful metric for AMD?\nThe context does **not explicitly state** whether operating margin is a useful metric for AMD or provide an explanation for its relevance (or lack thereof). Therefore:\n**Cette information n'est pas disponible dans le document.**",
+    "generation_sec": 5.7,
     "context_hit": false,
-    "answer_f1": 0.14652014652014653,
+    "answer_f1": 0.15139442231075698,
     "verdict": "CORRECT",
     "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée identifie correctement l'amortissement des actifs incorporels liés à l'acquisition de Xilinx comme principal facteur de la baisse de la marge opérationnelle, en accord avec la référence. Elle fournit des détails supplémentaires (ex. R&D, MG&A, stock-based compensation) sans contredire la référence et évalue pertinemment la pertinence de la métrique, le tout étant entièrement appuyé par les extraits."
+    "judge_reason": "La réponse générée identifie correctement l'amortissement des actifs incorporels liés à l'acquisition de Xilinx comme principal facteur de la baisse de la marge opérationnelle, en accord avec la référence. Elle fournit des détails supplémentaires (dépenses opérationnelles, déclin de la marge brute) sans contredire la référence, et signale honnêtement l'absence d'information sur la pertinence de la métrique."
   },
   {
     "id": "financebench_id_00917",
@@ -602,7 +365,7 @@
     "question_type": "domain-relevant",
     "question_reasoning": "Logical reasoning (based on numerical reasoning) OR Numerical reasoning OR Logical reasoning",
     "mode": "agentic",
-    "retrieval_sec": 1.23,
+    "retrieval_sec": 1.08,
     "n_docs": 30,
     "recall@5": 0.6,
     "mrr@5": 1.0,
@@ -694,29 +457,29 @@
       ],
       [
         "AMD_2022_10K",
-        45
+        3
       ],
       [
         "AMD_2022_10K",
-        3
+        45
       ]
     ],
     "gold_rank": 1,
     "corrective_rounds": 1,
     "corrective_queries": [
-      "AMD operating income total revenues fiscal 2022",
-      "AMD cost of sales operating expenses fiscal 2022",
-      "AMD gross margin operating margin reconciliation fiscal 2022"
+      "AMD operating income total revenues fiscal year 2022",
+      "AMD cost of sales gross profit fiscal year 2022",
+      "AMD operating expenses breakdown fiscal year 2022"
     ],
     "relevance": "PARTIAL",
     "evidence_seen": true,
-    "answer": "The operating margin change for AMD in FY22 was driven by the following factors:\n\n1. **Decrease in total operating income**:\n   - Operating income for 2022 was **$1.3 billion**, compared to **$3.6 billion** in 2021, representing a significant decline [1][15].\n   - This decrease was primarily due to:\n     - **Higher operating expenses**, including:\n       - **Research and development (R&D)**: Increased from **$2.8 billion** in 2021 to **$5.0 billion** in 2022 [2][15].\n       - **Marketing, general, and administrative (MG&A)**: Increased from **$1.4 billion** in 2021 to **$2.3 billion** in 2022 [2][15].\n       - **Amortization of acquisition-related intangibles**: **$2.1 billion** in 2022 (vs. **$0** in 2021), primarily due to the **Xilinx acquisition** [2][8][15].\n     - **Lower gross margin**: Gross margin decreased from **48%** in 2021 to **45%** in 2022, primarily due to the **amortization of intangible assets associated with the Xilinx acquisition** [1][2][15].\n     - **Segment-specific impacts**:\n       - **Client segment**: Operating income declined from **$2.1 billion** in 2021 to **$1.2 billion** in 2022, driven by **lower revenue (10% decrease)** and **higher operating expenses** [11][12].\n       - **\"All Other\" category**: Recorded an **operating loss of $4.98 billion** in 2022 (vs. **$409 million** in 2021), largely due to **$3.55 billion in amortization of acquisition-related intangibles** (Xilinx) and **$1.08 billion in stock-based compensation** [8][14][15].\n\n2. **Is operating margin a useful metric for AMD?**\n   - The context does **not explicitly state** whether operating margin is or is not a useful",
-    "generation_sec": 13.52,
+    "answer": "The operating margin change for AMD in FY22 was driven by the following factors:\n\n1. **Decrease in total operating income**:\n   - Operating income for 2022 was **$1.3 billion**, compared to **$3.6 billion** in 2021, representing a significant decline [1][11][14].\n\n2. **Key drivers of the decline**:\n   - **Amortization of acquisition-related intangible assets**:\n     - AMD recorded **$1.448 billion** in amortization of intangible assets in 2022 (vs. **$0** in 2021) due to the Xilinx acquisition [2][8].\n     - Total amortization of acquisition-related intangibles (including operating expenses) was **$3.548 billion** in 2022 [8].\n   - **Increase in operating expenses**:\n     - **Research and development (R&D)**: Increased from **$2.845 billion** in 2021 to **$5.005 billion** in 2022 [2].\n     - **Marketing, general, and administrative (MG&A)**: Increased from **$1.448 billion** in 2021 to **$2.336 billion** in 2022 [2].\n     - **Stock-based compensation**: Increased from **$379 million** in 2021 to **$1.081 billion** in 2022 [8].\n     - **Acquisition-related costs**: Increased from **$42 million** in 2021 to **$452 million** in 2022 [8].\n   - **Segment-specific impacts**:\n     - **Client segment**: Operating income declined from **$2.1 billion** in 2021 to **$1.2 billion** in 2022 due to lower revenue (10% decrease) and higher operating expenses [11][12].\n     - **\"All Other\" category**: Recorded an operating loss of **$4.979 billion** in 2022 (vs. **$409 million** in 2021), primarily due to amortization of acquisition-related intangibles and other acquisition costs [",
+    "generation_sec": 11.2,
     "context_hit": false,
-    "answer_f1": 0.14448669201520914,
+    "answer_f1": 0.13654618473895586,
     "verdict": "CORRECT",
     "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée identifie correctement l'amortissement des actifs incorporels liés à l'acquisition de Xilinx comme principal facteur de la baisse de la marge opérationnelle, en accord avec la référence. Elle fournit des détails supplémentaires (ex. R&D, MG&A, impacts par segment) sans contredire la référence, et s'appuie entièrement sur les extraits fournis."
+    "judge_reason": "La réponse générée reprend fidèlement l'information clé de la référence (amortissement des actifs incorporels liés à l'acquisition de Xilinx) et l'enrichit avec des détails supplémentaires tirés des extraits (chiffres précis, autres facteurs de coûts), sans la contredire. Tous les éléments sont appuyés par les documents fournis."
   },
   {
     "id": "financebench_id_01198",
@@ -726,7 +489,7 @@
     "question_type": "domain-relevant",
     "question_reasoning": "Information extraction",
     "mode": "baseline",
-    "retrieval_sec": 0.71,
+    "retrieval_sec": 0.61,
     "n_docs": 26,
     "recall@5": 0.4444444444444444,
     "mrr@5": 1.0,
@@ -827,10 +590,10 @@
     ],
     "gold_rank": 1,
     "evidence_seen": true,
-    "answer": "The revenue change for AMD in FY22 was driven by the following factors:\n\n1. A **64% increase in Data Center segment revenue**, primarily due to **higher sales of EPYC server processors** [1][2].\n2. A **21% increase in Gaming segment revenue**, primarily due to **higher semi-custom product sales** [1][3].\n3. A **significant increase in Embedded segment revenue**, driven by the **inclusion of Xilinx embedded product sales** following the acquisition of Xilinx in February 2022 [1][3][5].\n4. These increases were **partially offset by a 10% decrease in Client segment revenue**, primarily due to **lower processor shipments caused by a weak PC market and inventory correction actions** [1][4].",
-    "generation_sec": 8.33,
+    "answer": "The revenue change for AMD in FY22 was driven by the following factors:\n\n1. A **64% increase in Data Center segment revenue**, primarily due to **higher sales of EPYC server processors** [1][2].\n2. A **21% increase in Gaming segment revenue**, primarily due to **higher semi-custom product sales** (gaming console SoCs) [1][3].\n3. A **significant increase in Embedded segment revenue**, driven by the **inclusion of Xilinx embedded product sales** following the acquisition of Xilinx in February 2022 [1][3][5].\n4. These increases were **partially offset by a 10% decrease in Client segment revenue**, primarily due to **lower processor shipments** caused by a **weak PC market and inventory correction actions** across the PC supply chain [1][4].",
+    "generation_sec": 3.44,
     "context_hit": false,
-    "answer_f1": 0.3259259259259259,
+    "answer_f1": 0.3076923076923077,
     "verdict": "CORRECT",
     "judge_faithfulness": 5.0,
     "judge_reason": "La réponse générée reprend exactement les trois facteurs de la référence (EPYC server processors, semi-custom product sales, inclusion de Xilinx embedded product sales) et les détaille sans les contredire, en s'appuyant intégralement sur les extraits fournis."
@@ -843,7 +606,7 @@
     "question_type": "domain-relevant",
     "question_reasoning": "Information extraction",
     "mode": "agentic",
-    "retrieval_sec": 0.71,
+    "retrieval_sec": 0.61,
     "n_docs": 26,
     "recall@5": 0.4444444444444444,
     "mrr@5": 1.0,
@@ -947,13 +710,250 @@
     "corrective_queries": [],
     "relevance": "CAN_ANSWER",
     "evidence_seen": true,
-    "answer": "The revenue change for AMD in FY22 was driven by the following factors:\n\n1. A **64% increase in Data Center segment revenue**, primarily due to **higher sales of EPYC server processors** [1][2].\n2. A **21% increase in Gaming segment revenue**, primarily due to **higher semi-custom product sales** [1][3].\n3. A **significant increase in Embedded segment revenue**, driven by the **inclusion of Xilinx embedded product sales** following the acquisition of Xilinx in February 2022 [1][3][5].\n4. These increases were **partially offset by a 10% decrease in Client segment revenue**, primarily due to **lower processor shipments caused by a weak PC market and inventory correction actions across the PC supply chain** [1][4].",
-    "generation_sec": 2.91,
+    "answer": "The revenue change for AMD in FY22 was driven by the following factors:\n\n1. A **64% increase in Data Center segment revenue**, primarily due to **higher sales of EPYC server processors** [1][2].\n2. A **21% increase in Gaming segment revenue**, primarily due to **higher semi-custom product sales** (gaming console SoCs) [1][3].\n3. A **significant increase in Embedded segment revenue**, driven by the **inclusion of Xilinx embedded product sales** following the acquisition of Xilinx in February 2022 [1][3][5].\n4. These increases were **partially offset by a 10% decrease in Client segment revenue**, primarily due to **lower processor shipments** caused by a weak PC market and inventory correction actions in the PC supply chain [1][4].",
+    "generation_sec": 3.18,
     "context_hit": false,
-    "answer_f1": 0.31428571428571433,
+    "answer_f1": 0.3076923076923077,
     "verdict": "CORRECT",
     "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée reprend exactement les trois facteurs clés de la référence (EPYC server processors, semi-custom product sales, inclusion de Xilinx embedded product sales) et les détaille sans les contredire, en s'appuyant strictement sur les extraits fournis."
+    "judge_reason": "La réponse générée reprend exactement les trois facteurs clés mentionnés dans la référence (EPYC server processors, semi-custom product sales, inclusion de Xilinx embedded product sales) et les détaille sans les contredire, en s'appuyant strictement sur les extraits fournis."
+  },
+  {
+    "id": "financebench_id_00995",
+    "doc_name": "AMD_2022_10K",
+    "question": "What are the major products and services that AMD sells as of FY22?",
+    "expected_answer": "AMD sells server microprocessors (CPUs) and graphics processing units (GPUs), data processing units (DPUs), Field Programmable Gate Arrays (FPGAs), and Adaptive System-on-Chip (SoC) products for data centers; CPUs, accelerated processing units (APUs) that integrate CPUs and GPUs, and chipsets for desktop and notebook personal computers; discrete GPUs, and semi-custom SoC products and development services; and embedded CPUs, GPUs, APUs, FPGAs, and Adaptive SoC products.",
+    "question_type": "domain-relevant",
+    "question_reasoning": "Information extraction",
+    "mode": "baseline",
+    "retrieval_sec": 0.77,
+    "n_docs": 30,
+    "recall@5": 1.0,
+    "mrr@5": 1.0,
+    "ndcg@5": 1.0,
+    "page_hit@5": 1.0,
+    "page_recall@5": 1.0,
+    "recall@10": 1.0,
+    "mrr@10": 1.0,
+    "ndcg@10": 1.0,
+    "page_hit@10": 1.0,
+    "page_recall@10": 1.0,
+    "recall@20": 1.0,
+    "mrr@20": 1.0,
+    "ndcg@20": 1.0,
+    "page_hit@20": 1.0,
+    "page_recall@20": 1.0,
+    "retrieved": [
+      [
+        "AMD_2022_10K",
+        59
+      ],
+      [
+        "AMD_2022_10K",
+        3
+      ],
+      [
+        "AMD_2022_10K",
+        10
+      ],
+      [
+        "AMD_2022_10K",
+        10
+      ],
+      [
+        "AMD_2022_10K",
+        42
+      ],
+      [
+        "AMD_2022_10K",
+        5
+      ],
+      [
+        "AMD_2022_10K",
+        43
+      ],
+      [
+        "AMD_2022_10K",
+        7
+      ],
+      [
+        "AMD_2022_10K",
+        43
+      ],
+      [
+        "AMD_2022_10K",
+        11
+      ],
+      [
+        "AMD_2022_10K",
+        7
+      ],
+      [
+        "AMD_2022_10K",
+        8
+      ],
+      [
+        "AMD_2022_10K",
+        6
+      ],
+      [
+        "AMD_2022_10K",
+        30
+      ],
+      [
+        "AMD_2022_10K",
+        109
+      ],
+      [
+        "AMD_2022_10K",
+        66
+      ],
+      [
+        "AMD_2022_10K",
+        12
+      ],
+      [
+        "AMD_2022_10K",
+        3
+      ],
+      [
+        "AMD_2022_10K",
+        42
+      ],
+      [
+        "AMD_2022_10K",
+        59
+      ]
+    ],
+    "gold_rank": 2,
+    "evidence_seen": true,
+    "answer": "As of FY22, AMD sells the following major products and services:\n\n**Microprocessors (CPUs) and related products:**\n- x86 microprocessors (CPUs) [1]\n- Server microprocessors (AMD EPYC processors) [2][3][4]\n- CPUs for desktop and notebook personal computers (e.g., AMD Ryzen, AMD Ryzen PRO, Ryzen Threadripper, Ryzen Threadripper PRO, AMD Athlon, AMD Athlon PRO, AMD PRO A-Series) [2][3][8]\n- Accelerated processing units (APUs) that integrate CPUs and GPUs [1][2]\n- Chipsets [1][2][3]\n- Embedded processors (e.g., low-power versions of AMD Athlon, AMD Geode, AMD Ryzen, AMD EPYC, AMD R-Series, and G-Series processors) [2][4]\n\n**Graphics Processing Units (GPUs) and related products:**\n- Graphics processing units (GPUs) [1][2]\n- Discrete GPUs (e.g., AMD Radeon graphics for consumer market, AMD Embedded Radeon graphics for embedded market) [2][3]\n- Professional GPUs (AMD Radeon PRO graphics) [2][3]\n- Data center GPUs (Radeon Instinct, Radeon PRO V-series, AMD Instinct accelerators for servers) [2][3]\n\n**Data Center and Adaptive Computing Products:**\n- Data processing units (DPUs) [1][2][5][6]\n- Field Programmable Gate Arrays (FPGAs) (e.g., Virtex-6, Virtex-7, Virtex UltraScale+, Kintex-7, Kintex UltraScale, Kintex UltraScale+, Artix-7, Artix UltraScale+, Spartan-6, Spartan-7) [1][2][4][5]\n- Adaptive System-on-Chip (SoC) products (e.g., Zynq-7000, Zynq UltraScale+ MPSoC, Zynq UltraScale+ RFSoCs, Versal HBM, Versal Premium, Versal Prime, Versal AI Core, Versal AI Edge) [1][2][4][5]\n- Adaptive Compute Acceleration Platform (ACAP) products [5]\n- Compute and network acceleration",
+    "generation_sec": 6.83,
+    "context_hit": true,
+    "answer_f1": 0.3741935483870968,
+    "verdict": "CORRECT",
+    "judge_faithfulness": 5.0,
+    "judge_reason": "La réponse générée couvre tous les éléments de la référence (CPUs, GPUs, APUs, DPUs, FPGAs, Adaptive SoC, etc.) sans contradiction et avec des détails supplémentaires appuyés par les extraits fournis. Aucune affirmation non étayée n'est présente."
+  },
+  {
+    "id": "financebench_id_00995",
+    "doc_name": "AMD_2022_10K",
+    "question": "What are the major products and services that AMD sells as of FY22?",
+    "expected_answer": "AMD sells server microprocessors (CPUs) and graphics processing units (GPUs), data processing units (DPUs), Field Programmable Gate Arrays (FPGAs), and Adaptive System-on-Chip (SoC) products for data centers; CPUs, accelerated processing units (APUs) that integrate CPUs and GPUs, and chipsets for desktop and notebook personal computers; discrete GPUs, and semi-custom SoC products and development services; and embedded CPUs, GPUs, APUs, FPGAs, and Adaptive SoC products.",
+    "question_type": "domain-relevant",
+    "question_reasoning": "Information extraction",
+    "mode": "agentic",
+    "retrieval_sec": 0.77,
+    "n_docs": 30,
+    "recall@5": 1.0,
+    "mrr@5": 1.0,
+    "ndcg@5": 1.0,
+    "page_hit@5": 1.0,
+    "page_recall@5": 1.0,
+    "recall@10": 1.0,
+    "mrr@10": 1.0,
+    "ndcg@10": 1.0,
+    "page_hit@10": 1.0,
+    "page_recall@10": 1.0,
+    "recall@20": 1.0,
+    "mrr@20": 1.0,
+    "ndcg@20": 1.0,
+    "page_hit@20": 1.0,
+    "page_recall@20": 1.0,
+    "retrieved": [
+      [
+        "AMD_2022_10K",
+        59
+      ],
+      [
+        "AMD_2022_10K",
+        3
+      ],
+      [
+        "AMD_2022_10K",
+        10
+      ],
+      [
+        "AMD_2022_10K",
+        10
+      ],
+      [
+        "AMD_2022_10K",
+        42
+      ],
+      [
+        "AMD_2022_10K",
+        5
+      ],
+      [
+        "AMD_2022_10K",
+        43
+      ],
+      [
+        "AMD_2022_10K",
+        7
+      ],
+      [
+        "AMD_2022_10K",
+        43
+      ],
+      [
+        "AMD_2022_10K",
+        11
+      ],
+      [
+        "AMD_2022_10K",
+        7
+      ],
+      [
+        "AMD_2022_10K",
+        8
+      ],
+      [
+        "AMD_2022_10K",
+        6
+      ],
+      [
+        "AMD_2022_10K",
+        30
+      ],
+      [
+        "AMD_2022_10K",
+        109
+      ],
+      [
+        "AMD_2022_10K",
+        66
+      ],
+      [
+        "AMD_2022_10K",
+        12
+      ],
+      [
+        "AMD_2022_10K",
+        3
+      ],
+      [
+        "AMD_2022_10K",
+        42
+      ],
+      [
+        "AMD_2022_10K",
+        59
+      ]
+    ],
+    "gold_rank": 2,
+    "corrective_rounds": 0,
+    "corrective_queries": [],
+    "relevance": "CAN_ANSWER",
+    "evidence_seen": true,
+    "answer": "As of FY22, AMD sells the following major products and services:\n\n**Microprocessors (CPUs) and related products:**\n- x86 microprocessors (CPUs) [1]\n- Server microprocessors (AMD EPYC processors) [2][3][4]\n- CPUs for desktop and notebook personal computers (e.g., AMD Ryzen, AMD Ryzen PRO, Ryzen Threadripper, Ryzen Threadripper PRO, AMD Athlon, AMD Athlon PRO, AMD PRO A-Series) [2][3][8]\n- Embedded processors (e.g., low-power versions of AMD Athlon, AMD Geode, AMD Ryzen, AMD EPYC, AMD R-Series, and G-Series processors) [2][4]\n\n**Graphics Processing Units (GPUs) and related products:**\n- GPUs (standalone or integrated into APUs) [1][2]\n- Discrete GPUs (e.g., AMD Radeon graphics for consumer market, AMD Embedded Radeon graphics for embedded market) [2][3]\n- Professional GPUs (e.g., AMD Radeon PRO graphics) [2][3]\n- Data center GPUs (e.g., Radeon Instinct, Radeon PRO V-series, AMD Instinct accelerators) [2][3]\n- Accelerated Processing Units (APUs) that integrate CPUs and GPUs [1][2]\n\n**Chipsets:**\n- Chipsets (marketed under AMD trademarks) [2][3]\n\n**Data Center and Adaptive Computing Products:**\n- Data Processing Units (DPUs) [1][2][5][6]\n- Field Programmable Gate Arrays (FPGAs) (e.g., Virtex-6, Virtex-7, Virtex UltraScale+, Kintex-7, Kintex UltraScale, Kintex UltraScale+, Artix-7, Artix UltraScale+, Spartan-6, Spartan-7) [1][2][4][5]\n- Adaptive System-on-Chip (SoC) products (e.g., Zynq-7000, Zynq UltraScale+ MPSoC, Zynq UltraScale+ RFSoCs, Versal HBM, Versal Premium, Versal Prime, Versal AI Core, Versal AI Edge) [1][2][4][5]\n- Adaptive",
+    "generation_sec": 6.81,
+    "context_hit": true,
+    "answer_f1": 0.3766233766233767,
+    "verdict": "CORRECT",
+    "judge_faithfulness": 5.0,
+    "judge_reason": "La réponse générée couvre tous les éléments de la référence (CPUs, GPUs, APUs, DPUs, FPGAs, Adaptive SoCs, etc.) et les détaille sans contradiction. Toutes les affirmations sont appuyées par les extraits fournis, y compris les acquisitions de Xilinx et Pensando en FY22."
   },
   {
     "id": "financebench_id_01279",
@@ -963,7 +963,7 @@
     "question_type": "domain-relevant",
     "question_reasoning": "Numerical reasoning",
     "mode": "baseline",
-    "retrieval_sec": 0.71,
+    "retrieval_sec": 0.86,
     "n_docs": 27,
     "recall@5": 0.5555555555555556,
     "mrr@5": 1.0,
@@ -1064,13 +1064,13 @@
     ],
     "gold_rank": 2,
     "evidence_seen": true,
-    "answer": "En FY22, parmi les activités d'exploitation (operating), d'investissement (investing) et de financement (financing), c'est **l'exploitation (operating activities)** qui a généré le flux de trésorerie le plus élevé (ou perdu le moins).\n\n- **Flux de trésorerie net des activités d'exploitation (operating activities)** : **+3 565 millions de dollars** [1][5][10]\n- **Flux de trésorerie net des activités d'investissement (investing activities)** : **+1 999 millions de dollars** [1][3]\n- **Flux de trésorerie net des activités de financement (financing activities)** : **-3 264 millions de dollars** [1][7][9]",
-    "generation_sec": 17.29,
+    "answer": "En FY22, parmi les activités d'exploitation (operating), d'investissement (investing) et de financement (financing), c'est **l'exploitation (operating activities)** qui a généré le plus de flux de trésorerie pour AMD, avec un montant de **3 565 millions de dollars**.\n\nVoici les flux de trésorerie pour chaque activité en FY22 :\n- Operating activities : **+3 565 millions de dollars** [1][5][10]\n- Investing activities : **+1 999 millions de dollars** [1][3]\n- Financing activities : **-3 264 millions de dollars** (sortie nette) [1][7][9]\n\nAinsi, l'exploitation a rapporté le plus, tandis que le financement a enregistré la plus grande sortie de trésorerie.",
+    "generation_sec": 2.66,
     "context_hit": false,
-    "answer_f1": 0.0,
+    "answer_f1": 0.018018018018018018,
     "verdict": "CORRECT",
     "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée identifie correctement que les activités d'exploitation (operating activities) ont généré le flux de trésorerie le plus élevé en FY22, en accord avec la référence. Tous les chiffres et détails sont appuyés par les extraits fournis."
+    "judge_reason": "La réponse générée confirme que les activités d'exploitation (operating activities) ont généré le plus de flux de trésorerie pour AMD en FY22, en accord avec la référence. Tous les chiffres et détails sont appuyés par les extraits fournis."
   },
   {
     "id": "financebench_id_01279",
@@ -1080,7 +1080,7 @@
     "question_type": "domain-relevant",
     "question_reasoning": "Numerical reasoning",
     "mode": "agentic",
-    "retrieval_sec": 0.71,
+    "retrieval_sec": 0.86,
     "n_docs": 27,
     "recall@5": 0.5555555555555556,
     "mrr@5": 1.0,
@@ -1184,13 +1184,13 @@
     "corrective_queries": [],
     "relevance": "CAN_ANSWER",
     "evidence_seen": true,
-    "answer": "En FY22, parmi les activités d'exploitation (operating), d'investissement (investing) et de financement (financing), c'est **les activités d'exploitation** qui ont généré le plus de flux de trésorerie (ou perdu le moins), avec un montant de **3 565 millions de dollars** [1].\n\nVoici les montants exacts pour comparaison :\n- Operating activities : **+3 565 millions de dollars** [1][5][10]\n- Investing activities : **+1 999 millions de dollars** [1][3]\n- Financing activities : **-3 264 millions de dollars** [1][7][9]",
-    "generation_sec": 7.47,
+    "answer": "En FY22, parmi les trois catégories d'activités (opérations, investissement, financement), **les activités opérationnelles** ont généré le flux de trésorerie le plus élevé pour AMD, avec un montant de **3 565 millions de dollars**.\n\nVoici les flux de trésorerie pour chaque catégorie en 2022 :\n- **Activités opérationnelles** : **+3 565 millions de dollars** [1][5][10]\n- **Activités d'investissement** : **+1 999 millions de dollars** [1][3]\n- **Activités de financement** : **-3 264 millions de dollars** (perte nette) [1][7][9]\n\nAinsi, les activités opérationnelles ont rapporté le plus de trésorerie en FY22. [1]",
+    "generation_sec": 2.94,
     "context_hit": false,
-    "answer_f1": 0.0,
+    "answer_f1": 0.060000000000000005,
     "verdict": "CORRECT",
     "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée identifie correctement les activités d'exploitation comme la source principale de flux de trésorerie pour AMD en FY22, en accord avec la référence, et s'appuie intégralement sur les données du tableau fourni. Les montants détaillés renforcent la réponse sans la contredire."
+    "judge_reason": "La réponse générée confirme que les activités opérationnelles ont généré le flux de trésorerie le plus élevé pour AMD en FY22, en accord avec la référence, et s'appuie précisément sur les données du tableau fourni. Aucune affirmation non appuyée."
   },
   {
     "id": "financebench_id_00476",
@@ -1200,7 +1200,7 @@
     "question_type": "domain-relevant",
     "question_reasoning": "Information extraction",
     "mode": "baseline",
-    "retrieval_sec": 0.84,
+    "retrieval_sec": 0.92,
     "n_docs": 30,
     "recall@5": 0.3333333333333333,
     "mrr@5": 0.3333333333333333,
@@ -1301,13 +1301,13 @@
     ],
     "gold_rank": 6,
     "evidence_seen": true,
-    "answer": "D'après le contexte fourni, les titres de dette **enregistrés pour négociation sur une bourse nationale de valeurs mobilières** sous le nom d'**American Express Company** en 2022 sont les suivants :\n\n- **Common Shares (par value $0.20 per Share)**, négociées sous le symbole **AXP** sur le **New York Stock Exchange (NYSE)**. [6]\n\n**Aucune autre dette (obligations, notes, etc.) d'American Express Company n'est explicitement mentionnée comme étant enregistrée pour négociation sur une bourse nationale dans le contexte.** [6]\n\nLes autres dettes listées (ex. : *Fixed Rate Senior Notes*, *Floating Rate Senior Notes*, etc.) ne sont pas indiquées comme étant enregistrées sur une bourse nationale. [1][2][4][7][10]\n\nCette information n'est pas disponible dans le document pour les autres titres de dette. [1][2][3][4][5][7][8][9][10]",
-    "generation_sec": 3.68,
+    "answer": "D'après le contexte fourni, les dettes securities enregistrées pour négociation sur une bourse nationale de valeurs mobilières sous le nom d'**American Express Company** en 2022 sont les suivantes :\n\n- **Common Shares (par value $0.20 per Share)**, enregistrées sous le symbole **AXP** sur le **New York Stock Exchange (NYSE)**. [6]\n\n**Aucune autre dette security (obligations, notes, etc.) sous le nom d'American Express Company n'est explicitement mentionnée comme étant enregistrée pour négociation sur une bourse nationale de valeurs mobilières dans le contexte.** [1][2][3][4][5][7][8][9][10]\n\nLes tableaux et notes concernent principalement :\n- Les **notes senior et subordonnées** émises par American Express Company (montants, taux, échéances), mais **sans indication qu'elles soient enregistrées pour négociation sur une bourse nationale**. [1][2]\n- Les **dettes des trusts** (American Express Credit Account Master Trust, American Express Issuance Trust II), qui sont des structures de titrisation et non des titres enregistrés sous le nom d'American Express Company. [4][7][10]\n- Les **titres détenus en portefeuille** (obligations d'État, municipales, etc.), qui ne sont pas des émissions d'American Express. [5][8][9]\n\n**Réponse finale :**\nSeules les **Common Shares (AXP)** d'American Express Company sont explicitement enregistrées pour négociation sur le **New York Stock Exchange** en 2022. [6] Aucune autre dette security sous ce nom n'est mentionnée comme étant enregistrée sur une bourse nationale.",
+    "generation_sec": 5.96,
     "context_hit": false,
     "answer_f1": 0.0,
-    "verdict": "INCORRECT",
-    "judge_faithfulness": 3.0,
-    "judge_reason": "La réponse générée mentionne à tort les *Common Shares* (actions ordinaires) comme des titres de dette enregistrés, alors que la question porte spécifiquement sur les *debt securities* (obligations/dettes). De plus, elle ne confirme pas explicitement l'absence de dettes enregistrées, contrairement à la référence. Certaines affirmations sont appuyées (ex. absence de mention d'autres dettes enregistrées), mais l'inclusion des actions ordinaires est une erreur."
+    "verdict": "CORRECT",
+    "judge_faithfulness": 5.0,
+    "judge_reason": "La réponse générée conclut correctement qu'aucune dette security n'est enregistrée sous le nom d'American Express pour négociation sur une bourse nationale, en accord avec la référence (\"There are none\"). Elle s'appuie rigoureusement sur les extraits fournis, sans contradiction ni hallucination."
   },
   {
     "id": "financebench_id_00476",
@@ -1317,7 +1317,7 @@
     "question_type": "domain-relevant",
     "question_reasoning": "Information extraction",
     "mode": "agentic",
-    "retrieval_sec": 0.84,
+    "retrieval_sec": 0.92,
     "n_docs": 30,
     "recall@5": 0.3333333333333333,
     "mrr@5": 0.3333333333333333,
@@ -1420,18 +1420,18 @@
     "corrective_rounds": 1,
     "corrective_queries": [
       "American Express debt securities registered national exchange 2022",
-      "American Express debt instruments listed on exchanges 2022",
-      "American Express long-term debt securities exchange-listed 2022"
+      "American Express debt instruments listed trading exchanges 2022",
+      "American Express outstanding debt securities exchange-listed 2022"
     ],
     "relevance": "PARTIAL",
     "evidence_seen": true,
-    "answer": "D'après le contexte fourni, les **debt securities** enregistrées pour négociation sur une **national securities exchange** sous le nom d'**American Express Company** en 2022 sont les suivantes :\n\n- **Common Shares (par value $0.20 per Share)**, symboles de négociation : **AXP**, enregistrées sur le **New York Stock Exchange** [6].\n\n**Aucune autre dette (debt securities) n'est explicitement mentionnée comme étant enregistrée sur une national securities exchange sous le nom d'American Express Company en 2022** [6]. Les autres dettes listées (comme les *Senior Notes* ou *Subordinated Notes*) ne sont pas indiquées comme étant enregistrées pour négociation sur une bourse nationale [1][2][11].\n\n**Cette information n'est pas disponible dans le document** pour les autres types de dettes (ex. : *Fixed Rate Senior Notes*, *Floating Rate Senior Notes*, etc.) [1][2][11].",
-    "generation_sec": 10.2,
+    "answer": "D'après le contexte fourni, les seules dettes (debt securities) enregistrées pour négociation sur une bourse nationale de valeurs mobilières (national securities exchange) sous le nom d'**American Express Company** en 2022 sont :\n\n- **Common Shares (par value $0.20 per Share)**, symbole de négociation **AXP**, enregistrées sur le **New York Stock Exchange (NYSE)**. [6]\n\nAucune autre dette (debt security) sous le nom d'American Express Company n'est explicitement mentionnée comme étant enregistrée pour négociation sur une bourse nationale de valeurs mobilières dans le contexte. [6]\n\nLes autres dettes listées (comme les Senior Notes, Subordinated Notes, etc.) ne sont pas indiquées comme étant enregistrées sur une bourse nationale. [1][2][11] Les dettes émises par les trusts (comme American Express Credit Account Master Trust ou American Express Issuance Trust II) sont des titres de créance adossés à des actifs (asset-backed securities) et ne sont pas enregistrées sous le nom d'American Express Company. [7][10]",
+    "generation_sec": 10.08,
     "context_hit": false,
     "answer_f1": 0.0,
     "verdict": "CORRECT",
     "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée conclut correctement qu'aucune *debt security* n'est enregistrée pour négociation sur une *national securities exchange* sous le nom d'American Express en 2022, en accord avec la référence. Elle s'appuie sur les extraits fournis (notamment l'absence de mention de dette enregistrée sous Section 12(b)) et précise que seules les *Common Shares* (actions ordinaires) sont listées, ce qui ne contredit pas la référence."
+    "judge_reason": "La réponse générée conclut correctement qu'il n'y a aucune dette (debt security) enregistrée sous le nom d'American Express Company pour négociation sur une bourse nationale, en accord avec la référence. Toutes ses affirmations sont appuyées par les extraits fournis, notamment l'absence de mention de dettes enregistrées sous Section 12(b) et la distinction claire entre les actions (Common Shares) et les dettes."
   },
   {
     "id": "financebench_id_00720",
@@ -1441,7 +1441,7 @@
     "question_type": "domain-relevant",
     "question_reasoning": "Logical reasoning (based on numerical reasoning) OR Numerical reasoning OR Logical reasoning",
     "mode": "baseline",
-    "retrieval_sec": 0.89,
+    "retrieval_sec": 0.72,
     "n_docs": 30,
     "recall@5": 0.0,
     "mrr@5": 0.0,
@@ -1542,10 +1542,10 @@
     ],
     "gold_rank": null,
     "evidence_seen": false,
-    "answer": "Le document ne fournit pas d'information explicite sur la **gross margin** (marge brute) d'American Express pour l'exercice 2022, ni sur les facteurs ayant influencé son évolution. De plus, le contexte suggère que la **gross margin n'est pas une métrique pertinente** pour analyser la performance d'American Express, pour les raisons suivantes :\n\n1. **Modèle économique spécifique** :\n   American Express opère principalement comme un réseau de paiement et un émetteur de cartes, où les revenus proviennent de sources variées (ex. : *discount revenue*, *net interest income*, *net card fees*), et non d'une marge brute classique comme dans les secteurs manufacturiers ou commerciaux [1][7]. Les coûts directs (ex. : *Card Member rewards*, *Card Member services*) sont intrinsèquement liés aux volumes de transactions et aux services, et non à une \"marge sur coût de production\" [4].\n\n2. **Absence de données sur la marge brute** :\n   Le document ne mentionne jamais la *gross margin* ni ses composantes (ex. : coût des revenus, coût des services vendus). Les indicateurs clés cités sont plutôt :\n   - *Total revenues net of interest expense* (+25 % en 2022) [1],\n   - *Net income* ($7.5 milliards en 2022, en baisse vs 2021) [5],\n   - *Operating expenses* (+24 % en 2022) [4],\n   - *Pretax loss* pour *Corporate & Other* ($2.2 milliards en 2022) [6].\n\n3. **Métriques alternatives utilisées** :\n   Les analyses financières dans le contexte se concentrent sur des ratios spécifiques au secteur, tels que :\n   - *Net write-off rate* (1.4 % en 2022) [2][8],\n   - *Net interest yield* (non détaillé dans les chiffres fournis) [2],\n   - *Billed business* (+23 % en 2022) [2],\n   - *Capital ratios* (ex. : CET 1 capital ratio de 10.3 % en 2022) [9].\n\n**Conclusion** :\nCette information n'est",
-    "generation_sec": 8.59,
+    "answer": "Le document ne fournit pas d'information explicite sur la **gross margin** (marge brute) pour American Express en FY2022, ni sur les facteurs ayant influencé son évolution. De plus, le contexte suggère que la **gross margin n'est pas une métrique utile ou pertinente** pour analyser la performance d'American Express, pour les raisons suivantes :\n\n1. **Modèle économique spécifique** :\n   American Express opère principalement comme un réseau de paiement et un émetteur de cartes, où les revenus proviennent de sources variées (ex. : *discount revenue*, *net interest income*, *card fees*), et non d'une marge brute classique comme dans les secteurs manufacturiers ou commerciaux. Les coûts directs (ex. : *Card Member rewards*, *Card Member services*) sont intrinsèquement liés aux volumes de transactions et aux services, et non à un \"coût des biens vendus\" (COGS) traditionnel [4][7].\n\n2. **Absence de référence à la gross margin** :\n   Le document ne mentionne jamais la *gross margin* dans ses tableaux financiers, analyses de performance, ou discussions sur les revenus et dépenses. Les indicateurs clés cités incluent :\n   - *Total revenues net of interest expense* (croissance de 25 % en FY2022) [1].\n   - *Net income* (réduction à $7.5 milliards en 2022 vs. $8.1 milliards en 2021) [5].\n   - *Operating expenses* (augmentation de 24 % en 2022, liée aux investissements et pertes sur Amex Ventures) [4].\n   - *Net interest income* (croissance de 28 %) [1].\n\n3. **Métriques alternatives utilisées** :\n   Les analyses financières du document se concentrent sur des ratios spécifiques au secteur des services financiers et des cartes de paiement, tels que :\n   - *Net write-off rate* (1.4 % en 2022) [2][8].\n   - *Net interest yield* [2].\n   - *Provisions for credit losses* [5][8].\n   - *Billed business* (croissance de 23 % en 2022) [2].\n\n**Conclusion** :\nCette information n'est",
+    "generation_sec": 11.77,
     "context_hit": false,
-    "answer_f1": 0.021582733812949638,
+    "answer_f1": 0.020905923344947733,
     "verdict": "CORRECT",
     "judge_faithfulness": 5.0,
     "judge_reason": "La réponse générée confirme que la *gross margin* n'est pas une métrique pertinente pour American Express (aligné avec la référence) et justifie cette conclusion en s'appuyant sur les extraits fournis, sans contradiction ni hallucination."
@@ -1558,7 +1558,7 @@
     "question_type": "domain-relevant",
     "question_reasoning": "Logical reasoning (based on numerical reasoning) OR Numerical reasoning OR Logical reasoning",
     "mode": "agentic",
-    "retrieval_sec": 0.89,
+    "retrieval_sec": 0.72,
     "n_docs": 30,
     "recall@5": 0.0,
     "mrr@5": 0.0,
@@ -1661,18 +1661,18 @@
     "corrective_rounds": 1,
     "corrective_queries": [
       "American Express gross profit total revenues fiscal 2022",
-      "American Express cost of services provisions for credit losses fiscal 2022",
-      "American Express operating expenses net income before income taxes fiscal 2022"
+      "American Express cost of revenue provision for credit losses fiscal 2022",
+      "American Express operating expenses total expenses fiscal 2022"
     ],
     "relevance": "PARTIAL",
-    "evidence_seen": true,
-    "answer": "Le document ne fournit pas explicitement d'information sur l'évolution de la **gross margin** (marge brute) pour American Express en FY2022, ni sur les facteurs qui auraient pu l'influencer. De plus, le contexte ne mentionne jamais ce terme ou un équivalent direct (comme \"gross profit margin\").\n\n**Pourquoi la marge brute n'est pas un indicateur utile pour American Express ?**\nAmerican Express est une entreprise de services financiers et de paiements, dont le modèle économique repose principalement sur :\n1. **Des revenus liés aux transactions** (ex. : *discount revenue*, *net card fees*, *service fees*) plutôt qu'à la vente de biens physiques [1][7][13].\n2. **Des coûts variables** (ex. : *Card Member rewards*, *marketing*, *compensation costs*) qui sont directement corrélés à l'activité et non à un \"coût des marchandises vendues\" (COGS) comme dans un modèle industriel [4][11][13].\n3. **Une structure de revenus et de coûts complexe**, où les provisions pour pertes de crédit (*provisions for credit losses*) et les investissements stratégiques (ex. : *Amex Ventures*) jouent un rôle clé dans la rentabilité, mais ne sont pas reflétés dans une marge brute classique [5][13][15].\n\nAinsi, les indicateurs pertinents pour American Express incluent plutôt :\n- **Total revenues net of interest expense** (croissance de 25 % en FY2022) [1][13].\n- **Net income** (affecté par les provisions de crédit et les investissements) [5].\n- **Revenus par catégorie** (ex. : *discount revenue*, *net interest income*) [1][13].\n\n**Conclusion** : La *gross margin* n'est pas un métrique adapté à l'analyse d'American Express, car son modèle économique ne se prête pas à une distinction claire entre \"coûts directs\" et \"marge brute\" [1][4][7][13]. Les données disponibles se concentrent sur des indicateurs financiers spécifiques aux services financiers.",
-    "generation_sec": 32.73,
+    "evidence_seen": false,
+    "answer": "Le document ne fournit pas d'information explicite sur la **gross margin** (marge brute) pour American Express en FY2022, ni sur les facteurs ayant influencé son évolution. Voici les éléments pertinents extraits du contexte :\n\n1. **Absence de mention de la \"gross margin\" comme métrique clé** :\n   - Le document se concentre sur des indicateurs spécifiques au modèle économique d'American Express, tels que :\n     - *Total revenues net of interest expense* (croissance de 25 % en 2022) [1].\n     - *Discount revenue* (revenu principal, +25 % en 2022) [1].\n     - *Net income* (baisse de $8.1 milliards en 2021 à $7.5 milliards en 2022) [5].\n     - *Expenses* (détail des coûts comme les *Card Member rewards*, *marketing*, ou *operating expenses*) [4][12].\n   - Aucune référence à la \"gross margin\" ou à sa composition (ex. : revenus moins coût des biens vendus) n'est présente.\n\n2. **Pourquoi la \"gross margin\" n'est pas une métrique utile pour American Express** :\n   - **Modèle économique distinct** :\n     American Express est une entreprise de **services financiers** et de **paiements**, dont les revenus proviennent principalement de :\n     - Frais de transaction (*discount revenue*) payés par les commerçants [1][7].\n     - Intérêts sur les prêts aux détenteurs de cartes (*net interest income*) [1][7].\n     - Frais annuels de cartes (*net card fees*) [1].\n     - Ces revenus ne sont pas liés à la production ou à la vente de biens physiques, ce qui rend la \"gross margin\" (typiquement utilisée pour les entreprises industrielles ou commerciales) **peu pertinente** [1][7].\n   - **Coûts variables** :\n     Les coûts majeurs (ex. : *Card Member rewards*, *marketing*, *compensation*) sont des dépenses opérationnelles ou liées à la croissance, et non des \"coûts des biens vendus\" (COGS) [4][12]. La structure de coûts ne permet pas de calculer une mar",
+    "generation_sec": 12.91,
     "context_hit": false,
-    "answer_f1": 0.013840830449826988,
+    "answer_f1": 0.014285714285714285,
     "verdict": "CORRECT",
     "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée confirme que la *gross margin* n'est pas un indicateur pertinent pour American Express (aligné avec la référence) et justifie cette conclusion de manière détaillée et fidèle aux extraits fournis. Aucun refus injustifié, et les affirmations sont entièrement appuyées par le document."
+    "judge_reason": "La réponse générée confirme que la *gross margin* n'est pas une métrique pertinente pour American Express (aligné avec la référence) et justifie cette conclusion en s'appuyant sur les extraits fournis, sans contradiction ni hallucination."
   },
   {
     "id": "financebench_id_00723",
@@ -1682,7 +1682,7 @@
     "question_type": "domain-relevant",
     "question_reasoning": "Numerical reasoning OR information extraction",
     "mode": "baseline",
-    "retrieval_sec": 1.46,
+    "retrieval_sec": 1.27,
     "n_docs": 30,
     "recall@5": 0.0,
     "mrr@5": 0.0,
@@ -1783,13 +1783,13 @@
     ],
     "gold_rank": null,
     "evidence_seen": false,
-    "answer": "Cette information n'est pas disponible dans le document.\n\nLe contexte fourni ne mentionne **aucune donnée explicite** sur l'**operating margin** (marge opérationnelle) d'American Express en 2022, ni sur son évolution. Aucune référence à ce métrique ou à des calculs associés (comme le ratio de marge opérationnelle) n'apparaît dans les passages cités [1] à [10].\n\nDe plus, le document ne précise pas si l'**operating margin** est un métrique pertinent ou non pour évaluer la performance d'une entreprise comme American Express. Aucune explication sur l'adéquation de ce métrique n'est fournie. [Aucun passage]",
-    "generation_sec": 23.1,
+    "answer": "Cette information n'est pas disponible dans le document.\n\nLe contexte fourni ne mentionne **ni le terme \"operating margin\"**, **ni des données permettant de calculer ou d'évaluer cette métrique** (comme le chiffre d'affaires ou le résultat d'exploitation avant amortissements et provisions). Aucune référence à une tendance ou à une comparaison de marge opérationnelle entre 2021 et 2022 n'est présente [1][2][3][6][7].\n\n**Explication sur l'utilité de la marge opérationnelle pour AMEX (basée UNIQUEMENT sur le contexte) :**\nLe document souligne que les **dépenses variables** (récompenses, services aux clients, marketing) sont **corrélées aux volumes de transactions** et que les **coûts opérationnels** (y compris les pertes sur investissements stratégiques comme Amex Ventures) peuvent fluctuer significativement d'une année à l'autre [2]. De plus, les **réserves de crédit** et les **provisions** jouent un rôle majeur dans la performance financière, ce qui peut rendre la marge opérationnelle **moins pertinente** pour évaluer la santé globale d'AMEX, car :\n- Les **revenus** dépendent fortement des **volumes de dépenses** des clients (réseaux de paiement) [1].\n- Les **dépenses** incluent des éléments **non récurrents** (ex. : pertes/gains sur investissements) [2][3].\n- La **gestion des risques de crédit** (provisions, réserves) a un impact direct sur le résultat net, mais pas nécessairement sur la marge opérationnelle [1][6].\n\nAinsi, d'autres indicateurs (comme le **net income**, les **volumes de transactions**, ou les **ratios de capital**) sont probablement plus adaptés pour analyser la performance d'AMEX [1][5][6].",
+    "generation_sec": 6.2,
     "context_hit": false,
-    "answer_f1": 0.057692307692307696,
+    "answer_f1": 0.024,
     "verdict": "CORRECT",
     "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée constate correctement l'absence d'information sur l'operating margin dans le document, ce qui est cohérent avec la référence indiquant que ce métrique n'est pas pertinent pour une entreprise comme AMEX. Aucun refus abusif n'est commis, et la réponse s'aligne sur la justification experte."
+    "judge_reason": "La réponse générée indique correctement que l'information sur la marge opérationnelle n'est pas disponible dans le document et explique pourquoi cette métrique est moins pertinente pour AMEX (financial services), alignant ainsi avec la référence qui précise que la performance se mesure via le Net Interest Margin. Aucune contradiction ni hallucination."
   },
   {
     "id": "financebench_id_00723",
@@ -1799,7 +1799,7 @@
     "question_type": "domain-relevant",
     "question_reasoning": "Numerical reasoning OR information extraction",
     "mode": "agentic",
-    "retrieval_sec": 1.46,
+    "retrieval_sec": 1.27,
     "n_docs": 30,
     "recall@5": 0.0,
     "mrr@5": 0.0,
@@ -1902,18 +1902,255 @@
     "corrective_rounds": 1,
     "corrective_queries": [
       "AMEX operating income total revenues 2022",
-      "AMEX operating expenses operating income 2022",
-      "AMEX segment information operating income geographic regions 2022"
+      "AMEX operating expenses noninterest expenses 2022",
+      "AMEX net income provision for income taxes 2022"
     ],
     "relevance": "PARTIAL",
     "evidence_seen": false,
-    "answer": "**Réponse:**\n\nLe document ne fournit pas explicitement d'information sur l'**operating margin** (marge opérationnelle) d'American Express (AMEX) pour 2022, ni sur son évolution. Aucune donnée chiffrée ou mention directe de ce ratio n'apparaît dans le contexte. [1][2][3][6][11][12]\n\n**Pourquoi l'operating margin pourrait ne pas être un métrique utile pour AMEX ?**\n1. **Modèle économique spécifique** :\n   AMEX est une entreprise axée sur les services financiers (cartes de crédit, paiements, récompenses), où les **coûts variables** (récompenses, services aux clients, marketing) et les **investissements stratégiques** (technologie, acquisitions de clients) jouent un rôle central. Ces éléments peuvent fausser la comparaison de la marge opérationnelle avec d'autres secteurs. [1][2][10]\n   - Exemple : Les dépenses de **Card Member rewards** et de **marketing** sont corrélées aux volumes de transactions et à la croissance, et non à une structure de coûts fixes classique. [2]\n   - Les **pertes/gains sur les investissements Amex Ventures** (non récurrents) impactent fortement les résultats, mais ne reflètent pas la performance opérationnelle courante. [1][2][3][12]\n\n2. **Métriques alternatives privilégiées** :\n   Le document met l'accent sur d'autres indicateurs pour évaluer la performance, tels que :\n   - **Net income** (bénéfice net) : $7.5 milliards en 2022 (vs $8.1 milliards en 2021). [1]\n   - **Billed business** (volume de dépenses) : $1,338 milliards en 2022 (record). [13]\n   - **Croissance des prêts** (+22 % en 2022) et **acquisitions de cartes** (76.7 millions de cartes en circulation). [1][6][13]\n   - **Ratios de capital** (CET1, Tier 1) et **liquidité**, plus pertinents pour une institution financière régulée. [5]\n\n3. **Absence de standardisation",
-    "generation_sec": 17.35,
+    "answer": "**Réponse :**\nLe document ne fournit pas explicitement d'information sur l'**operating margin** (marge opérationnelle) d'American Express (AMEX) pour 2022, ni sur son évolution. Aucune donnée relative à ce ratio (calculé comme le résultat opérationnel divisé par le chiffre d'affaires) n'est mentionnée dans les passages fournis [1][2][3][6][11][12][13][14][15].\n\n**Pourquoi l'operating margin pourrait ne pas être un métrique utile pour AMEX :**\n1. **Modèle économique spécifique** : AMEX est une entreprise de services financiers et de paiements, dont les revenus dépendent fortement des **volumes de transactions** (billed business), des **frais de cartes** (net card fees), et des **revenus liés aux prêts** (net interest income) [14]. Les coûts sont principalement variables (récompenses, services aux clients, marketing) et corrélés à ces volumes [2], ce qui rend la marge opérationnelle moins pertinente pour évaluer la performance que des indicateurs comme :\n   - **Billed business** ($553 milliards en 2022, +24 % vs 2021) [12].\n   - **Net income** ($7,5 milliards en 2022, en baisse vs 2021 en raison de réserves de crédit et pertes sur investissements) [1].\n   - **Revenus nets des charges d'intérêts** (+25 % en 2022) [14].\n\n2. **Structure de coûts atypique** : Les dépenses incluent des éléments non récurrents comme les **pertes/gains sur investissements** (Amex Ventures) [2][3][11][13], qui faussent la lecture d'une marge opérationnelle stable. Par exemple, les pertes sur Amex Ventures en 2022 ont contribué à une hausse de 24 % des **operating expenses** [2].\n\n3. **Focus sur d'autres indicateurs** : Le document met en avant des métriques propres au secteur, comme :\n   - **Net write-off rate** (1,1 % en 2022) [6][12",
+    "generation_sec": 12.81,
     "context_hit": false,
-    "answer_f1": 0.022727272727272724,
+    "answer_f1": 0.021897810218978103,
     "verdict": "CORRECT",
     "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée confirme que l'operating margin n'est pas une métrique pertinente pour AMEX (comme la référence) et explique pourquoi, en s'appuyant sur les extraits fournis. Elle ne contredit pas la référence et va même au-delà en détaillant les métriques alternatives."
+    "judge_reason": "La réponse générée confirme que l'operating margin n'est pas une métrique pertinente pour AMEX (en ligne avec la référence) et explique pourquoi, en s'appuyant sur les extraits fournis. Elle ne contredit pas la référence et fournit des détails supplémentaires cohérents."
+  },
+  {
+    "id": "financebench_id_01028",
+    "doc_name": "AMERICANEXPRESS_2022_10K",
+    "question": "What are the geographies that American Express primarily operates in as of 2022?",
+    "expected_answer": "United States, EMEA, APAC, and LACC",
+    "question_type": "domain-relevant",
+    "question_reasoning": "Information extraction",
+    "mode": "baseline",
+    "retrieval_sec": 3.55,
+    "n_docs": 25,
+    "recall@5": 0.0,
+    "mrr@5": 0.0,
+    "ndcg@5": 0.0,
+    "page_hit@5": 0.0,
+    "page_recall@5": 0.0,
+    "recall@10": 0.0,
+    "mrr@10": 0.0,
+    "ndcg@10": 0.0,
+    "page_hit@10": 0.0,
+    "page_recall@10": 0.0,
+    "recall@20": 0.0,
+    "mrr@20": 0.0,
+    "ndcg@20": 0.0,
+    "page_hit@20": 0.0,
+    "page_recall@20": 0.0,
+    "retrieved": [
+      [
+        "AMERICANEXPRESS_2022_10K",
+        5
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        253
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        252
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        253
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        251
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        39
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        251
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        3
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        4
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        88
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        3
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        4
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        251
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        88
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        130
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        101
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        63
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        2
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        75
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        242
+      ]
+    ],
+    "gold_rank": null,
+    "evidence_seen": false,
+    "answer": "American Express operates a payments network in **\"approximately 103 countries and territories\"** as of 2022. [1]\n\nThe document lists specific geographies where American Express has subsidiaries, holdings, or principal locations, including:\n- **United States** [2][3][4][5][6][7]\n- **United Kingdom** (England and Wales) [2][3][6]\n- **France** [2]\n- **Canada** (Ontario) [2][6]\n- **Japan** [2][3][4][6]\n- **India** [2][3][5][6][7]\n- **Spain** [2][3][6]\n- **Italy** [2][3]\n- **Switzerland** [2][4]\n- **Netherlands** [2][3][4][7]\n- **Australia** (Victoria) [3][6]\n- **New Zealand** [3]\n- **Thailand** [3]\n- **China** (including Taiwan and Hong Kong) [2][3][4]\n- **Mexico** [5][6]\n- **Ireland** [5]\n- **Malaysia** [6][7]\n- **Brazil** [4]\n- **Indonesia** [4]\n- **Argentina** [2]\n- **Sweden** [2]\n- **Russian Federation** [5]\n- **Jersey** [5][7]\n- **Netherlands Antilles** [7]\n- **Philippines** [6]\n- **Arizona, Florida, North Carolina, Utah** (U.S. states with offices/data centers) [6]\n\n*Note*: The document does not provide an exhaustive list of all 103 countries/territories but highlights key operational geographies through subsidiaries, holdings, or offices. [1][2][3][4][5][6][7]",
+    "generation_sec": 4.97,
+    "context_hit": true,
+    "answer_f1": 0.03448275862068965,
+    "verdict": "INCORRECT",
+    "judge_faithfulness": 5.0,
+    "judge_reason": "La réponse générée liste des pays spécifiques plutôt que les régions géographiques agrégées (US, EMEA, APAC, LACC) mentionnées dans la référence, ce qui contredit la formulation attendue. Cependant, toutes les affirmations sont appuyées par les extraits fournis."
+  },
+  {
+    "id": "financebench_id_01028",
+    "doc_name": "AMERICANEXPRESS_2022_10K",
+    "question": "What are the geographies that American Express primarily operates in as of 2022?",
+    "expected_answer": "United States, EMEA, APAC, and LACC",
+    "question_type": "domain-relevant",
+    "question_reasoning": "Information extraction",
+    "mode": "agentic",
+    "retrieval_sec": 3.55,
+    "n_docs": 25,
+    "recall@5": 0.0,
+    "mrr@5": 0.0,
+    "ndcg@5": 0.0,
+    "page_hit@5": 0.0,
+    "page_recall@5": 0.0,
+    "recall@10": 0.0,
+    "mrr@10": 0.0,
+    "ndcg@10": 0.0,
+    "page_hit@10": 0.0,
+    "page_recall@10": 0.0,
+    "recall@20": 0.0,
+    "mrr@20": 0.0,
+    "ndcg@20": 0.0,
+    "page_hit@20": 0.0,
+    "page_recall@20": 0.0,
+    "retrieved": [
+      [
+        "AMERICANEXPRESS_2022_10K",
+        5
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        253
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        252
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        253
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        251
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        39
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        251
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        3
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        4
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        88
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        3
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        4
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        251
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        88
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        130
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        101
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        63
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        2
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        75
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        242
+      ]
+    ],
+    "gold_rank": null,
+    "corrective_rounds": 0,
+    "corrective_queries": [],
+    "relevance": "CAN_ANSWER",
+    "evidence_seen": false,
+    "answer": "American Express operates a payments network in **\"approximately 103 countries and territories\"** as of 2022 [1].\n\nThe following **specific geographies** where American Express has subsidiaries or operations are explicitly mentionnées dans le contexte:\n- **United States** (including Delaware, New York, Arizona) [2][3][4][5][6][7]\n- **United Kingdom** (England and Wales) [2][3][5][6]\n- **France** [2]\n- **Canada** (Ontario) [2][6]\n- **Japan** [2][3][4][6]\n- **Spain** [2][3][6]\n- **Italy** [2][3]\n- **Switzerland** [2][4]\n- **Netherlands** [2][3][4][7]\n- **India** [2][3][5][6][7]\n- **China** (including Taiwan and Hong Kong) [2][3][4]\n- **Australia** [3][6]\n- **New Zealand** [3]\n- **Thailand** [3]\n- **Mexico** [5][6]\n- **Ireland** [5]\n- **Brazil** [4]\n- **Indonesia** [4]\n- **Malaysia** [6][7]\n- **Philippines** [6]\n- **Sweden** [2]\n- **Argentina** [2]\n- **Russian Federation** [5]\n- **Jersey** [5][7]\n- **Netherlands Antilles** [7]\n\n**Note:** Le contexte ne précise pas si cette liste est exhaustive ou si d'autres pays font partie des \"approximately 103 countries and territories\" [1]. Aucune autre géographie n'est explicitement citée.",
+    "generation_sec": 5.13,
+    "context_hit": true,
+    "answer_f1": 0.03550295857988166,
+    "verdict": "INCORRECT",
+    "judge_faithfulness": 5.0,
+    "judge_reason": "La réponse générée liste des pays spécifiques avec précision, mais elle ne regroupe pas les géographies selon les régions clés mentionnées dans la référence (United States, EMEA, APAC, LACC). Bien que fidèle aux extraits, elle ne correspond pas à la granularité attendue."
   },
   {
     "id": "financebench_id_01351",
@@ -1923,7 +2160,7 @@
     "question_type": "domain-relevant",
     "question_reasoning": "Numerical reasoning",
     "mode": "baseline",
-    "retrieval_sec": 0.86,
+    "retrieval_sec": 1.19,
     "n_docs": 30,
     "recall@5": 0.0,
     "mrr@5": 0.0,
@@ -1967,11 +2204,11 @@
       ],
       [
         "AMERICANEXPRESS_2022_10K",
-        58
+        55
       ],
       [
         "AMERICANEXPRESS_2022_10K",
-        55
+        58
       ],
       [
         "AMERICANEXPRESS_2022_10K",
@@ -2024,356 +2261,119 @@
     ],
     "gold_rank": null,
     "evidence_seen": false,
-    "answer": "The effective tax rate of American Express was **21.6 percent** in FY2022 and **24.6 percent** in FY2021.\n\nThe change in the effective tax rate between FY2021 and FY2022 is a **decrease of 3.0 percentage points** (24.6% - 21.6%). [1]",
-    "generation_sec": 1.88,
+    "answer": "The effective tax rate of American Express was **21.6 percent in FY2022** and **24.6 percent in FY2021**.\n\nThe change between FY2021 and FY2022 is a **decrease of 3.0 percentage points** (24.6% - 21.6%). [1]",
+    "generation_sec": 2.16,
     "context_hit": true,
-    "answer_f1": 0.36923076923076914,
-    "verdict": "CORRECT",
-    "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée fournit les mêmes taux d'imposition effectifs que la référence (24.6% en 2021 et 21.6% en 2022) et calcule correctement la baisse de 3.0 points de pourcentage, sans contradiction. Toutes les informations sont directement appuyées par les extraits du document."
-  },
-  {
-    "id": "financebench_id_01351",
-    "doc_name": "AMERICANEXPRESS_2022_10K",
-    "question": "How much has the effective tax rate of American Express changed between FY2021 and FY2022?",
-    "expected_answer": "The effective tax rate for American Express has changed/dropped from 24.6% in FY 2021 to 21.6% in FY 2022.",
-    "question_type": "domain-relevant",
-    "question_reasoning": "Numerical reasoning",
-    "mode": "agentic",
-    "retrieval_sec": 0.86,
-    "n_docs": 30,
-    "recall@5": 0.0,
-    "mrr@5": 0.0,
-    "ndcg@5": 0.0,
-    "page_hit@5": 0.0,
-    "page_recall@5": 0.0,
-    "recall@10": 0.6666666666666666,
-    "mrr@10": 0.16666666666666666,
-    "ndcg@10": 0.3952094620037075,
-    "page_hit@10": 0.0,
-    "page_recall@10": 0.0,
-    "recall@20": 1.0,
-    "mrr@20": 0.16666666666666666,
-    "ndcg@20": 0.5564625629594755,
-    "page_hit@20": 0.0,
-    "page_recall@20": 0.0,
-    "retrieved": [
-      [
-        "AMERICANEXPRESS_2022_10K",
-        48
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        145
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        147
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        147
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        149
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        48
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        58
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        55
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        61
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        124
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        149
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        46
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        50
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        36
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        98
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        83
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        125
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        40
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        68
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        31
-      ]
-    ],
-    "gold_rank": null,
-    "corrective_rounds": 0,
-    "corrective_queries": [],
-    "relevance": "CAN_ANSWER",
-    "evidence_seen": false,
-    "answer": "The effective tax rate of American Express was **21.6 percent** in FY2022 and **24.6 percent** in FY2021.\n\nThe change in the effective tax rate between FY2021 and FY2022 is a **decrease of 3.0 percentage points** (24.6% - 21.6%). [1]",
-    "generation_sec": 1.57,
-    "context_hit": true,
-    "answer_f1": 0.36923076923076914,
+    "answer_f1": 0.39999999999999997,
     "verdict": "CORRECT",
     "judge_faithfulness": 5.0,
     "judge_reason": "La réponse générée fournit les mêmes taux d'imposition effectifs (24.6% en 2021 et 21.6% en 2022) que la référence, avec un calcul explicite de la variation (3.0 points de pourcentage), le tout étant entièrement appuyé par les extraits du document."
   },
   {
-    "id": "financebench_id_01028",
+    "id": "financebench_id_01351",
     "doc_name": "AMERICANEXPRESS_2022_10K",
-    "question": "What are the geographies that American Express primarily operates in as of 2022?",
-    "expected_answer": "United States, EMEA, APAC, and LACC",
+    "question": "How much has the effective tax rate of American Express changed between FY2021 and FY2022?",
+    "expected_answer": "The effective tax rate for American Express has changed/dropped from 24.6% in FY 2021 to 21.6% in FY 2022.",
     "question_type": "domain-relevant",
-    "question_reasoning": "Information extraction",
-    "mode": "baseline",
-    "retrieval_sec": 0.56,
-    "n_docs": 25,
-    "recall@5": 0.0,
-    "mrr@5": 0.0,
-    "ndcg@5": 0.0,
-    "page_hit@5": 0.0,
-    "page_recall@5": 0.0,
-    "recall@10": 0.0,
-    "mrr@10": 0.0,
-    "ndcg@10": 0.0,
-    "page_hit@10": 0.0,
-    "page_recall@10": 0.0,
-    "recall@20": 0.0,
-    "mrr@20": 0.0,
-    "ndcg@20": 0.0,
-    "page_hit@20": 0.0,
-    "page_recall@20": 0.0,
-    "retrieved": [
-      [
-        "AMERICANEXPRESS_2022_10K",
-        5
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        253
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        252
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        253
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        251
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        39
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        251
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        3
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        4
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        88
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        3
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        4
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        251
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        88
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        130
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        101
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        63
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        2
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        75
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        242
-      ]
-    ],
-    "gold_rank": null,
-    "evidence_seen": false,
-    "answer": "As of 2022, American Express primarily operates in the following geographies, explicitly mentioned in the context:\n\n- **Approximately 103 countries and territories** through its payments network, where it establishes relationships with third-party banks and institutions to license the American Express brand and extend its global network. [1]\n\n**Specific countries and regions listed in the context (via subsidiaries, offices, or operations):**\n- United States [1][2][3][4][5][6][7]\n- United Kingdom [2][3][6]\n- France [2][6]\n- Canada [2][6]\n- Japan [2][3][6]\n- India [2][3][6][7]\n- Spain [2][3][6]\n- Italy [2][3]\n- Switzerland [2][4]\n- Netherlands [2][3][4][7]\n- Sweden [2]\n- Argentina [2]\n- Taiwan (China) [2][4]\n- Australia [3][6]\n- New Zealand [3]\n- Thailand [3]\n- China [3][4][7]\n- Hong Kong (China) [4]\n- Brazil [4]\n- Indonesia [4]\n- Ireland [5]\n- Mexico [5][6]\n- Russian Federation [5]\n- Malaysia [6][7]\n- Philippines [6]\n- Jersey [5][7]\n- Netherlands Antilles [7]\n\n**Note:** The context does not provide an exhaustive list of all 103 countries/territories but highlights key geographies where American Express has subsidiaries, offices, or significant operations. [1][2][3][4][5][6][7]",
-    "generation_sec": 7.84,
-    "context_hit": true,
-    "answer_f1": 0.031413612565445025,
-    "verdict": "INCORRECT",
-    "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée liste des pays et régions spécifiques, tandis que la référence mentionne des zones géographiques agrégées (United States, EMEA, APAC, LACC). Bien que fidèle aux extraits, elle ne correspond pas à la granularité attendue par la référence."
-  },
-  {
-    "id": "financebench_id_01028",
-    "doc_name": "AMERICANEXPRESS_2022_10K",
-    "question": "What are the geographies that American Express primarily operates in as of 2022?",
-    "expected_answer": "United States, EMEA, APAC, and LACC",
-    "question_type": "domain-relevant",
-    "question_reasoning": "Information extraction",
+    "question_reasoning": "Numerical reasoning",
     "mode": "agentic",
-    "retrieval_sec": 0.56,
-    "n_docs": 25,
+    "retrieval_sec": 1.19,
+    "n_docs": 30,
     "recall@5": 0.0,
     "mrr@5": 0.0,
     "ndcg@5": 0.0,
     "page_hit@5": 0.0,
     "page_recall@5": 0.0,
-    "recall@10": 0.0,
-    "mrr@10": 0.0,
-    "ndcg@10": 0.0,
+    "recall@10": 0.6666666666666666,
+    "mrr@10": 0.16666666666666666,
+    "ndcg@10": 0.3952094620037075,
     "page_hit@10": 0.0,
     "page_recall@10": 0.0,
-    "recall@20": 0.0,
-    "mrr@20": 0.0,
-    "ndcg@20": 0.0,
+    "recall@20": 1.0,
+    "mrr@20": 0.16666666666666666,
+    "ndcg@20": 0.5564625629594755,
     "page_hit@20": 0.0,
     "page_recall@20": 0.0,
     "retrieved": [
       [
         "AMERICANEXPRESS_2022_10K",
-        5
+        48
       ],
       [
         "AMERICANEXPRESS_2022_10K",
-        253
+        145
       ],
       [
         "AMERICANEXPRESS_2022_10K",
-        252
+        147
       ],
       [
         "AMERICANEXPRESS_2022_10K",
-        253
+        147
       ],
       [
         "AMERICANEXPRESS_2022_10K",
-        251
+        149
       ],
       [
         "AMERICANEXPRESS_2022_10K",
-        39
+        48
       ],
       [
         "AMERICANEXPRESS_2022_10K",
-        251
+        55
       ],
       [
         "AMERICANEXPRESS_2022_10K",
-        3
+        58
       ],
       [
         "AMERICANEXPRESS_2022_10K",
-        4
+        61
       ],
       [
         "AMERICANEXPRESS_2022_10K",
-        88
+        124
       ],
       [
         "AMERICANEXPRESS_2022_10K",
-        3
+        149
       ],
       [
         "AMERICANEXPRESS_2022_10K",
-        4
+        46
       ],
       [
         "AMERICANEXPRESS_2022_10K",
-        251
+        50
       ],
       [
         "AMERICANEXPRESS_2022_10K",
-        88
+        36
       ],
       [
         "AMERICANEXPRESS_2022_10K",
-        130
+        98
       ],
       [
         "AMERICANEXPRESS_2022_10K",
-        101
+        83
       ],
       [
         "AMERICANEXPRESS_2022_10K",
-        63
+        125
       ],
       [
         "AMERICANEXPRESS_2022_10K",
-        2
+        40
       ],
       [
         "AMERICANEXPRESS_2022_10K",
-        75
+        68
       ],
       [
         "AMERICANEXPRESS_2022_10K",
-        242
+        31
       ]
     ],
     "gold_rank": null,
@@ -2381,13 +2381,13 @@
     "corrective_queries": [],
     "relevance": "CAN_ANSWER",
     "evidence_seen": false,
-    "answer": "As of 2022, American Express primarily operates in the following geographies through its **payments network** and **subsidiaries/affiliates**:\n\n1. **Approximately 103 countries and territories** globally, where it has relationships with third-party banks and institutions to license the American Express brand and extend its network [1].\n\n### **Key regions and countries explicitly mentioned in the context:**\n- **United States** (headquarters and major operations) [1][2][3][4][5][6][7][8][9].\n- **Europe**:\n  - United Kingdom (England and Wales) [2][3][5][6].\n  - France [2].\n  - Spain [2][3][6].\n  - Italy [2][3].\n  - Sweden [2].\n  - Netherlands [2][3][4][7].\n  - Switzerland [2][4].\n  - Ireland [5].\n  - Jersey (Channel Islands) [5][7].\n  - Russia [5] (though operational status in 2022 is not specified).\n- **Asia-Pacific**:\n  - Japan [2][3][4][6].\n  - China (including Taiwan and Hong Kong) [2][3][4][7].\n  - India [2][3][5][6][7].\n  - Thailand [3].\n  - Malaysia [6][7].\n  - Indonesia [4].\n  - Australia [3][6].\n  - New Zealand [3].\n  - Philippines [6].\n- **Americas (outside the U.S.)**:\n  - Canada [2][6].\n  - Mexico [5][6].\n  - Argentina [2].\n  - Brazil [4].\n- **Other**:\n  - Netherlands Antilles [7].\n\n### **Additional operational footprints (offices/headquarters):**\n- **Offices**: Phoenix (Arizona, U.S.), Sunrise (Florida, U.S.), Gurgaon (India), Brighton (England), Manila (Philippines), Tokyo (Japan), Kuala Lumpur (Malaysia), Sydney (Australia), Greensboro (North Carolina, U.S.), Sandy (Utah, U.S.), London (England), Madrid (Spain), Toronto (Canada), Mexico City (Mexico) [6].\n- **Data centers**: Phoenix (Arizona, U.S.), Greensboro (North Carolina, U.S.) [6].\n- **Travel lou",
-    "generation_sec": 7.6,
+    "answer": "The effective tax rate of American Express was **24.6 percent in FY2021** and **21.6 percent in FY2022**.\n\nThe change between FY2021 and FY2022 is a **decrease of 3.0 percentage points** (24.6% - 21.6%). [1]",
+    "generation_sec": 1.97,
     "context_hit": true,
-    "answer_f1": 0.02510460251046025,
+    "answer_f1": 0.39999999999999997,
     "verdict": "CORRECT",
     "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée liste les régions clés (États-Unis, EMEA, APAC, et LACC via des pays comme le Mexique, le Brésil, etc.) de manière détaillée sans contredire la référence, qui les résume en acronymes. Toutes les affirmations sont appuyées par les extraits fournis."
+    "judge_reason": "La réponse générée fournit les mêmes taux d'imposition effectifs (24.6% en 2021 et 21.6% en 2022) que la référence, avec un calcul supplémentaire de la variation (3.0 points) qui ne contredit pas la référence. Toutes les informations sont directement appuyées par les extraits du document."
   },
   {
     "id": "financebench_id_00517",
@@ -2397,7 +2397,7 @@
     "question_type": "domain-relevant",
     "question_reasoning": "Logical reasoning (based on numerical reasoning)",
     "mode": "baseline",
-    "retrieval_sec": 0.94,
+    "retrieval_sec": 0.93,
     "n_docs": 30,
     "recall@5": 0.6666666666666666,
     "mrr@5": 1.0,
@@ -2498,13 +2498,13 @@
     ],
     "gold_rank": 1,
     "evidence_seen": true,
-    "answer": "Oui, deux catégories de produits/services représentent plus de 20 % des revenus de Boeing pour l'exercice 2022 :\n\n1. **Commercial Airplanes** : 39 % des revenus totaux de l'entreprise en 2022 [8].\n2. **Defense, Space & Security** : Les revenus de ce segment s'élèvent à **23 162 millions de dollars** en 2022, ce qui représente environ **34,8 %** des revenus totaux (23 162 / 66 608 ≈ 0,3477 ou 34,8 %) [1][2].\n\n*Note* : Le calcul pour **Defense, Space & Security** est dérivé des chiffres exacts fournis dans le contexte [1][2]. Aucune autre catégorie ne dépasse 20 % des revenus totaux.",
-    "generation_sec": 3.68,
+    "answer": "Oui, deux catégories de produits/services représentent plus de 20 % des revenus de Boeing pour l'exercice 2022 :\n\n1. **Commercial Airplanes** : 39 % des revenus totaux de l'entreprise en 2022 [8].\n2. **Defense, Space & Security** : Les revenus de ce segment s'élèvent à **23 162 millions de dollars** en 2022, ce qui représente environ **34,8 %** des revenus totaux (23 162 / 66 608 × 100 ≈ 34,8 %) [1][2].\n\n**Boeing Capital** et **Unallocated items, eliminations and other** ne dépassent pas ce seuil [1][2].",
+    "generation_sec": 2.92,
     "context_hit": true,
-    "answer_f1": 0.11347517730496455,
+    "answer_f1": 0.15748031496062992,
     "verdict": "CORRECT",
     "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée identifie correctement les deux catégories (Commercial Airplanes et Defense, Space & Security) dépassant 20 % des revenus, avec des calculs précis et cohérents avec la référence. Elle omet simplement la catégorie *Services* (26 %), mais cette omission ne contredit pas la référence, qui liste trois catégories. Toutes les affirmations sont appuyées par les extraits fournis."
+    "judge_reason": "La réponse générée identifie correctement les deux catégories (Commercial Airplanes et Defense, Space & Security) représentant plus de 20 % des revenus de Boeing en 2022, avec des pourcentages cohérents (39 % et ~34,8 %). Elle omet simplement la catégorie *Global Services* (26 %), mais cette omission ne contredit pas la référence et reste fidèle aux extraits fournis. Toutes les affirmations sont appuyées par les données du tableau."
   },
   {
     "id": "financebench_id_00517",
@@ -2514,7 +2514,7 @@
     "question_type": "domain-relevant",
     "question_reasoning": "Logical reasoning (based on numerical reasoning)",
     "mode": "agentic",
-    "retrieval_sec": 0.94,
+    "retrieval_sec": 0.93,
     "n_docs": 30,
     "recall@5": 0.6666666666666666,
     "mrr@5": 1.0,
@@ -2618,13 +2618,13 @@
     "corrective_queries": [],
     "relevance": "CAN_ANSWER",
     "evidence_seen": true,
-    "answer": "Oui, deux catégories de produits/services représentent plus de 20 % des revenus de Boeing pour l'exercice 2022 :\n\n1. **Commercial Airplanes** : 39 % des revenus totaux de l'entreprise en 2022 [8].\n2. **Defense, Space & Security** : Les revenus de cette catégorie s'élèvent à **23 162 millions de dollars**, ce qui représente environ **34,8 %** des revenus totaux de **66 608 millions de dollars** en 2022 (calcul : 23 162 / 66 608 ≈ 0,3477 ou 34,8 %) [1][2].\n\n*Note* : Le calcul pour **Defense, Space & Security** est dérivé des chiffres exacts fournis dans le contexte, bien que le pourcentage précis ne soit pas explicitement mentionné. Le contexte indique clairement les montants absolus et le total, permettant ce calcul direct [1][2].",
-    "generation_sec": 7.58,
+    "answer": "Oui, deux catégories de produits/services représentent plus de 20 % des revenus de Boeing pour l'exercice 2022 :\n\n1. **Commercial Airplanes** : 39 % des revenus totaux de l'entreprise en 2022 [8].\n2. **Defense, Space & Security** : Les revenus de cette catégorie s'élèvent à **23 162 millions de dollars**, ce qui représente environ **34,8 %** des revenus totaux de **66 608 millions de dollars** en 2022 (calcul : 23 162 / 66 608 ≈ 0,348) [1][2].\n\n*Note* : Le calcul pour **Defense, Space & Security** est dérivé des chiffres exacts fournis dans le contexte, bien que le pourcentage précis ne soit pas explicitement indiqué dans le document. Le contexte confirme cependant que les revenus de cette catégorie dépassent 20 % du total [1][2].",
+    "generation_sec": 3.7,
     "context_hit": true,
     "answer_f1": 0.11042944785276074,
     "verdict": "CORRECT",
     "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée identifie correctement les deux catégories (Commercial Airplanes et Defense, Space & Security) représentant plus de 20 % des revenus de Boeing en 2022, avec des calculs précis et cohérents avec la référence. Elle mentionne également la catégorie Services (26 %), bien que non explicitement soulignée comme >20 % dans sa synthèse, sans contredire la référence. Toutes les affirmations sont appuyées par les extraits fournis."
+    "judge_reason": "La réponse générée identifie correctement les deux catégories (Commercial Airplanes et Defense, Space & Security) dépassant 20% des revenus, avec des calculs précis et cohérents avec la référence. Elle mentionne aussi implicitement Global Services (sans le qualifier de >20%), ce qui ne contredit pas la référence. Toutes les affirmations sont appuyées par les extraits fournis."
   },
   {
     "id": "financebench_id_00678",
@@ -2634,7 +2634,7 @@
     "question_type": "domain-relevant",
     "question_reasoning": "Numerical reasoning OR information extraction",
     "mode": "baseline",
-    "retrieval_sec": 0.61,
+    "retrieval_sec": 0.89,
     "n_docs": 30,
     "recall@5": 0.0,
     "mrr@5": 0.0,
@@ -2735,13 +2735,13 @@
     ],
     "gold_rank": 22,
     "evidence_seen": false,
-    "answer": "The document does not explicitly provide Boeing's **gross margin** for FY2022 or any prior year. Instead, it focuses on metrics such as:\n- **Operating margins** (GAAP and non-GAAP), which were negative in 2022: **(5.3)% (GAAP)** and **(7.0)% (non-GAAP)** [1].\n- **Cost of sales as a percentage of revenues**, which was **94.7%** in 2022 (implying a **gross margin of 5.3%** if calculated as 100% - 94.7%), but this is not explicitly labeled as \"gross margin\" in the document [3].\n- **Program-specific gross margins** (e.g., 777X and 787 programs), which were described as \"near break-even\" or \"single-digit\" at the end of 2022 [4][5][6].\n\n### Why gross margin may not be a useful metric for Boeing:\n1. **Program accounting**: Boeing uses **long-term contract accounting**, where revenues and costs are recognized over the life of a program (e.g., aircraft production) rather than per unit sold. This makes traditional gross margin calculations less meaningful, as profitability is tied to **accounting quantities** and **estimated costs to complete** rather than short-term sales [6][9].\n2. **Reach-forward losses**: Boeing records **earnings charges** (e.g., $3.5 billion on the 787 program in 2021) when estimated costs exceed revenues, which can distort gross margin figures [5][10].\n3. **Focus on operating margins**: The document emphasizes **operating margins** (GAAP and non-GAAP) as key performance indicators, not gross margin [1][8].\n\n**Conclusion**: The document does not explicitly state whether Boeing's gross margin profile improved in FY2022, and gross margin is not a primary metric for Boeing due to its reliance on program accounting and long-term contract structures [3][6][9]. Operating margins are the preferred metric in the provided context.",
-    "generation_sec": 9.8,
+    "answer": "Boeing's **gross margin** is not explicitly reported as a standalone metric in the provided context. Instead, the document focuses on **operating margins** (GAAP and non-GAAP) and **program-specific gross margins** (e.g., for the 777X and 787 programs) [1][3][4][5][6].\n\n### Key Observations:\n1. **Gross margin is not a primary metric for Boeing** in this context. The company uses **program accounting**, where profitability is assessed at the program level (e.g., 777X, 787) rather than through traditional gross margin calculations. This is due to the long-term nature of aircraft production, where costs and revenues are recognized over the entire \"accounting quantity\" (estimated units to be produced) [4][5][6][9].\n   - Example: The 777X program had **\"near break-even gross margins\"** at the end of 2022, while the 787 program saw an **improvement in profit margin** due to an increase in its accounting quantity [4][5].\n   - Boeing’s financial performance is heavily influenced by **reach-forward losses** (recorded when estimated costs exceed revenues) and **accounting quantity adjustments**, which are unique to program accounting [4][5][6].\n\n2. **Operating margins (GAAP) worsened in 2022**:\n   - 2022: **-5.3%** (vs. -4.7% in 2021) [1].\n   - Core operating margins (non-GAAP) also worsened: **-7.0%** (vs. -6.5% in 2021) [1].\n   - **Cost of sales as a % of revenues** remained **largely consistent** at **94.7%** in 2022 (vs. 95.2% in 2021), showing no material improvement in cost efficiency [3].\n\n3. **Why gross margin may not be useful for Boeing**:\n   - **Program accounting**: Boeing’s revenue recognition is tied to **long-term contracts** (e.g., aircraft programs spanning decades), where costs and revenues are spread over the accounting quantity. Traditional gross margin (revenue minus cost of goods sold) is less meaningful because it doesn’t reflect",
+    "generation_sec": 6.48,
     "context_hit": true,
-    "answer_f1": 0.14814814814814814,
-    "verdict": "CORRECT",
-    "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée identifie correctement que le document ne mentionne pas explicitement le \"gross margin\" comme métrique principale pour Boeing, explique pourquoi cette métrique est peu pertinente (comptabilité par programme, focus sur les marges opérationnelles), et calcule implicitement le gross margin (5.3%) à partir du coût des ventes, sans contredire la référence. Elle est plus nuancée et fidèle aux extraits fournis."
+    "answer_f1": 0.12612612612612611,
+    "verdict": "INCORRECT",
+    "judge_faithfulness": 4.0,
+    "judge_reason": "La réponse générée contredit la référence en affirmant que le *gross margin* n'est pas un métrique utile pour Boeing et n'est pas explicitement rapporté, alors que la référence fournit des chiffres précis de *gross margin* et de *gross margin %* pour 2021 et 2022. Cependant, les observations sur l'utilisation de la *program accounting* et les limites du *gross margin* sont globalement appuyées par les extraits."
   },
   {
     "id": "financebench_id_00678",
@@ -2751,7 +2751,7 @@
     "question_type": "domain-relevant",
     "question_reasoning": "Numerical reasoning OR information extraction",
     "mode": "agentic",
-    "retrieval_sec": 0.61,
+    "retrieval_sec": 0.89,
     "n_docs": 30,
     "recall@5": 0.0,
     "mrr@5": 0.0,
@@ -2859,13 +2859,13 @@
     ],
     "relevance": "PARTIAL",
     "evidence_seen": true,
-    "answer": "D'après le contexte fourni, **le document ne mentionne pas explicitement le \"gross margin\" (marge brute) de Boeing pour l'exercice 2022**, ni son évolution. Voici les éléments disponibles :\n\n1. **Métrique non directement rapportée** :\n   - Le document présente des indicateurs financiers comme le *cost of sales* (coût des ventes) [3], les *operating margins* (marges opérationnelles) [1], et les *core operating margins* (marges opérationnelles ajustées) [1], mais **aucune référence à la marge brute** (*gross margin*).\n   - La marge brute est généralement calculée comme : *Revenues – Cost of Sales*. Bien que les données pour ces deux postes soient disponibles [3][11], le document ne fournit pas cette métrique ni son évolution [3][11].\n\n2. **Pourquoi la marge brute pourrait ne pas être un indicateur utile pour Boeing** :\n   - **Program Accounting** : Boeing utilise la *program accounting* pour ses avions commerciaux (BCA), où les coûts et revenus sont estimés sur la durée totale d'un programme (ex. : 787, 777X) et non par unité livrée [14][9]. Cela rend la marge brute **peu représentative** à court terme, car :\n     - Les coûts sont répartis sur l'ensemble du programme (et non sur les ventes annuelles) [14].\n     - Les ajustements de coûts (*reach-forward losses*) ou de quantités (ex. : +100 unités pour le 787 en 2022) impactent directement les marges futures, mais pas nécessairement la marge brute annuelle [4][5][6].\n   - **Volatilité des estimations** : Les marges dépendent d'hypothèses sur les coûts futurs, les livraisons, et les pénalités clients (ex. : retards du 787), ce qui peut fausser la marge brute annuelle [6][15].\n   - **Focus sur les marges opérationnelles** : Le document met l'accent sur les *operating margins* (GAAP et non-GAAP) [1], qui intègrent des coûts comme la R&D ou les frais généraux, jugés plus pert",
-    "generation_sec": 19.1,
+    "answer": "Boeing's **gross margin** is not explicitly reported as a standalone metric in the provided context. Instead, the document focuses on **operating margins** (GAAP and non-GAAP) and **program-specific gross margins** (e.g., for the 777X and 787 programs) [1][4][5][6].\n\n### Key Observations:\n1. **Gross margin is not a primary metric for Boeing** due to its use of **program accounting** for commercial aircraft. Under program accounting, revenues and costs are recognized over the life of a program (accounting quantity) rather than per unit, making traditional gross margin calculations less meaningful for assessing performance [9][14].\n   - *\"Program accounting requires the demonstrated ability to reliably estimate revenues, costs and gross profit margin for the defined program accounting quantity\"* [9].\n   - *\"Cost of sales for each commercial aircraft program equals the product of (i) revenue recognized in connection with customer deliveries and (ii) the estimated cost of sales percentage applicable to the total remaining program\"* [14].\n\n2. **Operating margins (GAAP) deteriorated in FY2022**:\n   - 2022: **-5.3%** (vs. -4.7% in 2021) [1].\n   - Core operating margins (non-GAAP) also worsened: **-7.0%** (vs. -6.5% in 2021) [1].\n\n3. **Cost of sales as a % of revenues** remained largely unchanged in 2022 (94.7%) compared to 2021 (95.2%), indicating no improvement in cost efficiency [3].\n\n4. **Program-specific gross margins**:\n   - The **777X program** had *\"near break-even gross margins\"* at the end of 2022, with significant risks to future profitability [4][5][6].\n   - The **787 program** saw an improvement in its profit margin due to an increase in the accounting quantity (100 units), but this reflects accounting adjustments rather than operational efficiency gains [4][5].\n\n5. **Why gross margin is less useful for Boeing**:\n   - Program accounting spreads revenues and costs over the entire production cycle, making per-unit gross margins irrelevant for long-term contracts [9][14].\n   - Boeing’s financial",
+    "generation_sec": 12.47,
     "context_hit": true,
-    "answer_f1": 0.06811145510835913,
+    "answer_f1": 0.12680115273775217,
     "verdict": "INCORRECT",
-    "judge_faithfulness": 4.0,
-    "judge_reason": "La réponse générée affirme à tort que le document ne mentionne pas explicitement le \"gross margin\", alors que la référence calcule cette métrique à partir des données disponibles (revenues et cost of sales). Elle contredit ainsi la réponse de référence sans justification valable, bien que ses explications sur la pertinence limitée de la marge brute pour Boeing soient globalement fidèles au contexte."
+    "judge_faithfulness": 5.0,
+    "judge_reason": "La réponse générée contredit la référence en affirmant que le *gross margin* n'est pas un métrique utile pour Boeing et qu'il n'est pas explicitement rapporté, alors que la référence fournit des chiffres précis de *gross margin* et *gross margin %* pour 2021 et 2022. Les extraits du document confirment indirectement ces données (via *gross profit* et *revenues*), mais le système RAG a ignoré cette possibilité."
   },
   {
     "id": "financebench_id_01091",
@@ -2875,7 +2875,7 @@
     "question_type": "domain-relevant",
     "question_reasoning": "Information extraction",
     "mode": "baseline",
-    "retrieval_sec": 0.84,
+    "retrieval_sec": 1.11,
     "n_docs": 30,
     "recall@5": 0.0,
     "mrr@5": 0.0,
@@ -2976,13 +2976,13 @@
     ],
     "gold_rank": 2,
     "evidence_seen": true,
-    "answer": "Oui, Boeing a signalé une bataille juridique matériellement importante en cours pour l'exercice 2022 (FY2022) :\n\n- Un **règlement de 200 millions de dollars** avec la **Securities and Exchange Commission (SEC)** lié aux accidents du **737 MAX** a été mentionné comme l'une des causes de l'augmentation des dépenses en 2022 dans la catégorie *\"Eliminations and other unallocated expense\"* [1].\n\nCependant, Boeing indique également que, **selon les informations disponibles**, l'issue des autres procédures judiciaires, réclamations ou litiges gouvernementaux en cours **n'aurait pas d'effet matériel** sur sa situation financière, ses résultats d'exploitation ou ses flux de trésorerie [2]. Aucune autre bataille juridique matériellement importante n'est explicitement détaillée pour FY2022 dans le contexte fourni.",
-    "generation_sec": 5.67,
+    "answer": "Oui, Boeing a signalé un litige juridique important en cours pour l'exercice 2022 (FY2022) :\n\n- Un **règlement de 200 millions de dollars** avec la *Securities and Exchange Commission (SEC)* lié aux accidents du **737 MAX** a été mentionné comme contribuant à l'augmentation des *\"Eliminations and other unallocated expense\"* en 2022 [1].\n\nCependant, le document précise que Boeing estime, **sur la base des informations disponibles**, que l'issue des procédures judiciaires, réclamations ou enquêtes gouvernementales en cours **n'aura pas d'effet matériel** sur sa situation financière, ses résultats d'exploitation ou ses flux de trésorerie [2]. Aucune autre bataille juridique *matériellement importante* pour FY2022 n'est explicitement détaillée dans le contexte fourni.\n\n[1][2]",
+    "generation_sec": 3.36,
     "context_hit": false,
-    "answer_f1": 0.05797101449275363,
-    "verdict": "CORRECT",
-    "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée confirme l'existence de batailles juridiques matériellement importantes (comme le règlement de 200 millions de dollars avec la SEC lié aux accidents du 737 MAX), tout en précisant que Boeing estime que les autres procédures n'auront pas d'effet matériel, ce qui est cohérent avec la référence et appuyé par les extraits fournis."
+    "answer_f1": 0.05882352941176471,
+    "verdict": "INCORRECT",
+    "judge_faithfulness": 4.0,
+    "judge_reason": "La réponse générée mentionne un règlement avec la SEC et une estimation de Boeing sur l'absence d'effet matériel, ce qui est appuyé par les extraits, mais elle ne confirme pas explicitement l'existence de *plusieurs litiges matériellement importants* (comme les poursuites liées aux crashes de Lion Air et Ethiopian Airlines), contrairement à la référence. La réponse minimise ainsi la portée des batailles juridiques en cours."
   },
   {
     "id": "financebench_id_01091",
@@ -2992,7 +2992,7 @@
     "question_type": "domain-relevant",
     "question_reasoning": "Information extraction",
     "mode": "agentic",
-    "retrieval_sec": 0.84,
+    "retrieval_sec": 1.11,
     "n_docs": 30,
     "recall@5": 0.0,
     "mrr@5": 0.0,
@@ -3094,19 +3094,19 @@
     "gold_rank": 2,
     "corrective_rounds": 1,
     "corrective_queries": [
-      "Boeing material legal proceedings FY2022",
-      "Boeing litigation disclosures FY2022",
-      "Boeing ongoing lawsuits financial impact FY2022"
+      "Boeing material litigation ongoing FY2022",
+      "Boeing legal proceedings material impact FY2022",
+      "Boeing contingent liabilities legal disputes FY2022"
     ],
     "relevance": "PARTIAL",
     "evidence_seen": true,
-    "answer": "Oui, Boeing a rapporté des litiges juridiques en cours en FY2022 qui pourraient être considérés comme matériellement importants. Voici les éléments explicitement mentionnés dans le contexte :\n\n1. **Settlement avec la SEC en 2022** :\n   - Boeing a réglé une enquête de la *Securities and Exchange Commission (SEC)* liée aux accidents du 737 MAX, entraînant une charge de **200 millions de dollars** enregistrée en 2022 et payée en octobre 2022 [1][11].\n\n2. **Litiges résiduels liés au 737 MAX** :\n   - Plusieurs actions en justice sont toujours en cours à la suite des accidents de Lion Air (2018) et Ethiopian Airlines (2019). Boeing indique qu’il **ne peut pas estimer raisonnablement une fourchette de pertes potentielles** (non couvertes par l’assurance) pour ces litiges restants [11].\n\n3. **Autres procédures légales** :\n   - Boeing mentionne être impliqué dans **\"diverses procédures légales, réclamations et enquêtes\"** (produits, contrats, emploi, etc.), sans préciser leur impact matériel potentiel. L’entreprise affirme cependant que, **selon les informations actuelles**, ces procédures ne devraient pas avoir d’effet matériel sur sa situation financière [2][13].\n\n4. **Accord de poursuite différée (DPA) avec le DOJ** :\n   - Bien que cet accord ait été finalisé en **janvier 2021** (donc avant FY2022), il est mentionné comme un événement antérieur ayant eu un impact financier en 2020 et 2021 [1][6]. Aucun nouvel accord de ce type n’est signalé pour FY2022.\n\n**Conclusion** :\nBoeing a explicitement rapporté en FY2022 :\n- Un **règlement de 200 millions de dollars** avec la SEC [1][11].\n- Des **litiges en cours** liés au 737 MAX, sans estimation de pertes potentielles [11].\n- Une **incertitude quant à l’impact matériel** des autres procédures légales, mais sans indication de risques avérés pour FY2022",
-    "generation_sec": 14.43,
+    "answer": "Oui, Boeing a signalé des litiges juridiques en cours considérés comme matériellement importants pour l'exercice 2022 (FY2022). Voici les éléments explicitement mentionnés dans le contexte :\n\n1. **Settlement avec la Securities and Exchange Commission (SEC) en 2022** :\n   - Un règlement de **200 millions de dollars** lié aux accidents du 737 MAX a été conclu en septembre 2022, entraînant une charge de **200 millions de dollars** comptabilisée en 2022 et payée en octobre 2022 [1][11].\n\n2. **Litiges résiduels liés aux accidents du 737 MAX** :\n   - Bien que Boeing ait résolu certaines procédures (comme l'accord de *Deferred Prosecution Agreement* avec le Département de la Justice en 2021 et un règlement avec des plaignants dans un recours collectif dérivé en 2022), des **litiges en cours** persistent. Le document indique que Boeing **\"ne peut pas estimer raisonnablement une fourchette de pertes\"** pour les poursuites restantes ou autres questions liées aux accidents du 737 MAX, ce qui suggère un risque potentiellement matériel [11].\n\n3. **Mention générale des litiges matériels** :\n   - Boeing déclare que, **selon les informations actuelles**, aucun litige, réclamation ou enquête gouvernementale en cours **\"n'aura d'effet matériel sur [sa] situation financière, ses résultats d'exploitation ou ses flux de trésorerie\"**. Cependant, cette affirmation est nuancée par l'impossibilité d'estimer les pertes pour certains litiges (comme ceux liés au 737 MAX) [2][11][13].\n\n**Résumé** :\n- Le seul litige **explicitement quantifié** et matériellement important en 2022 est le **règlement de 200 millions de dollars avec la SEC** [1][11].\n- D'autres litiges (notamment ceux liés au 737 MAX) sont en cours, mais leur impact financier potentiel n'est pas estimable, ce qui implique un risque résiduel [11][13].",
+    "generation_sec": 11.19,
     "context_hit": true,
-    "answer_f1": 0.06802721088435375,
+    "answer_f1": 0.027118644067796606,
     "verdict": "CORRECT",
     "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée confirme l'existence de litiges matériellement importants (liés aux accidents du 737 MAX) et fournit des détails supplémentaires cohérents avec les extraits, sans contredire la référence. Tous les éléments cités sont appuyés par les extraits fournis."
+    "judge_reason": "La réponse générée confirme l'existence de litiges matériellement importants (notamment liés aux accidents du 737 MAX) et cite des éléments précis du document (règlement de 200M$ avec la SEC, impossibilité d'estimer les pertes résiduelles), sans contredire la référence. Elle est plus détaillée mais fidèle aux extraits fournis."
   },
   {
     "id": "financebench_id_00563",
@@ -3116,7 +3116,7 @@
     "question_type": "novel-generated",
     "question_reasoning": null,
     "mode": "baseline",
-    "retrieval_sec": 0.78,
+    "retrieval_sec": 0.91,
     "n_docs": 30,
     "recall@5": 1.0,
     "mrr@5": 1.0,
@@ -3217,13 +3217,13 @@
     ],
     "gold_rank": 1,
     "evidence_seen": true,
-    "answer": "From FY21 to FY22, excluding Embedded, the AMD reporting segment where sales proportionally increased the most was **Data Center**, with a **64% increase** in net revenue.\n\n- Data Center: 64% increase [$6,043M in 2022 vs $3,694M in 2021] [1][3]\n- Gaming: 21% increase [$6,805M in 2022 vs $5,607M in 2021] [3][5]\n- Client: 10% decrease [$6,201M in 2022 vs $6,887M in 2021] [3][10]",
-    "generation_sec": 2.34,
+    "answer": "D'après le contexte, en excluant le segment **Embedded**, le segment d'AMD dont les ventes ont proportionnellement augmenté le plus entre FY21 et FY22 est le **Data Center**, avec une hausse de **64%** [1][3].\n\n- **Data Center** : +64% (de $3,694 millions à $6,043 millions) [1][3].\n- **Gaming** : +21% (de $5,607 millions à $6,805 millions) [3][5].\n- **Client** : -10% (de $6,887 millions à $6,201 millions) [3][10].",
+    "generation_sec": 2.53,
     "context_hit": true,
-    "answer_f1": 0.05633802816901409,
+    "answer_f1": 0.05333333333333332,
     "verdict": "CORRECT",
     "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée identifie correctement le segment \"Data Center\" comme celui ayant la plus forte augmentation proportionnelle des ventes (64%), en accord avec la référence. Tous les chiffres et pourcentages sont appuyés par les extraits fournis, sans contradiction ni hallucination."
+    "judge_reason": "La réponse générée donne la même information que la référence (Data Center avec une hausse de 64%) et s'appuie intégralement sur les extraits fournis, sans contradiction ni ajout non justifié. Les détails supplémentaires (comme les pourcentages des autres segments) sont cohérents avec les données du document."
   },
   {
     "id": "financebench_id_00563",
@@ -3233,7 +3233,7 @@
     "question_type": "novel-generated",
     "question_reasoning": null,
     "mode": "agentic",
-    "retrieval_sec": 0.78,
+    "retrieval_sec": 0.91,
     "n_docs": 30,
     "recall@5": 1.0,
     "mrr@5": 1.0,
@@ -3337,13 +3337,13 @@
     "corrective_queries": [],
     "relevance": "CAN_ANSWER",
     "evidence_seen": true,
-    "answer": "D'après le contexte, entre FY21 et FY22, en excluant le segment Embedded, le segment **Data Center** a connu l'augmentation proportionnelle la plus importante en termes de ventes.\n\n- **Data Center** : augmentation de 64 % (de 3,694 milliards $ en 2021 à 6,043 milliards $ en 2022) [1][3].\n- **Gaming** : augmentation de 21 % (de 5,607 milliards $ en 2021 à 6,805 milliards $ en 2022) [3][5].\n- **Client** : diminution de 10 % (de 6,887 milliards $ en 2021 à 6,201 milliards $ en 2022) [3][10].",
-    "generation_sec": 3.21,
+    "answer": "From FY21 to FY22, excluding Embedded, the AMD reporting segment with the **proportional increase in sales** was the **Data Center segment**, with a **64% increase** in net revenue. [1][3]\n\n- Data Center: 64% increase [1][3]\n- Gaming: 21% increase [3][5]\n- Client: 10% decrease [3][10]",
+    "generation_sec": 1.92,
     "context_hit": true,
-    "answer_f1": 0.046511627906976744,
+    "answer_f1": 0.08333333333333333,
     "verdict": "CORRECT",
     "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée donne la même information que la référence (Data Center comme segment avec la plus forte augmentation proportionnelle) et s'appuie intégralement sur les extraits fournis, avec des calculs cohérents et des détails supplémentaires non contradictoires."
+    "judge_reason": "La réponse générée identifie correctement le segment Data Center comme celui ayant la plus forte augmentation proportionnelle de ventes (64%), en accord avec la référence. Toutes les affirmations sont appuyées par les extraits fournis, y compris les pourcentages d'évolution des autres segments."
   },
   {
     "id": "financebench_id_01290",
@@ -3353,7 +3353,7 @@
     "question_type": "domain-relevant",
     "question_reasoning": "Information extraction OR Logical reasoning",
     "mode": "baseline",
-    "retrieval_sec": 0.67,
+    "retrieval_sec": 1.07,
     "n_docs": 30,
     "recall@5": 0.0,
     "mrr@5": 0.0,
@@ -3454,13 +3454,13 @@
     ],
     "gold_rank": 17,
     "evidence_seen": false,
-    "answer": "The primary customers of Boeing as of FY2022 are:\n\n1. **The U.S. government (including foreign military sales through the U.S. government)** – This customer group accounted for **40% of Boeing’s consolidated revenues in 2022**, primarily recorded in the **Defense, Space & Security (BDS)** and **Global Services (BGS)** segments. [6]\n\n2. **Commercial airline industry worldwide** – The **Commercial Airplanes (BCA)** segment develops, produces, and markets commercial jet aircraft for this customer group. [3]\n\n3. **Commercial and defense customers worldwide** – The **Global Services (BGS)** segment provides services to both commercial and defense customers. [8]\n\nNo other primary customer groups are explicitly identified in the provided context.",
-    "generation_sec": 4.89,
+    "answer": "Based on the provided context, the primary customers of Boeing as of FY2022 are:\n\n1. **The U.S. government (including foreign military sales through the U.S. government)** – This group accounted for **40% of Boeing’s consolidated revenues in 2022**, primarily recorded in the **Defense, Space & Security (BDS)** and **Global Services (BGS)** segments. [6]\n\n2. **Commercial airline industry worldwide** – The **Commercial Airplanes (BCA)** segment develops, produces, and markets commercial jet aircraft for this customer base. [3]\n\n3. **Commercial and defense customers worldwide** – The **Global Services (BGS)** segment provides services to both commercial and defense customers. [8]\n\nNo other primary customer groups are explicitly identified in the context.",
+    "generation_sec": 2.97,
     "context_hit": true,
-    "answer_f1": 0.34074074074074073,
+    "answer_f1": 0.3333333333333333,
     "verdict": "CORRECT",
     "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée reprend fidèlement les informations clés de la référence (US government = 40% des revenus en FY2022, clients principaux = airlines et gouvernement) et les détaille sans contradiction, en s'appuyant strictement sur les extraits fournis."
+    "judge_reason": "La réponse générée reprend fidèlement les informations clés de la référence (US government = 40% des revenus en FY2022, clients principaux = airlines et gouvernement) et les étaye avec des détails supplémentaires issus des extraits (segments BDS, BGS, BCA). Aucune contradiction ni hallucination."
   },
   {
     "id": "financebench_id_01290",
@@ -3470,7 +3470,7 @@
     "question_type": "domain-relevant",
     "question_reasoning": "Information extraction OR Logical reasoning",
     "mode": "agentic",
-    "retrieval_sec": 0.67,
+    "retrieval_sec": 1.07,
     "n_docs": 30,
     "recall@5": 0.0,
     "mrr@5": 0.0,
@@ -3578,13 +3578,13 @@
     ],
     "relevance": "PARTIAL",
     "evidence_seen": false,
-    "answer": "Based on the provided context, the primary customers of Boeing as of FY2022 are:\n\n1. **Commercial Airplanes Segment (BCA):**\n   - The primary customers are the **commercial airline industry worldwide** [3].\n\n2. **Defense, Space & Security Segment (BDS):**\n   - The primary customer is the **U.S. government (including foreign military sales through the U.S. government)**, which represented **40% of consolidated revenues in 2022** [6][11].\n   - Revenues from the U.S. government in this segment are recognized **over time (99%)** and primarily on **fixed-price contracts (60%)** [11].\n\n3. **Global Services Segment (BGS):**\n   - The primary customers are **commercial and defense customers worldwide** [8].\n   - A portion of BGS revenues also comes from the **U.S. government**, as noted in [6].\n\n4. **Boeing Capital Segment (BCC):**\n   - The primary customers are **Boeing product buyers requiring financing** [8].\n\n**Additional details on customer distribution:**\n- **U.S. government contracts (including foreign military sales)** accounted for **$800 million in accounts receivable in 2022** [1].\n- **Non-U.S. customers** contributed **$6,018 million in revenue for the Defense, Space & Security segment in 2022** [11]. However, the specific identity of these non-U.S. customers is not provided in the context.",
-    "generation_sec": 17.15,
+    "answer": "Based on the provided context, the primary customers of Boeing as of FY2022 are:\n\n1. **The U.S. government (including foreign military sales through the U.S. government)** – This group represented **40% of Boeing’s consolidated revenues in 2022**, primarily recorded in the **Defense, Space & Security (BDS)** and **Global Services (BGS)** segments. [6][11]\n\n2. **Commercial airlines worldwide** – The **Commercial Airplanes (BCA)** segment develops, produces, and markets commercial jet aircraft principally for the **commercial airline industry**. [3]\n\n3. **Commercial and defense customers worldwide** – The **Global Services (BGS)** segment provides services to both **commercial and defense customers**. [8]\n\n4. **Non-U.S. customers** – These accounted for **$6,018 million (or ~9% of total revenues in 2022)** in the **Defense, Space & Security (BDS)** segment, including foreign military sales through the U.S. government. [11]\n\nNo further breakdown of specific customer names (e.g., airlines, governments, or defense agencies) is provided in the context.",
+    "generation_sec": 7.65,
     "context_hit": true,
-    "answer_f1": 0.2191780821917808,
+    "answer_f1": 0.27472527472527475,
     "verdict": "CORRECT",
     "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée reprend fidèlement les informations clés de la référence (commercial airlines et US government comme principaux clients, avec 40% des revenus en FY2022) et les enrichit sans les contredire, en s'appuyant strictement sur les extraits fournis."
+    "judge_reason": "La réponse générée reprend fidèlement les informations clés de la référence (US government = 40% des revenus, clients principaux = commercial airlines et US government) et les étaye avec des détails supplémentaires tirés des extraits fournis, sans contradiction."
   },
   {
     "id": "financebench_id_00757",
@@ -3695,13 +3695,13 @@
     ],
     "gold_rank": 1,
     "evidence_seen": true,
-    "answer": "Oui, AMD a rapporté une concentration de client pour l'exercice fiscal 2022 (FY22). Un client représentait **16 % du chiffre d'affaires net consolidé** pour l'année se terminant le **31 décembre 2022**, et les ventes à ce client provenaient du segment **Gaming** [1].",
-    "generation_sec": 2.18,
+    "answer": "Oui, AMD a rapporté une concentration de client pour l'exercice fiscal 2022 (FY22). Un client représentait **16 % de son chiffre d'affaires net consolidé** pour l'année terminée le 31 décembre 2022 [1].",
+    "generation_sec": 1.35,
     "context_hit": true,
-    "answer_f1": 0.07407407407407407,
+    "answer_f1": 0.0909090909090909,
     "verdict": "CORRECT",
     "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée confirme la concentration de client (16% du chiffre d'affaires net consolidé en FY22) et précise le segment (Gaming), ce qui est entièrement appuyé par les extraits fournis. Aucune contradiction avec la référence."
+    "judge_reason": "La réponse générée confirme la concentration de client (16% du chiffre d'affaires net consolidé en FY22) et s'appuie exactement sur les extraits fournis, sans ajout ni contradiction. La formulation est fidèle à la référence."
   },
   {
     "id": "financebench_id_00757",
@@ -3815,13 +3815,13 @@
     "corrective_queries": [],
     "relevance": "CAN_ANSWER",
     "evidence_seen": true,
-    "answer": "Oui, AMD a rapporté une concentration de client pour l'exercice fiscal 2022 (FY22). Un client représentait **16 % du chiffre d'affaires net consolidé** pour l'année se terminant le **31 décembre 2022**, et les ventes à ce client provenaient du segment **Gaming** [1].",
-    "generation_sec": 3.29,
+    "answer": "Oui, AMD a rapporté une concentration de client pour l'exercice fiscal 2022 (FY22). Un client représentait **16 % de son chiffre d'affaires net consolidé** pour l'année terminée le 31 décembre 2022 [1].",
+    "generation_sec": 1.95,
     "context_hit": true,
-    "answer_f1": 0.07407407407407407,
+    "answer_f1": 0.0909090909090909,
     "verdict": "CORRECT",
     "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée confirme la concentration de client (16% du chiffre d'affaires net consolidé en FY22) et précise le segment (Gaming), ce qui est entièrement appuyé par les extraits fournis. Elle ne contredit pas la référence et apporte même des détails supplémentaires cohérents."
+    "judge_reason": "La réponse générée confirme la concentration de client (16% du chiffre d'affaires net consolidé en FY22) et s'appuie exactement sur les extraits fournis, sans ajout ni contradiction. La formulation est fidèle à la référence."
   },
   {
     "id": "financebench_id_01964",
@@ -3831,7 +3831,7 @@
     "question_type": "novel-generated",
     "question_reasoning": null,
     "mode": "baseline",
-    "retrieval_sec": 1.34,
+    "retrieval_sec": 0.76,
     "n_docs": 30,
     "recall@5": 0.5,
     "mrr@5": 0.3333333333333333,
@@ -3932,133 +3932,133 @@
     ],
     "gold_rank": 3,
     "evidence_seen": true,
+    "answer": "The largest liability in American Express's Balance Sheet in 2022 was **Customer deposits**, which amounted to **$110,239 million** [3].",
+    "generation_sec": 1.32,
+    "context_hit": true,
+    "answer_f1": 0.17391304347826084,
+    "verdict": "CORRECT",
+    "judge_faithfulness": 5.0,
+    "judge_reason": "La réponse générée identifie correctement \"Customer deposits\" comme la plus grande dette en 2022, en accord avec la référence, et s'appuie explicitement sur les extraits fournis (montant de $110,239 millions). Aucune contradiction ni hallucination."
+  },
+  {
+    "id": "financebench_id_01964",
+    "doc_name": "AMERICANEXPRESS_2022_10K",
+    "question": "What was the largest liability in American Express's Balance Sheet in 2022?",
+    "expected_answer": "Customer deposits",
+    "question_type": "novel-generated",
+    "question_reasoning": null,
+    "mode": "agentic",
+    "retrieval_sec": 0.76,
+    "n_docs": 30,
+    "recall@5": 0.5,
+    "mrr@5": 0.3333333333333333,
+    "ndcg@5": 0.3065735963827292,
+    "page_hit@5": 1.0,
+    "page_recall@5": 1.0,
+    "recall@10": 1.0,
+    "mrr@10": 0.3333333333333333,
+    "ndcg@10": 0.5249810332008933,
+    "page_hit@10": 1.0,
+    "page_recall@10": 1.0,
+    "recall@20": 1.0,
+    "mrr@20": 0.3333333333333333,
+    "ndcg@20": 0.5249810332008933,
+    "page_hit@20": 1.0,
+    "page_recall@20": 1.0,
+    "retrieved": [
+      [
+        "AMERICANEXPRESS_2022_10K",
+        93
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        126
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        97
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        125
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        129
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        168
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        82
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        71
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        82
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        122
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        156
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        133
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        133
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        138
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        149
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        98
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        98
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        64
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        70
+      ],
+      [
+        "AMERICANEXPRESS_2022_10K",
+        120
+      ]
+    ],
+    "gold_rank": 3,
+    "corrective_rounds": 0,
+    "corrective_queries": [],
+    "relevance": "CAN_ANSWER",
+    "evidence_seen": true,
     "answer": "The largest liability in American Express's Balance Sheet in 2022 was **Customer deposits**, totaling **$110,239 million** [3].",
-    "generation_sec": 19.24,
+    "generation_sec": 1.26,
     "context_hit": true,
     "answer_f1": 0.1904761904761905,
     "verdict": "CORRECT",
     "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée identifie correctement \"Customer deposits\" comme la plus grande dette en 2022, en accord avec la référence, et s'appuie explicitement sur les extraits du document (montant de $110,239 millions). Aucune contradiction ou hallucination n'est présente."
-  },
-  {
-    "id": "financebench_id_01964",
-    "doc_name": "AMERICANEXPRESS_2022_10K",
-    "question": "What was the largest liability in American Express's Balance Sheet in 2022?",
-    "expected_answer": "Customer deposits",
-    "question_type": "novel-generated",
-    "question_reasoning": null,
-    "mode": "agentic",
-    "retrieval_sec": 1.34,
-    "n_docs": 30,
-    "recall@5": 0.5,
-    "mrr@5": 0.3333333333333333,
-    "ndcg@5": 0.3065735963827292,
-    "page_hit@5": 1.0,
-    "page_recall@5": 1.0,
-    "recall@10": 1.0,
-    "mrr@10": 0.3333333333333333,
-    "ndcg@10": 0.5249810332008933,
-    "page_hit@10": 1.0,
-    "page_recall@10": 1.0,
-    "recall@20": 1.0,
-    "mrr@20": 0.3333333333333333,
-    "ndcg@20": 0.5249810332008933,
-    "page_hit@20": 1.0,
-    "page_recall@20": 1.0,
-    "retrieved": [
-      [
-        "AMERICANEXPRESS_2022_10K",
-        93
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        126
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        97
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        125
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        129
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        168
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        82
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        71
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        82
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        122
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        156
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        133
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        133
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        138
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        149
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        98
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        98
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        64
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        70
-      ],
-      [
-        "AMERICANEXPRESS_2022_10K",
-        120
-      ]
-    ],
-    "gold_rank": 3,
-    "corrective_rounds": 0,
-    "corrective_queries": [],
-    "relevance": "CAN_ANSWER",
-    "evidence_seen": true,
-    "answer": "The largest liability in American Express's Balance Sheet in 2022 was **Customer deposits**, totaling **$110,239 million** [3].\n\nThe other liabilities listed include:\n- **Membership Rewards liability**: $12,789 million [2]\n- **Long-term debt**: $42,573 million [3]\n- **Other liabilities**: $37,350 million (which includes the Membership Rewards liability) [2][3].",
-    "generation_sec": 5.21,
-    "context_hit": true,
-    "answer_f1": 0.07547169811320754,
-    "verdict": "CORRECT",
-    "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée identifie correctement \"Customer deposits\" comme la plus grande dette en 2022, conformément à la référence, et s'appuie entièrement sur les extraits fournis (tableau des liabilities). Les détails supplémentaires ne contredisent pas la référence."
+    "judge_reason": "La réponse générée identifie correctement \"Customer deposits\" comme la plus grande dette en 2022, en accord avec la référence, et s'appuie explicitement sur les extraits fournis (montant de $110,239 millions). Aucune contradiction ou hallucination n'est présente."
   },
   {
     "id": "financebench_id_01981",
@@ -4068,7 +4068,7 @@
     "question_type": "novel-generated",
     "question_reasoning": null,
     "mode": "baseline",
-    "retrieval_sec": 0.89,
+    "retrieval_sec": 0.66,
     "n_docs": 30,
     "recall@5": 1.0,
     "mrr@5": 1.0,
@@ -4169,13 +4169,13 @@
     ],
     "gold_rank": 1,
     "evidence_seen": true,
-    "answer": "American Express a pu retenir ses membres de carte en 2022, avec un niveau de rétention élevé. Cela est explicitement mentionné dans le contexte :\n\n- *\"Card Member retention remained high, demonstrating the impact of investments we have made in our premium value propositions.\"* [1]",
-    "generation_sec": 12.08,
+    "answer": "American Express a pu retenir ses membres de carte en 2022, comme l'indique le passage suivant :\n\n\"Net card fees increased 17 percent year over-year, as new card acquisitions reached record levels in 2022 and **Card Member retention remained high**, demonstrating the impact of investments we have made in our premium value propositions.\" [1]",
+    "generation_sec": 1.5,
     "context_hit": false,
     "answer_f1": 0.0,
     "verdict": "CORRECT",
     "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée confirme explicitement la rétention élevée des membres de carte en 2022, en citant directement le passage pertinent du document (\"Card Member retention remained high\"). Aucune contradiction ni information non appuyée n'est présente."
+    "judge_reason": "La réponse générée confirme que American Express a pu retenir ses membres de carte en 2022, en citant explicitement le passage du document qui mentionne que *\"Card Member retention remained high\"*. Cela correspond exactement à la réponse de référence (\"Yes\") et s'appuie intégralement sur les extraits fournis."
   },
   {
     "id": "financebench_id_01981",
@@ -4185,7 +4185,7 @@
     "question_type": "novel-generated",
     "question_reasoning": null,
     "mode": "agentic",
-    "retrieval_sec": 0.89,
+    "retrieval_sec": 0.66,
     "n_docs": 30,
     "recall@5": 1.0,
     "mrr@5": 1.0,
@@ -4285,21 +4285,17 @@
       ]
     ],
     "gold_rank": 1,
-    "corrective_rounds": 1,
-    "corrective_queries": [
-      "American Express customer retention metrics 2022",
-      "American Express card member churn rate 2022",
-      "American Express loyalty program enrollment 2022"
-    ],
+    "corrective_rounds": 0,
+    "corrective_queries": [],
     "relevance": "CAN_ANSWER",
     "evidence_seen": true,
-    "answer": "American Express a pu retenir ses membres de carte en 2022, avec un taux de rétention élevé des Card Members. Cela est explicitement mentionné comme l'un des facteurs ayant contribué à l'augmentation de 17 % des frais nets de carte d'une année sur l'autre [1].",
-    "generation_sec": 8.15,
+    "answer": "American Express a pu retenir ses membres de carte en 2022, comme l'indique le passage suivant :\n\n\"Net card fees increased 17 percent year over-year, as new card acquisitions reached record levels in 2022 and **Card Member retention remained high**, demonstrating the impact of investments we have made in our premium value propositions.\" [1]",
+    "generation_sec": 2.31,
     "context_hit": false,
     "answer_f1": 0.0,
     "verdict": "CORRECT",
     "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée confirme la rétention des membres de carte en 2022 (\"Card Member retention remained high\"), en accord avec la référence (\"Yes\"), et s'appuie explicitement sur les extraits fournis (mention des \"frais nets de carte\" en hausse de 17 % due à la rétention). Aucune contradiction ou hallucination."
+    "judge_reason": "La réponse générée confirme que American Express a pu retenir ses membres de carte en 2022, en citant explicitement le passage du document qui mentionne que *\"Card Member retention remained high\"*. Elle est alignée avec la référence et entièrement appuyée par les extraits fournis."
   },
   {
     "id": "financebench_id_00464",
@@ -4309,7 +4305,7 @@
     "question_type": "novel-generated",
     "question_reasoning": null,
     "mode": "baseline",
-    "retrieval_sec": 1.46,
+    "retrieval_sec": 0.77,
     "n_docs": 30,
     "recall@5": 1.0,
     "mrr@5": 1.0,
@@ -4410,13 +4406,13 @@
     ],
     "gold_rank": 1,
     "evidence_seen": true,
-    "answer": "Oui, le business de Boeing est sujet à la cyclicité, en particulier pour son segment **Commercial Airplanes**.\n\n- Le document indique explicitement que **\"Historically, the airline industry has been cyclical and very competitive\"** et qu'elle a connu **\"significant profit swings\"** [1].\n- La demande pour les avions commerciaux de Boeing est influencée par des facteurs économiques et industriels volatils, tels que la croissance économique, la rentabilité des compagnies aériennes, les prix du carburant, et les crises (pandémies, terrorisme) [1].\n- Les résultats financiers du segment **Commercial Airplanes** montrent des variations importantes d'une année à l'autre (ex. : revenus de **$16,162M** en 2020 à **$25,867M** en 2022, avec des pertes opérationnelles fluctuantes) [2].\n\n[1][2]",
-    "generation_sec": 3.15,
+    "answer": "Oui, le business de Boeing est sujet à la cyclicité, en particulier pour son segment **Commercial Airplanes**.\n\n- Le document indique explicitement que **\"Historically, the airline industry has been cyclical\"** et qu'elle a connu **\"significant profit swings\"** [1].\n- La demande pour les avions commerciaux de Boeing est influencée par des facteurs économiques et industriels volatils, tels que la **profitabilité des compagnies aériennes**, les **prix du carburant**, les **régulations environnementales**, et les **crises géopolitiques ou sanitaires** (ex. pandémies) [1].\n- Le segment **Commercial Airplanes** montre des variations marquées dans ses revenus et ses pertes opérationnelles sur les trois années présentées (2020–2022), reflétant une sensibilité aux cycles économiques [2].\n\n[1][2]",
+    "generation_sec": 3.04,
     "context_hit": false,
-    "answer_f1": 0.10294117647058824,
+    "answer_f1": 0.10769230769230768,
     "verdict": "CORRECT",
     "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée confirme la cyclicité de Boeing en s'appuyant sur les mêmes arguments que la référence (exposition à l'industrie aérienne cyclique) et renforce son analyse avec des extraits pertinents du document, sans contradiction. Toutes les affirmations sont étayées par les données fournies."
+    "judge_reason": "La réponse générée confirme la cyclicité de Boeing en s'appuyant sur les mêmes éléments que la référence (exposition à l'industrie aérienne cyclique, variations de revenus et pertes opérationnelles) et cite explicitement les extraits du document fournis. Aucune contradiction ni affirmation non appuyée."
   },
   {
     "id": "financebench_id_00464",
@@ -4426,7 +4422,7 @@
     "question_type": "novel-generated",
     "question_reasoning": null,
     "mode": "agentic",
-    "retrieval_sec": 1.46,
+    "retrieval_sec": 0.77,
     "n_docs": 30,
     "recall@5": 1.0,
     "mrr@5": 1.0,
@@ -4530,13 +4526,13 @@
     "corrective_queries": [],
     "relevance": "CAN_ANSWER",
     "evidence_seen": true,
-    "answer": "Oui, Boeing's business, en particulier son segment **Commercial Airplanes**, est sujet à la cyclicalité.\n\nVoici les éléments explicites du contexte qui le confirment :\n- *\"Historically, the airline industry has been cyclical and very competitive and has experienced significant profit swings and constant challenges to be more cost competitive.\"* [1]\n- *\"The commercial aircraft market is predominantly driven by long-term trends in airline passenger and cargo traffic. The principal factors underlying long-term traffic growth are sustained economic growth and political stability [...]\"* [1]\n- Les revenus du segment **Commercial Airplanes** ont varié significativement entre 2020 et 2022 ($16,162M en 2020, $19,493M en 2021, $25,867M en 2022), reflétant des fluctuations liées à des facteurs externes (ex. : pandémie, reprise post-COVID). [2]\n- *\"The industry continues to recover from the lingering effects of the COVID-19 pandemic. The commercial aircraft market and the airline industry both remain extremely competitive.\"* [3]\n\nLe contexte ne fournit pas d'information explicite sur la cyclicalité des autres segments (Defense, Space & Security ou Global Services). [2][6]",
-    "generation_sec": 5.96,
+    "answer": "Oui, le business de Boeing est sujet à la cyclicité, en particulier pour son segment **Commercial Airplanes**.\n\n- Le document indique explicitement que **\"Historically, the airline industry has been cyclical and very competitive\"** et qu'elle a connu **\"significant profit swings\"** [1].\n- La demande pour les avions commerciaux de Boeing est influencée par des facteurs économiques et industriels volatils, tels que la **croissance économique**, la **rentabilité des compagnies aériennes**, les **prix du carburant**, et les **crises géopolitiques ou sanitaires** (ex. pandémies) [1].\n- Les résultats financiers du segment **Commercial Airplanes** montrent des variations importantes : par exemple, les **revenus** sont passés de **$16,162 millions en 2020** à **$25,867 millions en 2022**, tandis que les **pertes opérationnelles** ont fluctué entre **($13,847) millions en 2020** et **($2,370) millions en 2022** [2].\n\n[1][2]",
+    "generation_sec": 4.23,
     "context_hit": false,
-    "answer_f1": 0.1256544502617801,
+    "answer_f1": 0.0915032679738562,
     "verdict": "CORRECT",
     "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée confirme la cyclicalité de Boeing (notamment via son segment *Commercial Airplanes*), en alignement avec la référence, et s'appuie intégralement sur les extraits fournis pour justifier cette conclusion. Aucune affirmation non étayée n'est présente."
+    "judge_reason": "La réponse générée confirme la cyclicité de Boeing en s'appuyant sur des extraits pertinents du document (cyclicalité de l'industrie aérienne, fluctuations des revenus et pertes du segment Commercial Airplanes), sans contradiction avec la référence. Tous les éléments avancés sont étayés par les extraits fournis."
   },
   {
     "id": "financebench_id_00494",
@@ -4546,7 +4542,7 @@
     "question_type": "novel-generated",
     "question_reasoning": null,
     "mode": "baseline",
-    "retrieval_sec": 0.57,
+    "retrieval_sec": 0.76,
     "n_docs": 30,
     "recall@5": 0.5,
     "mrr@5": 1.0,
@@ -4647,13 +4643,13 @@
     ],
     "gold_rank": 1,
     "evidence_seen": true,
-    "answer": "Boeing forecasts the following production rate changes for FY2023 (based on the provided context):\n\n1. **787 Program**:\n   - Currently producing at low rates.\n   - Expected to **gradually increase to 5 per month in 2023** [1][2].\n\n2. **777X Program**:\n   - Production is **currently paused**.\n   - Expected to **resume in 2023** [1].\n\n3. **737 Program**:\n   - Currently producing at **31 per month** (as of 2022).\n   - Plans to **gradually increase production rates** based on **market demand and supply chain capacity** [1][3].\n\n4. **777/777X Programs (combined)**:\n   - Currently producing at a **combined rate of 3 per month** (no explicit FY2023 change mentioned) [4].\n\n5. **767 Program**:\n   - Currently producing at a **combined rate of 3 per month** (no explicit FY2023 change mentioned) [4].\n\n6. **747 Program**:\n   - Production **completed in Q4 2022**; no FY2023 production forecast [9].",
-    "generation_sec": 10.29,
+    "answer": "Boeing forecasts the following production rate changes for FY2023 (based on the provided context):\n\n1. **787 Program**:\n   - Currently producing at low rates.\n   - Expected to **gradually increase to 5 per month in 2023** [1][2].\n\n2. **777X Program**:\n   - Production is **currently paused** and **expected to resume in 2023** [1].\n\n3. **737 Program**:\n   - Currently producing at **31 per month** (as of 2022).\n   - Plans to **gradually increase production rates** based on **market demand and supply chain capacity** [1][3].\n\n4. **777/777X Programs (combined)**:\n   - Currently producing at a combined rate of **3 per month** [4].\n   - No explicit forecast for rate changes in 2023 is provided in the context.\n\n5. **767 Program**:\n   - Currently producing at a combined rate of **3 per month** (including KC-46A Tanker) [4].\n   - No explicit forecast for rate changes in 2023 is provided in the context.\n\n6. **747 Program**:\n   - Production **completed in Q4 2022**; no further rate changes expected [9].",
+    "generation_sec": 3.52,
     "context_hit": true,
-    "answer_f1": 0.20689655172413793,
+    "answer_f1": 0.17964071856287428,
     "verdict": "CORRECT",
     "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée reprend fidèlement les informations de la référence (augmentation des taux de production pour les 737, 777X et 787 en 2023) et les détaille sans les contredire. Toutes les affirmations sont appuyées par les extraits fournis."
+    "judge_reason": "La réponse générée reprend fidèlement les informations de la référence (augmentation des taux de production pour les 737, 777X et 787 en 2023) et les détaille sans les contredire, en s'appuyant strictement sur les extraits fournis. Aucune affirmation non appuyée n'est présente."
   },
   {
     "id": "financebench_id_00494",
@@ -4663,7 +4659,7 @@
     "question_type": "novel-generated",
     "question_reasoning": null,
     "mode": "agentic",
-    "retrieval_sec": 0.57,
+    "retrieval_sec": 0.76,
     "n_docs": 30,
     "recall@5": 0.5,
     "mrr@5": 1.0,
@@ -4767,13 +4763,13 @@
     "corrective_queries": [],
     "relevance": "CAN_ANSWER",
     "evidence_seen": true,
-    "answer": "Boeing is forecasting the following production rate changes for FY2023:\n\n- **787 program**: Currently producing at low rates and expects to **gradually increase to 5 per month in 2023** [1][2].\n- **777X program**: Production is currently paused and is **expected to resume in 2023** [1].\n- **737 program**: Currently producing at **31 per month** and plans to **gradually increase production rates based on market demand and supply chain capacity** [1][3].\n\nNo other production rate changes for FY2023 are explicitly mentioned in the provided context.",
-    "generation_sec": 2.35,
+    "answer": "Boeing forecasts the following production rate changes for FY2023:\n\n1. **787 program**: Currently producing at low rates, with an expected gradual increase to **5 per month in 2023** [1][2].\n2. **777X program**: Production is currently paused and is **expected to resume in 2023** [1].\n3. **737 program**: Currently producing at **31 per month**, with plans to **gradually increase production rates based on market demand and supply chain capacity** [1][3]. No specific target rate for FY2023 is provided beyond the gradual increase.\n\nNo other production rate changes for FY2023 are explicitly mentioned in the provided context.",
+    "generation_sec": 34.84,
     "context_hit": true,
-    "answer_f1": 0.27999999999999997,
+    "answer_f1": 0.2807017543859649,
     "verdict": "CORRECT",
     "judge_faithfulness": 5.0,
-    "judge_reason": "La réponse générée reprend fidèlement les informations de la référence (augmentation pour 737, 777X et 787) et les détaille sans les contredire, en s'appuyant strictement sur les extraits fournis. Aucune affirmation non appuyée n'est présente."
+    "judge_reason": "La réponse générée reprend fidèlement les informations de la référence (augmentation pour les 737, 777X et 787) et les détaille sans les contredire. Toutes les affirmations sont appuyées par les extraits fournis."
   },
   {
     "id": "financebench_id_00585",
@@ -4783,7 +4779,7 @@
     "question_type": "novel-generated",
     "question_reasoning": null,
     "mode": "baseline",
-    "retrieval_sec": 0.84,
+    "retrieval_sec": 1.05,
     "n_docs": 30,
     "recall@5": 0.6666666666666666,
     "mrr@5": 0.5,
@@ -4884,13 +4880,13 @@
     ],
     "gold_rank": null,
     "evidence_seen": false,
-    "answer": "Boeing's effective tax rate in FY2022 was **(0.6)%** (a tax benefit), compared to **14.7%** (a tax benefit) in FY2021. [1]",
-    "generation_sec": 2.63,
+    "answer": "Boeing's effective tax rate in FY2022 was **(0.6)%**, while in FY2021 it was **14.7%**. [1]",
+    "generation_sec": 1.14,
     "context_hit": false,
-    "answer_f1": 0.6486486486486486,
+    "answer_f1": 0.6250000000000001,
     "verdict": "INCORRECT",
     "judge_faithfulness": 3.0,
-    "judge_reason": "La réponse générée indique un taux effectif d'impôt de **14.7%** pour FY2021 (positif), alors que la référence et les extraits montrent **-14.76%** (bénéfice fiscal). Le signe est erroné, bien que les chiffres soient proches. La faithfulness est pénalisée pour cette inversion de sens."
+    "judge_reason": "La réponse générée indique un taux de 14.7% pour FY2021, alors que la référence et les extraits montrent un taux négatif (-14.76%). Le signe est incorrect, bien que la valeur absolue soit proche. La réponse n'est pas entièrement appuyée par les données."
   },
   {
     "id": "financebench_id_00585",
@@ -4900,7 +4896,7 @@
     "question_type": "novel-generated",
     "question_reasoning": null,
     "mode": "agentic",
-    "retrieval_sec": 0.84,
+    "retrieval_sec": 1.05,
     "n_docs": 30,
     "recall@5": 0.6666666666666666,
     "mrr@5": 0.5,
@@ -5005,11 +5001,11 @@
     "relevance": "CAN_ANSWER",
     "evidence_seen": false,
     "answer": "Boeing's effective tax rate in FY2022 was **(0.6)%** (a tax benefit), compared to **14.7%** (a tax benefit) in FY2021. [1]",
-    "generation_sec": 4.77,
+    "generation_sec": 1.57,
     "context_hit": false,
     "answer_f1": 0.6486486486486486,
     "verdict": "INCORRECT",
     "judge_faithfulness": 3.0,
-    "judge_reason": "La réponse générée indique un taux effectif d'impôt de **14.7%** pour FY2021 (avec mention d'un \"tax benefit\"), alors que la référence précise **-14.76%** (taux négatif). Le signe est erroné, ce qui contredit la référence. Cependant, les chiffres sont partiellement appuyés par les extraits (tableau montrant \"($743) | 14.7 %\" pour 2021, mais sans interprétation correcte du signe)."
+    "judge_reason": "La réponse générée indique un taux effectif d'impôt de **14.7%** pour FY2021 (avec mention d'un \"tax benefit\"), alors que la référence et les extraits montrent **-14.76%** (un taux négatif, reflétant un bénéfice fiscal). Le signe est incorrect, bien que la valeur absolue soit proche. La faithfulness est pénalisée car l'erreur de signe n'est pas appuyée par les données."
   }
 ]

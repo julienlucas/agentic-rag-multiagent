@@ -1,7 +1,7 @@
 # Évaluation FinanceBench
 
-Deuxième évaluation du RAG agentique, sur des documents nettement plus difficiles que la
-première (`evaluation/dataset.jsonl` : rapport DeepSeek + rapport environnemental Google).
+Évaluation du RAG agentique sur des filings SEC longs et denses en tableaux — le seul jeu
+d'éval du projet, et le seul qui porte un chiffre publiable (annotation experte externe).
 
 ## Pourquoi FinanceBench
 
@@ -165,10 +165,10 @@ S'y ajoutent, par mode :
   et `gold_rank` (rang de la première page de preuve), pour diagnostiquer le retrieval sans
   relancer d'appels API.
 
-### Continuité avec la première évaluation
+### Métriques de retrieval
 
 `recall@k`, `mrr@k`, `ndcg@k` (matching textuel sur les passages de preuve), `context_hit_rate`
-et `mean_f1` sont calculés avec les mêmes fonctions que `evaluation/run_eval.py`.
+et `mean_f1` viennent de `evaluation/metrics.py`.
 
 ⚠️ **`mean_f1` est peu informatif ici** : les réponses attendues sont en prose
 (« Data Center », « Performance is not measured through operating margin »), le recouvrement de

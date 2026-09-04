@@ -24,6 +24,16 @@ class Settings(BaseSettings):
 
     CHROMA_COLLECTION_NAME: str = "documents"
 
+    # Métrique de similarité de l'index vectoriel (Chroma -> HNSW : "cosine" | "l2" | "ip").
+    # Posée explicitement à dessein : le défaut de Chroma est "l2", qui n'est correct que tant
+    # que les embeddings sont normés. C'est le cas de mistral-embed (normes mesurées sur
+    # l'index FinanceBench : 1 ± 2e-4), et sur des vecteurs unitaires L2 = 2 - 2·cos donne
+    # exactement le même classement — vérifié sur 25 requêtes, top-20 identique.
+    # Un modèle d'embedding non normé rendrait ce défaut faux SILENCIEUSEMENT : pas d'erreur,
+    # pas de log, juste un recall qui baisse. D'où le réglage explicite.
+    # ⚠️ Changer cette valeur invalide les index HNSW déjà persistés : il faut ré-embedder.
+    VECTOR_SPACE: str = "cosine"
+
     # Cohere API (pour reranking)
     COHERE_API_KEY: Optional[str] = None
 

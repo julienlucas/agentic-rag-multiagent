@@ -28,8 +28,7 @@ def build_verification_report(state: "AgentState") -> str:
     Rapport de vérification construit à partir des signaux réels du pipeline —
     aucun appel LLM supplémentaire (le VerificationAgent a été retiré pour la latence).
 
-    Le frontend convertit **gras** et *italique*. run_eval._parse_verification_flags
-    lit la ligne "**Pertinent:**" (ancien format), on la conserve pour compatibilité.
+    Le frontend convertit **gras** et *italique*.
     """
     import os
     from collections import OrderedDict

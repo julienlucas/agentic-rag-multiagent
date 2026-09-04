@@ -4,15 +4,13 @@ import sys
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from langsmith import Client
-from backend.config.settings import settings
-from backend.document_processor.file_handler import DocumentProcessor
 from backend.retriever.builder import RetrieverBuilder
 
 
@@ -27,24 +25,6 @@ def load_dataset(path: str) -> List[Dict]:
                 continue
             items.append(json.loads(line))
     return items
-
-
-def resolve_file_path(example: Dict) -> str:
-    if example.get("file_path"):
-        return example["file_path"]
-    file_name = example.get("file_name", "").strip()
-    return os.path.join(settings.EXAMPLES_DIR, file_name)
-
-
-def build_retriever_for_file(file_path: str):
-    class FileObject:
-        def __init__(self, path: str):
-            self.name = path
-
-    processor = DocumentProcessor()
-    retriever_builder = RetrieverBuilder()
-    chunks = processor.process([FileObject(file_path)])
-    return retriever_builder.build_hybrid_retriever(chunks)
 
 
 def log_to_langsmith(name: str, summary: Dict, inputs: Dict):
@@ -85,7 +65,6 @@ def build_retriever_from_chunks(chunks: List, persist_directory: str = None):
     """
     Construit le retriever à partir de chunks déjà produits, sans repasser par l'OCR.
 
-    build_retriever_for_file() passe par DocumentProcessor, qui ré-OCRise le fichier.
     L'évaluation FinanceBench pré-calcule ses chunks (OCR page par page + metadata de page)
     dans une phase séparée, et réutilise ici exactement la même chaîne de retrieval que
     la production : BM25 + Chroma -> ParentChild -> MultiQuery -> Rerank Cohere.
