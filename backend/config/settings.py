@@ -81,7 +81,24 @@ class Settings(BaseSettings):
     # questions dont la preuve était déjà là (FinanceBench, 2 sept. 2026 : 2 CORRECT -> INCORRECT).
     CORRECTIVE_PROTECT_TOP: int = 10
     # Passages supplémentaires transmis au modèle après une correction, en plus des initiaux.
+    # Avec l'agent à outils, une page entière lue par read_page compte pour un passage.
     CORRECTIVE_EXTRA_DOCS: int = 5
+    # Le modèle de GÉNÉRATION reçoit lui-même les outils search / grep / read_page, sur
+    # TOUTES les questions : il répond directement si le contexte suffit, sinon il cherche et
+    # répond dans la même conversation (Agentic Search de Mistral). Remplace la recherche
+    # corrective conditionnelle : sur le run du 4 sept. 2026, 3 des 6 questions sans preuve
+    # étaient classées CAN_ANSWER par le vérificateur, l'agent n'y était jamais appelé.
+    GENERATOR_TOOLS_ENABLED: bool = True
+    GENERATOR_MAX_TOOL_CALLS: int = 5
+
+    # Forme de la correction (quand GENERATOR_TOOLS_ENABLED est False) :
+    #  - "agent"   : boucle d'outils (search / grep / read_page) menée par le modèle de
+    #                génération, qui voit chaque résultat avant de décider du suivant.
+    #  - "rewrite" : l'ancienne réécriture aveugle de la question par Mistral Small.
+    # L'agent retombe sur "rewrite" si l'appel d'outils échoue (modèle sans function calling).
+    CORRECTIVE_MODE: str = "agent"
+    # Plafond d'appels d'outils par question corrigée. ~3 s par appel avec Mistral Large.
+    CORRECTIVE_MAX_TOOL_CALLS: int = 5
     # Déclencheur : score max du reranker Cohere sous ce seuil = le retrieval a
     # probablement raté -> corriger. (NO_MATCH du checker déclenche toujours ;
     # le checker seul ne suffit pas : son prompt le biaise vers PARTIAL et il ne

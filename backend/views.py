@@ -8,6 +8,7 @@ from django.views.decorators.csrf import csrf_exempt
 from typing import List
 from .document_processor.file_handler import DocumentProcessor
 from .retriever.builder import RetrieverBuilder
+from .retriever.page_store import PageStore
 from .agents.workflow import AgentWorkflow
 from .config import constants
 from .config.settings import settings
@@ -49,7 +50,8 @@ def process_files(file_objects, session_id, success_message="Fichiers traités a
     if session_id not in sessions:
         sessions[session_id] = {
             "file_hashes": frozenset(),
-            "retriever": None
+            "retriever": None,
+            "page_store": None,
         }
 
     # Traiter les documents
@@ -62,11 +64,15 @@ def process_files(file_objects, session_id, success_message="Fichiers traités a
     retriever = retriever_builder.build_hybrid_retriever(chunks)
     logger.info(f"Retriever créé: {retriever is not None}")
 
+    # Pages OCR pour les outils grep / read_page de l'agent de recherche.
+    page_store = PageStore(processor.pages) if processor.pages else None
+
     # Mettre à jour la session
     current_hashes = get_file_hashes(file_objects)
     sessions[session_id].update({
         "file_hashes": current_hashes,
-        "retriever": retriever
+        "retriever": retriever,
+        "page_store": page_store,
     })
 
     logger.info(f"Session {session_id} mise à jour. Retriever: {sessions[session_id]['retriever'] is not None}")
@@ -155,7 +161,8 @@ def process_question(request):
 
         result = _workflow.full_pipeline(
             question=question,
-            retriever=sessions[session_id]["retriever"]
+            retriever=sessions[session_id]["retriever"],
+            page_store=sessions[session_id].get("page_store"),
         )
 
         return JsonResponse({

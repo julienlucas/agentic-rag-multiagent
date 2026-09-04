@@ -20,6 +20,9 @@ class DocumentProcessor:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.client = Mistral(api_key=settings.MISTRALAI_API_KEY)
         self.batch_size = 3  # Traiter 3 pages à la fois
+        # Markdown OCR page par page, par source : alimente le PageStore (outils grep /
+        # read_page de l'agent de recherche). Rempli par process(), cache compris.
+        self.pages: dict = {}
 
     def _validate_files(self, files: List) -> None:
         """Valider la taille totale des fichiers téléchargés."""
@@ -59,23 +62,25 @@ class DocumentProcessor:
                     # Fichier local - lire depuis le chemin
                     with open(file.name, "rb") as f:
                         file_hash = self._generate_hash(f.read())
-                # v2 : les chunks portent désormais metadata["page"] — les caches
-                # antérieurs n'en ont pas, la version dans la clé les invalide.
-                cache_path = self.cache_dir / f"{file_hash}-v2.pkl"
+                # v3 : le cache porte aussi les pages OCR (v2 : metadata["page"] sur les
+                # chunks). La version dans la clé invalide les caches antérieurs.
+                cache_path = self.cache_dir / f"{file_hash}-v3.pkl"
 
                 if self._is_cache_valid(cache_path):
                     logger.info(f"Chargement depuis le cache: {file.name}")
-                    chunks = self._load_from_cache(cache_path)
+                    chunks, pages = self._load_from_cache(cache_path)
                 else:
                     logger.info(f"Traitement et mise en cache: {file.name}")
-                    chunks = self._process_file(file)
+                    chunks, pages = self._process_file(file)
                     logger.info(f"Chunks générés pour {file.name}: {len(chunks)}")
 
                     if chunks:
-                        self._save_to_cache(chunks, cache_path)
+                        self._save_to_cache(chunks, pages, cache_path)
                         logger.info(f"Chunks sauvegardés en cache pour {file.name}")
                     else:
                         logger.warning(f"Aucun chunk généré pour {file.name}")
+                if pages:
+                    self.pages[file.name] = pages
 
                 # Dédupliquer les chunks entre les fichiers
                 for chunk in chunks:
@@ -91,11 +96,11 @@ class DocumentProcessor:
         logger.info(f"Total des chunks uniques: {len(all_chunks)}")
         return all_chunks
 
-    def _process_file(self, file) -> List:
-        """Logique de traitement avec Mistral OCR"""
+    def _process_file(self, file) -> tuple:
+        """Logique de traitement avec Mistral OCR. Retourne (chunks, pages)."""
         if not file.name.endswith(('.pdf', '.docx', '.txt', '.md')):
             logger.warning(f"Ignorer le type de fichier non supporté: {file.name}")
-            return []
+            return [], []
 
         # Lire le contenu du fichier en bytes
         if hasattr(file, 'file_obj'):
@@ -149,7 +154,7 @@ class DocumentProcessor:
                 chunks = chunker.split(markdown, metadata)
                 self._attach_pages(chunks, markdown, page_spans)
                 logger.info(f"Chunking avec stratégie '{settings.CHUNKING_STRATEGY}': {len(chunks)} chunks")
-                return chunks
+                return chunks, all_markdown
             else:
                 # Fallback vers la méthode originale (header-aware + recursive)
                 header_splitter = MarkdownHeaderTextSplitter(self.headers)
@@ -158,11 +163,11 @@ class DocumentProcessor:
                     chunk_size=settings.CHUNK_SIZE,
                     chunk_overlap=settings.CHUNK_OVERLAP,
                 )
-                return chunk_splitter.split_documents(header_chunks)
+                return chunk_splitter.split_documents(header_chunks), all_markdown
 
         except Exception as e:
             logger.error(f"Erreur lors du traitement OCR: {str(e)}")
-            return []
+            return [], []
 
     @staticmethod
     def _attach_pages(chunks, markdown: str, page_spans) -> None:
@@ -204,17 +209,18 @@ class DocumentProcessor:
     def _generate_hash(self, content: bytes) -> str:
         return hashlib.sha256(content).hexdigest()
 
-    def _save_to_cache(self, chunks: List, cache_path: Path):
+    def _save_to_cache(self, chunks: List, pages: List, cache_path: Path):
         with open(cache_path, "wb") as f:
             pickle.dump({
                 "timestamp": datetime.now().timestamp(),
-                "chunks": chunks
+                "chunks": chunks,
+                "pages": pages,
             }, f)
 
-    def _load_from_cache(self, cache_path: Path) -> List:
+    def _load_from_cache(self, cache_path: Path) -> tuple:
         with open(cache_path, "rb") as f:
             data = pickle.load(f)
-        return data["chunks"]
+        return data["chunks"], data.get("pages") or []
 
     def _is_cache_valid(self, cache_path: Path) -> bool:
         if not cache_path.exists():
