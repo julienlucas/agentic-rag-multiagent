@@ -113,21 +113,6 @@ uv run python evaluation/financebench/run_financebench_eval.py --mode both
 | Outils RAG juridiques commerciaux (étude Stanford) | 42-65 % | 17-33 % | |
 | RAG naïf — papier FinanceBench (GPT-4-Turbo 2023, benchmark complet) | ~19 % | 81 % de réponses fausses ou refusées | |
 
-Les lignes Mistral, Stanford et papier FinanceBench portent sur des échantillons différents du
-nôtre : ce sont des repères d'ordre de grandeur, pas un match à armes égales.
-
-Ce que ce run dit, en trois lignes :
-- Le modèle a appelé les outils sur 9 questions sur 26 (3,9 appels en moyenne, une page entière
-  lue dans 8 cas sur 9). Six questions passent de faux ou refusé à correct par rapport à la
-  baseline, chacune avec sa trace (`corrective_queries` dans `financebench_results.json`) ; une
-  est perdue sans appel d'outil, et un refus devient une réponse fausse (le signe du taux
-  d'imposition de Boeing, lu à l'envers). Preuve transmise au modèle : 18/26 contre 16.
-- Le prix : génération 2,7× plus lente en moyenne (12,7 s contre 4,6 s), inchangée sur les
-  17 questions répondues sans outil.
-- Deux questions du mode agentique sont en erreur technique (bug de lecture de la réponse du
-  modèle, corrigé depuis, non re-mesuré) : elles sont exclues du dénominateur, comme le prévoit
-  le protocole. Sur 26 questions l'IC95 fait ~30 points de large ; Mistral Large n'est pas
-  déterministe à température 0 (la baseline oscille entre 17 et 20 selon le run à contexte
-  identique) — un écart de quelques questions n'est pas une amélioration démontrée.
+Les lignes Mistral, Stanford et papier FinanceBench portent sur des échantillons différents de ce RAG : ce sont des repères d'ordre de grandeur, pas un match à armes égales.
 
 Détail du protocole, options et notes d'implémentation : [`evaluation/financebench/README.md`](evaluation/financebench/README.md).
