@@ -75,75 +75,9 @@ LANGSMITH_PROJECT=agentic_rag_multi_agent
 uv run python manage.py runserver
 ```
 
-## Évaluation sur le jeu interne (généralisation + non-régression)
-
-40 questions en **français** sur 2 documents non financiers (rapport technique DeepSeek, rapport
-environnemental Google 2024), réparties en factuelles / numériques / synthèse / multi-passages /
-hors-contexte.
-
-> **Ce jeu ne produit pas un chiffre publiable** : sa vérité terrain est rédigée à la main, on ne
-> se fait pas noter sur un examen qu'on a écrit soi-même. C'est FinanceBench (annotation experte
-> externe, plus bas) qui porte le score. Celui-ci sert à deux choses que FinanceBench ne couvre
-> pas : vérifier que le pipeline tient **hors du domaine financier**, et le mesurer **en
-> français** — la langue d'usage réelle.
-
-**Lancer l'évaluation** (~11 min) :
-```bash
-uv run python evaluation/run_eval.py --mode both --out-dir evaluation/outputs
-```
-
-Options utiles : `--workers 1` en cas de rate limits, `--judge detailed` pour l'ancien juge à
-3 axes (correctness / faithfulness / completeness, 3 appels LLM par question au lieu d'un),
-`--max-items N` / `--no-judge` pour un essai rapide.
-
-> Un run partiel refuse d'écrire dans `evaluation/outputs/` : il remplacerait les chiffres
-> publiés ci-dessous par un échantillon. Pour un essai :
-> `uv run python evaluation/run_eval.py --max-items 3 --no-judge --out-dir /tmp/eval-essai`
-
-**Résultats** — run du 2 septembre 2026, 40 questions, même juge et même protocole que
-FinanceBench pour que les deux jeux soient lisibles côte à côte :
-
-| | Correctes | Hallucinations | Refus |
-|---|---|---|---|
-| Avec les agents | 90,0 % (36/40) | 1/40 | 3/40 |
-| Sans les agents | 87,5 % (35/40) | 2/40 | 3/40 |
-
-Retrieval : `recall@10` 74,5 %, `mrr@10` 90,8 %, `context_hit_rate` 92,5 %.
-
-Ce corpus est nettement plus facile que FinanceBench (2 documents d'une trentaine de pages contre
-3 filings de 150 à 260), d'où l'écart de score — c'est attendu, et c'est pourquoi ce jeu ne sert
-pas de vitrine. Deux choses qu'il montre et que FinanceBench ne montre pas :
-
-- **Les 3 refus sont légitimes**, dont les 2 questions hors-contexte que le jeu contient exprès
-  (« le prix d'un abonnement DeepSeek Pro » dans un rapport technique). Le système ne les invente
-  pas : il classe `NO_MATCH`, déclenche la recherche corrective, ne trouve rien, et refuse.
-- **La même régression que sur FinanceBench s'y reproduit** : l'unique réponse perdue par le mode
-  agentic (`gg-6`) est classée `PARTIAL`. Deux corpus, deux langues, le même symptôme — le signal
-  `PARTIAL` dégrade la génération. C'est le correctif prioritaire.
-
-Les résultats sont dans `evaluation/outputs/` (`eval_summary.json` et `eval_results.json`).
-
-Métriques suivies :
-- Retrieval : `recall@k`, `mrr@k`, `ndcg@k`
-- Réponse : `mean_f1`, `context_hit_rate`
-- Juge : `accuracy`, `hallucination_rate`, `refusal_rate`, avec comptages bruts
-  (`--judge detailed` donne à la place `mean_correctness` / `mean_faithfulness` / `mean_completeness`)
-- Vérification : `relevant_rate` (issu du rapport du pipeline)
-
-> `supported_rate` et le `hallucination_rate` hors juge LLM sont à `null` depuis le
-> retrait du `VerificationAgent` (avril 2026) : le rapport de vérification est construit
-> à partir des signaux du pipeline et ne contient plus la ligne « Supporté ». La seule
-> mesure d'hallucination vivante est celle du juge LLM.
-
-Fichiers générés :
-- `eval_summary.json`
-- `eval_results.json`
-- `eval_regressions.json`
-- `eval_errors.json`
-
 ## Évaluation FinanceBench (documents financiers difficiles)
 
-Deuxième évaluation, sur [FinanceBench](https://github.com/patronus-ai/financebench) (Patronus AI) —
+L'évaluation, sur [FinanceBench](https://github.com/patronus-ai/financebench) (Patronus AI) —
 le benchmark utilisé par [Mistral pour évaluer Agentic Search](https://mistral.ai/news/agentic-search/) :
 QA sur des filings SEC de 150 à 260 pages, denses en tableaux.
 

@@ -32,7 +32,7 @@ from backend.config.settings import settings
 from backend.agents.workflow import AgentState, AgentWorkflow, effective_top_k
 from evaluation.financebench.prepare import load_cached_chunks, store_dir_for
 from evaluation.llm_judge import FinanceBenchJudge, aggregate_financebench_verdicts
-from evaluation.run_eval import (
+from evaluation.metrics import (
     _context_hits,
     _doc_relevance_flags,
     _f1_score,

@@ -354,7 +354,7 @@ def build_dataset(questions: List[Dict], docs: List[str]) -> List[Dict]:
 
 
 def write_dataset(rows: List[Dict], path: Path):
-    """Écrit le JSONL avec les en-têtes `# Categorie (n)` lus par run_eval._example_labels_for_dataset."""
+    """Écrit le JSONL, groupé par type de question sous des en-têtes `# Categorie (n)`."""
     by_type: Dict[str, List[Dict]] = {}
     for row in rows:
         by_type.setdefault(row["question_type"] or "other", []).append(row)
