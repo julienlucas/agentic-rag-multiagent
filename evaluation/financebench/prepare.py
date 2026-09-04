@@ -393,6 +393,7 @@ def build_vector_store(chunks: List, docs: List[str], force: bool = False):
         persist_directory=str(store_dir),
         embedding_function=embeddings,
         collection_name=settings.CHROMA_COLLECTION_NAME,
+        collection_metadata={"hnsw:space": settings.VECTOR_SPACE},
     )
     existing = store._collection.count()
     if existing >= len(chunks) and not force:
@@ -407,6 +408,7 @@ def build_vector_store(chunks: List, docs: List[str], force: bool = False):
             persist_directory=str(store_dir),
             embedding_function=embeddings,
             collection_name=settings.CHROMA_COLLECTION_NAME,
+            collection_metadata={"hnsw:space": settings.VECTOR_SPACE},
         )
         existing = 0
 

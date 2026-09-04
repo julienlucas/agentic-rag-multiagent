@@ -69,6 +69,7 @@ class RetrieverBuilder:
                         persist_directory=persist_directory,
                         embedding_function=self.embeddings,
                         collection_name=settings.CHROMA_COLLECTION_NAME,
+                        collection_metadata={"hnsw:space": settings.VECTOR_SPACE},
                     )
                     existing = vector_store._collection.count()
                     if 0 < existing < len(docs):
@@ -81,6 +82,7 @@ class RetrieverBuilder:
                             persist_directory=persist_directory,
                             embedding_function=self.embeddings,
                             collection_name=settings.CHROMA_COLLECTION_NAME,
+                            collection_metadata={"hnsw:space": settings.VECTOR_SPACE},
                         )
                         existing = 0
                     if existing == 0:
@@ -94,6 +96,7 @@ class RetrieverBuilder:
                     vector_store = Chroma.from_documents(
                         documents=docs,
                         embedding=self.embeddings,
+                        collection_metadata={"hnsw:space": settings.VECTOR_SPACE},
                     )
                 logger.info("Magasin de vecteurs créé avec succès.")
 
