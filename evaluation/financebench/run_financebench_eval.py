@@ -30,7 +30,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from backend.agents.research_agent import ResearchAgent
 from backend.config.settings import settings
 from backend.agents.workflow import AgentState, AgentWorkflow, effective_top_k
-from evaluation.financebench.prepare import load_cached_chunks, store_dir_for
+from backend.retriever.page_store import PageStore
+from evaluation.financebench.prepare import load_cached_chunks, load_cached_pages, store_dir_for
 from evaluation.llm_judge import FinanceBenchJudge, aggregate_financebench_verdicts
 from evaluation.metrics import (
     _context_hits,
@@ -128,6 +129,7 @@ def evaluate_example(
     judge: Optional[FinanceBenchJudge],
     k_values: List[int],
     page_tolerance: int,
+    page_store: Optional[PageStore] = None,
 ) -> List[Dict]:
     """Récupère une seule fois, puis génère une réponse par mode évalué."""
     question = example["question"].strip()
@@ -197,6 +199,9 @@ def evaluate_example(
                     verification_report="",
                     is_relevant=False,
                     retriever=retriever,
+                    page_store=page_store,
+                    corrective_rounds=0,
+                    tool_calls=0,
                 )
                 final_state = call_with_backoff(
                     lambda: workflow.compiled_workflow.invoke(state),
@@ -224,6 +229,11 @@ def evaluate_example(
             llm_docs = (final_state.get("documents") or docs)[:effective_top_k(final_state)]
             row["corrective_rounds"] = final_state.get("corrective_rounds", 0)
             row["corrective_queries"] = final_state.get("corrective_queries", [])
+            row["tool_calls"] = final_state.get("tool_calls", 0)
+            row["pages_read"] = sorted({
+                f"{(d.metadata or {}).get('doc_name')} p.{(d.metadata or {}).get('page')}"
+                for d in llm_docs if (d.metadata or {}).get("origin") == "read_page"
+            })
             row["relevance"] = final_state.get("relevance", "")
         else:
             llm_docs = top_docs
@@ -291,6 +301,12 @@ def aggregate(results: List[Dict], k_values: List[int]) -> Dict:
     corrective = [r.get("corrective_rounds") for r in results if r.get("corrective_rounds") is not None]
     if corrective:
         base["corrective_rate"] = round(sum(1 for c in corrective if c > 0) / len(corrective), 4)
+        corrected = [r for r in results if r.get("corrective_rounds")]
+        if corrected:
+            base["mean_tool_calls_when_corrected"] = round(
+                mean(r.get("tool_calls", 0) for r in corrected), 2)
+            base["pages_read_rate_when_corrected"] = round(
+                sum(1 for r in corrected if r.get("pages_read")) / len(corrected), 4)
 
     retrieval = {}
     for k in k_values:
@@ -339,7 +355,7 @@ def _pct(value: Optional[float]) -> str:
     return "—" if value is None else f"{value * 100:.1f}%"
 
 
-def print_report(summary: Dict, modes: List[str], k_values: List[int] = None):
+def print_report(summary: Dict, modes: List[str], k_values: List[int] = None, n_protocol: int = 0):
     """Tableau de synthèse lisible, dans le format des chiffres publics de Mistral."""
     lines = ["", "=" * 78, "RÉSULTATS — FinanceBench (protocole Patronus AI)", "=" * 78]
 
@@ -358,10 +374,10 @@ def print_report(summary: Dict, modes: List[str], k_values: List[int] = None):
             "      uv run python evaluation/financebench/run_financebench_eval.py --mode both",
             "=" * 78,
         ]
-    elif n_run and n_run < 21:
+    elif n_run and n_protocol and n_run < n_protocol:
         lines += [
             "",
-            f"⚠️  RUN PARTIEL — {n_run} question(s) sur les 21 du protocole. Les pourcentages",
+            f"⚠️  RUN PARTIEL — {n_run} question(s) sur les {n_protocol} du protocole. Les pourcentages",
             "    ci-dessous ne sont pas comparables aux chiffres publiés du projet.",
             "=" * 78,
         ]
@@ -404,6 +420,8 @@ def print_report(summary: Dict, modes: List[str], k_values: List[int] = None):
         lines.append("-" * 78)
     row("Preuve transmise au LLM", lambda b: _pct(b.get("evidence_seen_rate")))
     row("Recherche corrective déclenchée", lambda b: _pct(b.get("corrective_rate")))
+    row("  appels d'outils (moy., si corrigée)", lambda b: str(b.get("mean_tool_calls_when_corrected", "—")))
+    row("  page entière lue (si corrigée)", lambda b: _pct(b.get("pages_read_rate_when_corrected")))
     lines.append("-" * 78)
     row(f"page_hit@{k_small} (retrieval exact)", lambda b: _pct((b.get("retrieval") or {}).get(f"page_hit@{k_small}")))
     row(f"page_hit@{k_large}", lambda b: _pct((b.get("retrieval") or {}).get(f"page_hit@{k_large}")))
@@ -505,6 +523,7 @@ def main():
     guard_partial_overwrite(args.out_dir, str(HERE / "outputs"), partial, args.force_overwrite)
 
     dataset = load_dataset(args.dataset)
+    n_protocol = len(dataset)  # taille du jeu complet, avant tout filtre
     if args.docs:
         wanted = {d.strip() for d in args.docs.split(",") if d.strip()}
         dataset = [ex for ex in dataset if ex.get("doc_name") in wanted]
@@ -542,6 +561,11 @@ def main():
         )
         get_retriever = lambda ex: retriever
 
+    # Pages OCR entières, pour les outils grep / read_page de l'agent de recherche.
+    page_store = PageStore(load_cached_pages(docs_in_dataset))
+    _log(f"PageStore: {sum(page_store.page_count(d) for d in page_store.documents())} pages "
+         f"sur {len(page_store.documents())} documents")
+
     _log(f"Index prêt en {time.time() - start:.0f}s")
 
     # --- Agents (instanciés une fois, nœuds sans état -> réutilisables entre threads) ---
@@ -560,7 +584,7 @@ def main():
             futures = {
                 pool.submit(
                     evaluate_example, ex, get_retriever(ex), modes,
-                    workflow, researcher, judge, k_values, args.page_tolerance,
+                    workflow, researcher, judge, k_values, args.page_tolerance, page_store,
                 ): ex
                 for ex in dataset
             }
@@ -637,7 +661,7 @@ def main():
         with open(os.path.join(args.out_dir, name), "w", encoding="utf-8") as f:
             json.dump(payload, f, ensure_ascii=False, indent=2)
 
-    print_report(summary, modes, k_values)
+    print_report(summary, modes, k_values, n_protocol=n_protocol)
     _log(f"Résultats écrits dans {args.out_dir}/")
 
     log_to_langsmith(

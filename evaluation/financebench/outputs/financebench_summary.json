@@ -3,91 +3,100 @@
   "documents": [
     "AMD_2022_10K",
     "AMERICANEXPRESS_2022_10K",
-    "BOEING_2022_10K"
+    "BOEING_2022_10K",
+    "PEPSICO_2022_10K"
   ],
   "index": "combined",
-  "n_questions": 21,
-  "elapsed_sec": 192.29,
+  "n_questions": 26,
+  "elapsed_sec": 292.43,
   "truncated": false,
   "errors": 0,
   "baseline": {
-    "count": 21,
+    "count": 26,
     "failed": 0,
     "rate_limited": 0,
-    "attempted": 21,
-    "mean_f1": 0.1553,
-    "context_hit_rate": 0.4762,
-    "mean_generation_sec": 3.96,
-    "mean_retrieval_sec": 1.04,
-    "evidence_seen_rate": 0.6667,
+    "attempted": 26,
+    "mean_f1": 0.1027,
+    "context_hit_rate": 0.4231,
+    "mean_generation_sec": 4.64,
+    "mean_retrieval_sec": 0.85,
+    "evidence_seen_rate": 0.6154,
     "retrieval": {
-      "recall@5": 0.4175,
-      "mrr@5": 0.5317,
-      "ndcg@5": 0.4701,
-      "page_hit@5": 0.5714,
-      "page_recall@5": 0.5714,
-      "recall@10": 0.5663,
-      "mrr@10": 0.5476,
-      "ndcg@10": 0.5142,
-      "page_hit@10": 0.6667,
-      "page_recall@10": 0.6667,
-      "recall@20": 0.6492,
-      "mrr@20": 0.5476,
-      "ndcg@20": 0.5552,
-      "page_hit@20": 0.7143,
-      "page_recall@20": 0.6825
+      "recall@5": 0.2033,
+      "mrr@5": 0.3667,
+      "ndcg@5": 0.2973,
+      "page_hit@5": 0.4231,
+      "page_recall@5": 0.3974,
+      "recall@10": 0.3402,
+      "mrr@10": 0.3769,
+      "ndcg@10": 0.3218,
+      "page_hit@10": 0.6154,
+      "page_recall@10": 0.5897,
+      "recall@20": 0.5569,
+      "mrr@20": 0.3909,
+      "ndcg@20": 0.3915,
+      "page_hit@20": 0.6923,
+      "page_recall@20": 0.6667
     },
     "financebench": {
-      "count": 21,
+      "count": 26,
       "errors": 0,
       "counts": {
-        "correct": 16,
-        "refusal": 0,
-        "hallucination": 5
+        "correct": 17,
+        "refusal": 2,
+        "hallucination": 7
       },
-      "accuracy": 0.7619,
-      "refusal_rate": 0.0,
-      "hallucination_rate": 0.2381,
+      "accuracy": 0.6538,
+      "refusal_rate": 0.0769,
+      "hallucination_rate": 0.2692,
       "accuracy_ci95": [
-        0.5491,
-        0.8937
+        0.4622,
+        0.8059
       ],
       "refusal_rate_ci95": [
-        0.0,
-        0.1546
+        0.0214,
+        0.2414
       ],
       "hallucination_rate_ci95": [
-        0.1063,
-        0.4509
+        0.137,
+        0.4608
       ],
-      "mean_faithfulness": 4.81
+      "mean_faithfulness": 4.73
     },
     "by_question_type": {
       "domain-relevant": {
-        "count": 14,
-        "accuracy": 0.7143,
-        "hallucination_rate": 0.2857,
+        "count": 17,
+        "accuracy": 0.7059,
+        "hallucination_rate": 0.2941,
         "refusal_rate": 0.0,
-        "page_hit@20": 0.6429,
-        "mean_f1": 0.145
+        "page_hit@20": 0.5882,
+        "mean_f1": 0.1266
+      },
+      "metrics-generated": {
+        "count": 2,
+        "accuracy": 0.5,
+        "hallucination_rate": 0.5,
+        "refusal_rate": 0.0,
+        "page_hit@20": 1.0,
+        "mean_f1": 0.0097
       },
       "novel-generated": {
         "count": 7,
-        "accuracy": 0.8571,
+        "accuracy": 0.5714,
         "hallucination_rate": 0.1429,
-        "refusal_rate": 0.0,
+        "refusal_rate": 0.2857,
         "page_hit@20": 0.8571,
-        "mean_f1": 0.1758
+        "mean_f1": 0.0715
       }
     },
     "by_reasoning": {
       "Information extraction": {
-        "count": 5,
-        "accuracy": 0.6,
-        "hallucination_rate": 0.4,
+        "count": 8,
+        "accuracy": 0.625,
+        "hallucination_rate": 0.375,
         "refusal_rate": 0.0,
-        "page_hit@20": 0.8,
-        "mean_f1": 0.155
+        "page_hit@20": 0.625,
+        "mean_f1": 0.1352
       },
       "Information extraction OR Logical reasoning": {
         "count": 1,
@@ -95,7 +104,7 @@
         "hallucination_rate": 0.0,
         "refusal_rate": 0.0,
         "page_hit@20": 1.0,
-        "mean_f1": 0.3333
+        "mean_f1": 0.0906
       },
       "Logical reasoning (based on numerical reasoning)": {
         "count": 1,
@@ -103,7 +112,7 @@
         "hallucination_rate": 0.0,
         "refusal_rate": 0.0,
         "page_hit@20": 1.0,
-        "mean_f1": 0.1575
+        "mean_f1": 0.1361
       },
       "Logical reasoning (based on numerical reasoning) OR Logical reasoning": {
         "count": 1,
@@ -111,7 +120,7 @@
         "hallucination_rate": 1.0,
         "refusal_rate": 0.0,
         "page_hit@20": 1.0,
-        "mean_f1": 0.0238
+        "mean_f1": 0.0513
       },
       "Logical reasoning (based on numerical reasoning) OR Numerical reasoning OR Logical reasoning": {
         "count": 2,
@@ -119,15 +128,15 @@
         "hallucination_rate": 0.0,
         "refusal_rate": 0.0,
         "page_hit@20": 0.5,
-        "mean_f1": 0.0862
+        "mean_f1": 0.0887
       },
       "Numerical reasoning": {
-        "count": 2,
-        "accuracy": 1.0,
-        "hallucination_rate": 0.0,
+        "count": 4,
+        "accuracy": 0.75,
+        "hallucination_rate": 0.25,
         "refusal_rate": 0.0,
-        "page_hit@20": 0.5,
-        "mean_f1": 0.209
+        "page_hit@20": 0.75,
+        "mean_f1": 0.1138
       },
       "Numerical reasoning OR information extraction": {
         "count": 2,
@@ -135,79 +144,89 @@
         "hallucination_rate": 0.5,
         "refusal_rate": 0.0,
         "page_hit@20": 0.0,
-        "mean_f1": 0.0751
+        "mean_f1": 0.0894
       },
       "unknown": {
         "count": 7,
-        "accuracy": 0.8571,
+        "accuracy": 0.5714,
         "hallucination_rate": 0.1429,
-        "refusal_rate": 0.0,
+        "refusal_rate": 0.2857,
         "page_hit@20": 0.8571,
-        "mean_f1": 0.1758
+        "mean_f1": 0.0715
       }
     }
   },
   "agentic": {
-    "count": 21,
+    "count": 26,
     "failed": 0,
     "rate_limited": 0,
-    "attempted": 21,
-    "mean_f1": 0.158,
-    "context_hit_rate": 0.5238,
-    "mean_generation_sec": 7.68,
-    "mean_retrieval_sec": 1.04,
-    "evidence_seen_rate": 0.7143,
-    "corrective_rate": 0.381,
+    "attempted": 26,
+    "mean_f1": 0.0449,
+    "context_hit_rate": 0.5,
+    "mean_generation_sec": 12.68,
+    "mean_retrieval_sec": 0.85,
+    "evidence_seen_rate": 0.6923,
+    "corrective_rate": 0.3462,
+    "mean_tool_calls_when_corrected": 3.89,
+    "pages_read_rate_when_corrected": 0.8889,
     "retrieval": {
-      "recall@5": 0.4175,
-      "mrr@5": 0.5317,
-      "ndcg@5": 0.4701,
-      "page_hit@5": 0.5714,
-      "page_recall@5": 0.5714,
-      "recall@10": 0.5663,
-      "mrr@10": 0.5476,
-      "ndcg@10": 0.5142,
-      "page_hit@10": 0.6667,
-      "page_recall@10": 0.6667,
-      "recall@20": 0.6492,
-      "mrr@20": 0.5476,
-      "ndcg@20": 0.5552,
-      "page_hit@20": 0.7143,
-      "page_recall@20": 0.6825
+      "recall@5": 0.2033,
+      "mrr@5": 0.3667,
+      "ndcg@5": 0.2973,
+      "page_hit@5": 0.4231,
+      "page_recall@5": 0.3974,
+      "recall@10": 0.3402,
+      "mrr@10": 0.3769,
+      "ndcg@10": 0.3218,
+      "page_hit@10": 0.6154,
+      "page_recall@10": 0.5897,
+      "recall@20": 0.5569,
+      "mrr@20": 0.3909,
+      "ndcg@20": 0.3915,
+      "page_hit@20": 0.6923,
+      "page_recall@20": 0.6667
     },
     "financebench": {
-      "count": 21,
-      "errors": 0,
+      "count": 24,
+      "errors": 2,
       "counts": {
-        "correct": 17,
+        "correct": 20,
         "refusal": 0,
         "hallucination": 4
       },
-      "accuracy": 0.8095,
+      "accuracy": 0.8333,
       "refusal_rate": 0.0,
-      "hallucination_rate": 0.1905,
+      "hallucination_rate": 0.1667,
       "accuracy_ci95": [
-        0.6,
-        0.9233
+        0.6415,
+        0.9332
       ],
       "refusal_rate_ci95": [
         0.0,
-        0.1546
+        0.138
       ],
       "hallucination_rate_ci95": [
-        0.0767,
-        0.4
+        0.0668,
+        0.3585
       ],
-      "mean_faithfulness": 4.86
+      "mean_faithfulness": 4.79
     },
     "by_question_type": {
       "domain-relevant": {
-        "count": 14,
-        "accuracy": 0.7857,
-        "hallucination_rate": 0.2143,
+        "count": 17,
+        "accuracy": 0.7647,
+        "hallucination_rate": 0.1176,
         "refusal_rate": 0.0,
-        "page_hit@20": 0.6429,
-        "mean_f1": 0.138
+        "page_hit@20": 0.5882,
+        "mean_f1": 0.0424
+      },
+      "metrics-generated": {
+        "count": 2,
+        "accuracy": 0.5,
+        "hallucination_rate": 0.5,
+        "refusal_rate": 0.0,
+        "page_hit@20": 1.0,
+        "mean_f1": 0.0208
       },
       "novel-generated": {
         "count": 7,
@@ -215,17 +234,17 @@
         "hallucination_rate": 0.1429,
         "refusal_rate": 0.0,
         "page_hit@20": 0.8571,
-        "mean_f1": 0.1979
+        "mean_f1": 0.0581
       }
     },
     "by_reasoning": {
       "Information extraction": {
-        "count": 5,
-        "accuracy": 0.8,
-        "hallucination_rate": 0.2,
+        "count": 8,
+        "accuracy": 0.75,
+        "hallucination_rate": 0.125,
         "refusal_rate": 0.0,
-        "page_hit@20": 0.8,
-        "mean_f1": 0.1494
+        "page_hit@20": 0.625,
+        "mean_f1": 0.0454
       },
       "Information extraction OR Logical reasoning": {
         "count": 1,
@@ -233,7 +252,7 @@
         "hallucination_rate": 0.0,
         "refusal_rate": 0.0,
         "page_hit@20": 1.0,
-        "mean_f1": 0.2747
+        "mean_f1": 0.0259
       },
       "Logical reasoning (based on numerical reasoning)": {
         "count": 1,
@@ -241,15 +260,15 @@
         "hallucination_rate": 0.0,
         "refusal_rate": 0.0,
         "page_hit@20": 1.0,
-        "mean_f1": 0.1104
+        "mean_f1": 0.0968
       },
       "Logical reasoning (based on numerical reasoning) OR Logical reasoning": {
         "count": 1,
-        "accuracy": 0.0,
-        "hallucination_rate": 1.0,
+        "accuracy": 1.0,
+        "hallucination_rate": 0.0,
         "refusal_rate": 0.0,
         "page_hit@20": 1.0,
-        "mean_f1": 0.04
+        "mean_f1": 0.0724
       },
       "Logical reasoning (based on numerical reasoning) OR Numerical reasoning OR Logical reasoning": {
         "count": 2,
@@ -257,15 +276,15 @@
         "hallucination_rate": 0.0,
         "refusal_rate": 0.0,
         "page_hit@20": 0.5,
-        "mean_f1": 0.0754
+        "mean_f1": 0.0252
       },
       "Numerical reasoning": {
-        "count": 2,
-        "accuracy": 1.0,
-        "hallucination_rate": 0.0,
+        "count": 4,
+        "accuracy": 0.5,
+        "hallucination_rate": 0.25,
         "refusal_rate": 0.0,
-        "page_hit@20": 0.5,
-        "mean_f1": 0.23
+        "page_hit@20": 0.75,
+        "mean_f1": 0.0202
       },
       "Numerical reasoning OR information extraction": {
         "count": 2,
@@ -273,7 +292,7 @@
         "hallucination_rate": 0.5,
         "refusal_rate": 0.0,
         "page_hit@20": 0.0,
-        "mean_f1": 0.0743
+        "mean_f1": 0.0364
       },
       "unknown": {
         "count": 7,
@@ -281,13 +300,13 @@
         "hallucination_rate": 0.1429,
         "refusal_rate": 0.0,
         "page_hit@20": 0.8571,
-        "mean_f1": 0.1979
+        "mean_f1": 0.0581
       }
     }
   },
   "delta": {
-    "accuracy": 0.0476,
-    "hallucination_rate": -0.0476,
-    "mean_f1": 0.0027
+    "accuracy": 0.1795,
+    "hallucination_rate": -0.1025,
+    "mean_f1": -0.0578
   }
 }

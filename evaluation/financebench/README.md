@@ -29,24 +29,25 @@ Ce que le benchmark met en difficulté et que les documents précédents ne test
 ## Sous-ensemble évalué
 
 Le corpus complet fait 705 Mo (368 PDF, ~53 900 pages). On évalue les **3 documents portant
-7 questions chacun**, soit **21 questions** — le meilleur ratio questions / coût d'ingestion :
+7 questions chacun**, plus PepsiCo pour un signal numérique exact (réponses de type `$9068.00`),
+soit **26 questions** :
 
 | Document | Questions | PDF | Pages |
 |---|---|---|---|
-| `AMD_2022_10K` | 7 | 5,1 Mo | ~180 |
+| `AMD_2022_10K` | 7 | 5,1 Mo | ~120 |
 | `AMERICANEXPRESS_2022_10K` | 7 | 2,4 Mo | 260 |
 | `BOEING_2022_10K` | 7 | 1,4 Mo | ~150 |
+| `PEPSICO_2022_10K` | 5 | | ~160 |
 
-Répartition : 14 `domain-relevant` + 7 `novel-generated`, mêlant extraction d'information,
-raisonnement numérique et raisonnement logique.
+Répartition : 17 `domain-relevant` + 7 `novel-generated` + 2 `metrics-generated`, mêlant
+extraction d'information, raisonnement numérique et raisonnement logique.
 
-Les 3 documents sont indexés **dans un seul index** : le système doit retrouver le bon passage
-du bon document, sans savoir lequel des trois porte la réponse. `--per-doc` donne le réglage
-plus facile (un index par document).
+Les 4 documents sont indexés **dans un seul index** : le système doit retrouver le bon passage
+du bon document, sans savoir lequel porte la réponse. `--per-doc` donne le réglage plus
+facile (un index par document).
 
-Pour ajouter un signal numérique exact (réponses de type `$1577.00`) :
-`--docs AMD_2022_10K,AMERICANEXPRESS_2022_10K,BOEING_2022_10K,PEPSICO_2022_10K`
-(+5 questions, dont 2 `metrics-generated`).
+Les runs antérieurs au 4 septembre 2026 (après-midi) portaient sur les 3 premiers documents,
+21 questions : leurs chiffres ne sont pas comparables à ceux d'un run à 26.
 
 ## Prérequis
 
@@ -108,6 +109,7 @@ Et si besoin, ingérez un document à la fois :
 uv run python evaluation/financebench/prepare.py --docs AMD_2022_10K
 uv run python evaluation/financebench/prepare.py --docs AMERICANEXPRESS_2022_10K
 uv run python evaluation/financebench/prepare.py --docs BOEING_2022_10K
+uv run python evaluation/financebench/prepare.py --docs PEPSICO_2022_10K
 uv run python evaluation/financebench/prepare.py   # assemble et construit l'index
 ```
 
@@ -126,8 +128,8 @@ Chaque réponse reçoit un verdict ternaire d'un juge LLM :
 Chaque taux est publié avec son **comptage brut** (`counts`) et son **intervalle de confiance à
 95 %** (Wilson, `*_ci95`), et le tableau de synthèse les affiche.
 
-> ⚠️ **21 questions, c'est peu.** L'IC95 d'une accuracy autour de 75 % fait environ **35 points de
-> large** : 15/21 et 16/21 ne sont pas distinguables. Une différence d'une ou deux questions entre
+> ⚠️ **26 questions, c'est peu.** L'IC95 d'une accuracy autour de 80 % fait environ **30 points de
+> large** : 20/26 et 22/26 ne sont pas distinguables. Une différence d'une ou deux questions entre
 > deux configurations n'est pas une amélioration, c'est du bruit — le run l'écrit explicitement en
 > fin de rapport. Ne citer un gain que s'il tient sur plusieurs questions **et** que les intervalles
 > ne se recouvrent quasiment plus.
@@ -135,7 +137,7 @@ Chaque taux est publié avec son **comptage brut** (`counts`) et son **intervall
 Pour recalculer un intervalle à la main, ou l'obtenir depuis un résumé déjà écrit :
 
 ```bash
-uv run python evaluation/financebench/confidence.py 16 21
+uv run python evaluation/financebench/confidence.py 22 26
 uv run python evaluation/financebench/confidence.py --summary evaluation/financebench/outputs/financebench_summary.json
 ```
 
@@ -158,9 +160,13 @@ S'y ajoutent, par mode :
 
 - **`evidence_seen_rate`** — la preuve figure-t-elle parmi les documents effectivement transmis au
   LLM ? C'est la métrique qui borne l'accuracy : le modèle ne peut pas répondre juste à partir
-  d'une preuve qu'il n'a pas vue. Pour le mode agentic, elle est calculée après la recherche
-  corrective ; le delta avec baseline mesure donc l'apport réel de la boucle agentique.
-- **`corrective_rate`** (agentic) — part des questions où la recherche corrective s'est déclenchée.
+  d'une preuve qu'il n'a pas vue. Pour le mode agentic, elle compte aussi les passages ramenés
+  par les outils ; le delta avec baseline mesure donc l'apport réel de la boucle agentique.
+- **`corrective_rate`** (agentic) — part des questions où le modèle a appelé au moins un outil.
+- **`mean_tool_calls_when_corrected`** / **`pages_read_rate_when_corrected`** (agentic) — sur ces
+  questions, nombre moyen d'appels d'outils, et part où au moins une page entière a été lue
+  (`read_page`). Chaque ligne de résultat liste aussi `pages_read` et la trace des appels dans
+  `corrective_queries`.
 - `financebench_results.json` contient aussi, par question, les 20 `(document, page)` récupérés
   et `gold_rank` (rang de la première page de preuve), pour diagnostiquer le retrieval sans
   relancer d'appels API.
@@ -204,7 +210,7 @@ Un tableau de synthèse est aussi affiché en fin de run.
   complet ; le runner invoque directement le graphe compilé avec les documents déjà récupérés,
   ce qui divise la latence par ~2 sans changer le comportement mesuré.
 - **Comparaison honnête.** Les deux modes partagent exactement le même retrieval et les mêmes
-  5 documents de contexte (`workflow._research_step`). Le seul écart est la boucle agentique :
+  10 documents de contexte initiaux (`workflow._research_step`). Le seul écart est la boucle agentique :
   le delta mesure donc son apport propre, pas une différence de contexte.
 - **Index scopé au jeu de documents.** Le répertoire Chroma est nommé d'après un hash de la liste
   de documents, pour éviter qu'un run lancé avec `--docs` sur un sous-ensemble n'interroge une

@@ -35,11 +35,13 @@ CHROMA_DIR = HERE / "chroma"
 GITHUB_RAW = "https://raw.githubusercontent.com/patronus-ai/financebench/main"
 QUESTIONS_URL = f"{GITHUB_RAW}/data/financebench_open_source.jsonl"
 
-# Les 3 documents portant 7 questions chacun = 21 questions.
+# Les 3 documents portant 7 questions chacun (21 questions), plus PepsiCo : 5 questions
+# dont 2 `metrics-generated` à réponse numérique exacte (EBITDA, marge) = 26 questions.
 DEFAULT_DOCS = [
     "AMD_2022_10K",
     "AMERICANEXPRESS_2022_10K",
     "BOEING_2022_10K",
+    "PEPSICO_2022_10K",
 ]
 
 # Longueur cible des snippets gold découpés depuis evidence_text.
@@ -83,6 +85,23 @@ def load_cached_chunks(docs: List[str]) -> List:
             f"--docs {','.join(docs)}"
         )
     return chunks
+
+
+def load_cached_pages(docs: List[str]) -> Dict[str, List[str]]:
+    """
+    Recharge le markdown OCR page par page mis en cache par la phase prepare.
+    Alimente le PageStore (outils grep / read_page de l'agent de recherche).
+    """
+    pages_by_doc: Dict[str, List[str]] = {}
+    for doc_name in docs:
+        cached = _load_ocr_cache(CACHE_DIR / f"{doc_name}.ocr.json")
+        if not cached:
+            raise SystemExit(
+                f"Cache OCR absent pour {doc_name}.\n"
+                f"Lancez d'abord: uv run python evaluation/financebench/prepare.py --docs {doc_name}"
+            )
+        pages_by_doc[doc_name] = [cached.get(i, "") for i in range(max(cached) + 1)]
+    return pages_by_doc
 
 
 def download(url: str, dest: Path, force: bool = False) -> Path:
