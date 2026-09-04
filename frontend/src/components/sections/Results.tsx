@@ -94,6 +94,33 @@ const levers = [
   },
 ];
 
+const limits = [
+  {
+    title: "Le recall du retrieval",
+    text: "Sur 6 questions sur 21, la page de preuve n'est jamais récupérée — même après recherche corrective. Ce n'est pas un problème de reranking : quand la preuve est dans les candidats, elle est dans le top 10 dans 14 cas sur 15.",
+  },
+  {
+    title: "La non-déterminance du modèle",
+    text: (
+      <>
+        Un autre modèle de raisonnement que{" "}
+        <img
+          src="/static/mistral.png"
+          alt="Mistral AI"
+          className="inline-block h-4 w-auto align-text-bottom"
+        />{" "}
+        Mistral rendrait un meilleur verdict : 3 réponses sur 21 changent de verdict d&apos;un run
+        à l&apos;autre, à contexte strictement identique. Un écart d&apos;une ou deux questions ne
+        se lit donc pas comme une amélioration.
+      </>
+    ),
+  },
+  {
+    title: "Le coût en latence",
+    text: "La recherche corrective double la génération : 7,7 s contre 4,0 s par question, le prix des réécritures et de la seconde recherche.",
+  },
+];
+
 function Bar({ value, tone, label }: { value: number; tone: "before" | "after" | "mistral"; label: string }) {
   return (
     <Tooltip>
@@ -131,7 +158,7 @@ function Delta({ row }: { row: Row }) {
 function BenchmarkChart() {
   const [table, setTable] = useState(false);
   return (
-    <figure className="card-paper p-6">
+    <figure className="card-paper border-border/50 p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 max-w-2xl">
           <figcaption className="display-sm">Du RAG naïf au système agentique</figcaption>
@@ -160,7 +187,7 @@ function BenchmarkChart() {
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.metric} className="border-t border-border">
+              <tr key={r.metric} className="border-t border-border/30">
                 <td className="py-2 font-medium">{r.metric}</td>
                 <td className="py-2 tabular-nums">{r.before.toLocaleString("fr-FR")} %</td>
                 <td className="py-2 tabular-nums">{r.after.toLocaleString("fr-FR")} %</td>
@@ -232,9 +259,9 @@ export function Results() {
             key={l.label}
             className={cn(
               "flex h-full flex-col rounded-xl border p-6",
-              l.tone === "muted" && "border-border bg-paper-2",
-              l.tone === "brand" && "border-brand bg-paper shadow-card",
-              l.tone === "ref" && "border-dashed border-chart-ref/50 bg-paper-2",
+              l.tone === "muted" && "border-border/30 bg-paper-2",
+              l.tone === "brand" && "border-brand/30 bg-paper shadow-card",
+              l.tone === "ref" && "border-dashed/30 border-chart-ref/50 bg-paper-2",
             )}
           >
             <div className="flex items-center justify-between">
@@ -258,7 +285,7 @@ export function Results() {
       </div>
 
       {/* Ce que les chiffres autorisent à dire — et pas plus. Hors de la carte, exprès. */}
-      <figure className="mt-12 grid max-w-4xl gap-x-6 sm:grid-cols-[3.5rem_1fr]">
+      <figure className="py-18 grid max-w-4xl gap-x-6 sm:grid-cols-[3.5rem_1fr]">
         <span
           aria-hidden
           className="display-xl -mt-3 hidden select-none leading-none text-brand sm:block"
@@ -299,18 +326,20 @@ export function Results() {
       <div className="mt-14">
         <div className="flex flex-col">
           <p className="display-md mt-3">Ce qui limite encore</p>
-          <ul className="mt-5 space-y-2">
-            {[
-              "Sur 4 questions sur 21, la page de preuve n'atteint toujours pas le modèle, même après correction.",
-              "Le modèle n'est pas déterministe : à contexte identique, environ une réponse sur dix change de verdict d'un run à l'autre.",
-              "La recherche corrective double la latence de génération (10 s contre 5 s par question).",
-            ].map((point) => (
-              <li key={point} className="flex gap-2.5 text-sm leading-relaxed text-ink-muted">
-                <span aria-hidden className="mt-2 size-1 shrink-0 rounded-full bg-brand" />
-                <span className="min-w-0 flex-1">{point}</span>
+          <ol className="mt-6 divide-y divide-border border-t border-border">
+            {limits.map((l, i) => (
+              <li
+                key={l.title}
+                className="grid gap-1 py-4 sm:grid-cols-[2rem_16rem_1fr] sm:gap-4"
+              >
+                <span className="mono-xs pt-1 text-sand-deep">0{i + 1}</span>
+                <span className="text-sm font-medium">{l.title}</span>
+                <span className="text-sm leading-relaxed text-ink-muted">
+                  {l.text}
+                </span>
               </li>
             ))}
-          </ul>
+          </ol>
           <p className="mt-4 border-t border-sand pt-3 text-xs leading-relaxed text-muted-foreground">
             21 questions d'évaluation sur 3 filings : assez pour repérer les modes d'échec,
             trop peu pour se comparer à un benchmark complet.

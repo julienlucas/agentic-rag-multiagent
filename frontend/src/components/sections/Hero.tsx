@@ -26,7 +26,7 @@ const steps: {
 }[] = [
   {
     icon: <ScanText />,
-    label: "OCR",
+    label: "OCR Mistral",
     model: "Mistral OCR",
     vendor: "mistral",
     tone: "bg-violet-50 text-violet-500",
@@ -70,7 +70,7 @@ const steps: {
 
 function VendorLogo({ vendor }: { vendor: Vendor }) {
   if (vendor === "mistral") {
-    return <img src="/static/mistral.png" alt="Mistral AI" className="size-4 rounded-sm" />;
+    return <img src="/static/mistral.png" alt="Mistral AI" className="size-4 rounded-sm object-contain" />;
   }
   return (
     <span className="grid size-4 place-items-center rounded-sm bg-ink text-[0.55rem] font-semibold leading-none text-on-ink">
@@ -99,7 +99,7 @@ const navLinks = [
 
 export function Hero() {
   return (
-    <section id="top" className="border-b border-border">
+    <section id="top" className="border-b border-border/30">
       <Container className="py-6 sm:py-14">
         <div className="mt-6 flex items-start justify-between gap-8">
           <div className="min-w-0">
@@ -107,7 +107,7 @@ export function Hero() {
               RAG <span className="accent-italic">Agentique</span>
             </h1>
             <p className="copy mt-3 text-lg">
-              Automatisations de réponses nécéssitant précision et sources
+              Automatisations de réponses nécéssitant précision et citations sources
               (exemple: sur les documents techniques, rapports denses en
               tableaux, spécifications, appels d'offres, etc.)
             </p>
@@ -134,7 +134,7 @@ export function Hero() {
 
         <div
           id="demo"
-          className="mt-6 scroll-mt-20 bg-brand-surface-strong/50 p-8 rounded-4xl"
+          className="mt-6 scroll-mt-20 bg-brand-surface-strong/80 p-8 rounded-4xl"
         >
           <h2 className="display-md pb-3">
             Un pipeline RAG agentique end-to-end
@@ -154,13 +154,9 @@ export function Hero() {
                       >
                         {s.icon}
                       </span>
-                      <span className="text-[1rem] !font-medium display-xl leading-tight">
+                      <span className="text-[1rem] !font-extrabold leading-tight">
                         {s.label}
                       </span>
-                      {/* <span className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap text-[0.7rem] font-medium text-ink-muted">
-                        <VendorLogo vendor={s.vendor} />
-                        {s.model}
-                      </span> */}
                     </div>
                     {i < steps.length - 1 ? (
                       <ArrowRight

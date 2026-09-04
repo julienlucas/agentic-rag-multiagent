@@ -324,7 +324,7 @@ export function DemoChat({ children }: { children?: ReactNode }) {
         La réponse
       </h3>
 
-      <div className="card-paper overflow-hidden">
+      <div className="card-paper bg-white border-border/70 overflow-hidden">
         <div>
           {/* conversation */}
           <div className="flex min-h-[28rem] flex-col">
@@ -535,7 +535,7 @@ export function DemoChat({ children }: { children?: ReactNode }) {
 
             {/* saisie */}
             <div className="border-t border-border p-3 px-5">
-              <div className="flex items-end gap-2 rounded-lg border border-input bg-paper p-2 transition-colors focus-within:border-brand">
+              <div className="flex items-end gap-2 rounded-lg border border-input bg-white p-2 transition-colors focus-within:border-brand">
                 <textarea
                     rows={1}
                   value={draft}
@@ -557,12 +557,12 @@ export function DemoChat({ children }: { children?: ReactNode }) {
                   className="max-h-32 min-h-9 flex-1 resize-none bg-transparent px-2 py-1.5 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed"
                 />
                 <Button
-                  size="icon"
                   variant="brand"
                   onClick={() => ask(draft)}
                   disabled={!draft.trim() || !ready || pending}
-                  aria-label="Envoyer"
+                  className="h-9 shrink-0 px-3.5"
                 >
+                  Envoyer
                   <ArrowUp />
                 </Button>
               </div>

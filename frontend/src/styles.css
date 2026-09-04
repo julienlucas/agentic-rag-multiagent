@@ -148,7 +148,10 @@
   /* Fond de page imposé : #f6f3ea = oklch(0.964 0.012 91.5). Toutes les surfaces gardent cette
      teinte (91.5°), seule la luminosité descend et le chroma monte légèrement. */
   --cream: #f6f3ea;
-  --background: var(--cream);
+  /* Fond de page à 80 % : la crème est composée sur la base blanche posée sur <html>
+     (rendu équivalent à #f8f5ee). Reste indexé sur --cream, qui garde sa valeur pleine
+     pour --primary-foreground et --destructive-foreground. */
+  --background: color-mix(in srgb, var(--cream) 10%, transparent);
   --foreground: oklch(0.22 0.015 85);
   --paper: oklch(0.99 0.006 91.5); /* #fdfcf7 */
   --paper-2: oklch(0.952 0.014 91.5); /* #f2efe5 */
@@ -186,7 +189,7 @@
   --brand-ink: oklch(0.3 0.06 87.6); /* #3a2b01 */
   --brand-light: oklch(0.72 0.11 87.6); /* #c2a04c · accent sur fond encre */
   --brand-surface: oklch(0.559 0.1 87.6 / 12%);
-  --brand-surface-strong: oklch(0.559 0.1 87.6 / 22%);
+  --brand-surface-strong: oklch(0.559 0.1 87.6 / 10%);
 
   --ink: oklch(0.22 0.015 85);
   --ink-soft: oklch(0.27 0.015 85);
@@ -232,10 +235,16 @@
 
   html {
     scroll-behavior: smooth;
+    /* Base opaque sous le fond translucide du body. Sans elle, le composite du 80 %
+       dépend du canvas du navigateur. */
+    background-color: #fff;
   }
 
   body {
     background-color: var(--color-background);
+    /* Dès que <html> a un fond, celui du body ne se propage plus au canvas : sans cette
+       hauteur, une page courte laisserait apparaître le blanc sous le contenu. */
+    min-height: 100dvh;
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
