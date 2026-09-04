@@ -41,7 +41,7 @@ export function Agents() {
     >
       <div className="grid gap-4 md:grid-cols-3">
         {agents.map((a) => (
-          <div key={a.title} className="card-paper flex h-full flex-col p-6">
+          <div key={a.title} className="card-paper border-border/50 flex h-full flex-col p-6">
             <div className="flex items-center justify-between">
               <span className="inline-flex size-9 items-center justify-center rounded-md bg-brand-surface text-brand-deep [&_svg]:size-4.5">
                 {a.icon}

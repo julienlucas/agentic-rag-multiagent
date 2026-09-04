@@ -13,8 +13,7 @@ export function Contact() {
       title="Qui je suis ?"
       intro={
         <>
-          Julien Lucas. 5 ans comme développeur/software engineer en startups, scaleups, reconverti
-          vers l'AI Engineering en 2025. Créateur de{" "}
+          Julien Lucas. 5 ans comme développeur/software engineer en startups, scaleups, devenu AI Applied Engineer. Créateur de{" "}
           <a href="https://prospable.com" target="_blank" rel="noreferrer">
             Prospable
           </a>
