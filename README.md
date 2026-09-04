@@ -1,12 +1,13 @@
+# RAG Agentique multi-agent évalué sur FinanceBench
 ![RAG Agentique multi-agent Header](./static/header-b.png)
 
-# RAG Agentique multi-agent, évalué sur FinanceBench
+Si vous appréciez, ajoutez une étoile au repo pour soutenir mon travail. 🙏
 
 Ce système RAG combine un récupérateur hybride (BM25 + embeddings + reranking Cohere), un routage
 par document et des agents spécialisés, sur des rapports SEC de 150 à 260 pages. Il est **mesuré**
 sur [FinanceBench](https://github.com/patronus-ai/financebench), le benchmark utilisé par Mistral
-pour évaluer Agentic Search : **81,0 % de réponses correctes** sur le run versionné (81 à 86 %
-selon le run), contre ~19 % pour le RAG naïf du papier. Tous les chiffres cités ici sont
+pour évaluer Agentic Search : **83,3 % de réponses correctes** (20/24) sur le run versionné,
+contre ~19 % pour le RAG naïf du papier. Tous les chiffres cités ici sont
 reproductibles à partir des sorties versionnées dans `evaluation/financebench/outputs/` —
 [résultats et limites](#évaluation-financebench-documents-financiers-difficiles).
 
@@ -15,15 +16,25 @@ reproductibles à partir des sorties versionnées dans `evaluation/financebench/
 ![Projet Overview](./static/project-overview.jpg)
 
 ### 1. **Agent Vérificateur de Pertinence**
-Évalue si les passages récupérés répondent réellement à la question (CAN_ANSWER / PARTIAL / NO_MATCH).
+Évalue si les passages récupérés répondent réellement à la question (CAN_ANSWER / PARTIAL / NO_MATCH). Son verdict ne bloque plus la génération : il est transmis au modèle de réponse comme indice (« le contexte initial a été jugé partiel, cherchez ce qui manque »).
 
-### 2. **Agent de Recherche Corrective**
-Si le vérificateur classe les passages `PARTIAL` ou `NO_MATCH`, il réécrit la question dans le vocabulaire du document (ex. « legal battles » → *litigation*), relance la recherche, et **ajoute** jusqu'à 5 passages — reclassés par Cohere contre la question d'origine — après les 10 initiaux, sans jamais les remplacer.
+### 2. **Agent de Recherche et de réponse, avec outils**
+Le modèle de génération reçoit les 10 meilleurs passages et les [trois outils](#les-outils) décrits plus bas. Il répond directement si le contexte suffit ; sinon il cherche — en voyant chaque résultat avant de décider du suivant, 5 appels au plus — et répond **dans la même conversation** : le modèle qui cherche est celui qui répond, comme dans l'[Agentic Search](https://mistral.ai/news/agentic-search/) de Mistral. Les outils sont disponibles sur **toutes** les questions ; le mode conditionnel (agent de recherche séparé, ou réécriture de la question) reste disponible pour comparaison via `GENERATOR_TOOLS_ENABLED` et `CORRECTIVE_MODE`.
 
-> Trois règles, chacune tirée d'un run FinanceBench où son absence coûtait des réponses : les requêtes réécrites sont en langage naturel (le modèle produisait du booléen `"x" AND "y"`, inutilisable) ; les passages ajoutés sont reclassés contre la question d'origine, pas contre la réécriture ; les 10 passages initiaux sont intouchables. Résultat : la preuve atteint le modèle sur 15 à 17 questions sur 21 selon le run, au lieu de 14.
+### 3. **Génération contrainte**
+La réponse ne s'appuie que sur les passages numérotés — initiaux ou ramenés par les outils — avec une citation `[n]` après chaque affirmation, et refuse quand l'information n'y est pas. Deux règles de prompt tirées des runs FinanceBench : un ratio ou une marge dont les composantes sont dans le contexte se **calcule** (formule, chiffres cités, résultat) ; et « non disponible » ne s'écrit qu'après un `grep` sans résultat.
 
-### 3. **Agent de Recherche**
-Génère la réponse finale, contrainte aux seuls passages récupérés — refuse explicitement quand l'information n'y est pas.
+## Cet agent a des outils à dispo
+
+Trois opérations façon système de fichiers, données au modèle de réponse. Les pages OCR sont conservées entières (`backend/retriever/page_store.py`) à côté des chunks : les chunks servent à *trouver*, les pages à *lire*.
+
+| Outil | Ce qu'il fait |
+|---|---|
+| `search(query, doc)` | Le retrieval hybride du pipeline (BM25 + vecteurs, routage, rerank Cohere), relancé avec une nouvelle requête, optionnellement restreint à un document. Renvoie 8 extraits avec document et page. |
+| `grep(pattern, doc)` | Occurrences littérales d'un motif (regex, insensible à la casse), page par page, sur tout le document. Exhaustif : 0 résultat permet d'affirmer qu'un terme n'y figure pas. |
+| `read_page(doc, page, end_page)` | La page entière telle que l'OCR l'a produite, tableau compris — ce qu'un chunk de 1 200 caractères ne montre jamais. `end_page` lit 2 à 3 pages d'un coup pour un tableau à cheval. |
+
+Chaque passage ramené par un outil reçoit un numéro `[n]`, affiché dans le résultat, que la réponse cite comme les autres. Les 10 passages initiaux gardent leurs numéros : les outils ne peuvent qu'**ajouter** après eux. Le rapport de vérification renvoyé avec chaque réponse liste les appels effectués.
 
 ### Le système inclut un retriever hybride pour maximiser la pertinence
 - **Algo BM25 + Embeddings** : Recherche texte classique à forte précision lexicale + Recherche sémantique capturant le sens contextuel. L'index vectoriel déclare explicitement sa métrique (`VECTOR_SPACE = "cosine"`) : le défaut de Chroma est `l2`, qui n'est correct que tant que les embeddings sont normés.
@@ -31,10 +42,10 @@ Génère la réponse finale, contrainte aux seuls passages récupérés — refu
 - **Reranking Cohere + parent-child + multi-query** : petits chunks pour matcher, gros chunks pour répondre.
 
 ## Stack de modèles
-- ⚡ Mistral OCR (plutôt que docling trop lent)
+- ⚡ Mistral OCR
 - 🧠 Mistral Embed (embeddings)
 - 🧠 Cohere Rerank v4 Pro multi-langue
-- 💎 Mistral Large (génération) + Mistral Small (sous-agents : pertinence, routage, réécriture)
+- 💎 Mistral Large (recherche à outils + génération) + Mistral Small (sous-agents : pertinence, routage, multi-query)
 
 ## Installation
 
@@ -55,7 +66,6 @@ Puis créer un fichier `.env` avec vos clés ([console.mistral.ai](https://conso
 ```bash
 MISTRALAI_API_KEY=votre_clé_api_mistral_ici
 COHERE_API_KEY=votre_clé_api_cohere_ici
-LANGSMITH_API_KEY=
 ```
 
 Pour surveiller votre application avec LangSmith (si vous le souhaitez) :
@@ -66,7 +76,7 @@ Pour surveiller votre application avec LangSmith (si vous le souhaitez) :
 
 3. **Ajouter vos variables d'environnement**
 ```bash
-# Configuration LangSmith
+# Configuration LangSmith pour le monitoring
 LANGSMITH_API_KEY=votre_cle_api_langsmith_ici
 LANGSMITH_PROJECT=agentic_rag_multi_agent
 ```
@@ -82,7 +92,7 @@ L'évaluation, sur [FinanceBench](https://github.com/patronus-ai/financebench) (
 le benchmark utilisé par [Mistral pour évaluer Agentic Search](https://mistral.ai/news/agentic-search/) :
 QA sur des filings SEC de 150 à 260 pages, denses en tableaux.
 
-**Préparation (une seule fois, ~5-15 min)** — télécharge, OCRise et met en cache 3 10-K (AMD, American Express, Boeing) :
+**Préparation, l'indexation des documents (une seule fois, ~10-20 min)** — télécharge, OCRise et met en cache 4 10-K (AMD, American Express, Boeing, PepsiCo) :
 ```bash
 uv run python evaluation/financebench/prepare.py
 ```
@@ -92,76 +102,32 @@ uv run python evaluation/financebench/prepare.py
 uv run python evaluation/financebench/run_financebench_eval.py --mode both
 ```
 
-**Résultats** — run du 4 septembre 2026, versionné dans `evaluation/financebench/outputs/`.
-21 questions, 3 filings, index combiné, juge LLM au protocole du benchmark, comptages bruts :
+**Résultats** — run du 4 septembre 2026 (soir), versionné dans `evaluation/financebench/outputs/`.
+26 questions, 4 filings, index combiné, juge LLM au protocole du benchmark, comptages bruts :
 
 | | Correctes | Hallucinations | Refus |
 |---|---|---|---|
-| Ce système, **avec** les agents | **81,0 % (17/21)** | 19,0 % (4/21) | 0 |
-| Ce système, **sans** les agents (même retrieval, une seule génération) | 76,2 % (16/21) | 23,8 % (5/21) | 0 |
-| RAG naïf — papier FinanceBench (GPT-4-Turbo 2023, benchmark complet) | ~19 % | 81 % de réponses fausses ou refusées | |
 | Mistral Agentic Search — repère externe (Medium 3.5, 150 questions) | 86 % | | |
+| Ce RAG, **avec** les agents (modèle de réponse équipé des outils) | **83,3 % (20/24)** | 16,7 % (4/24) | 0 |
+| Ce RAG, **sans** les agents (même retrieval, une seule génération) | 65,4 % (17/26) | 26,9 % (7/26) | 2 |
 | Outils RAG juridiques commerciaux (étude Stanford) | 42-65 % | 17-33 % | |
+| RAG naïf — papier FinanceBench (GPT-4-Turbo 2023, benchmark complet) | ~19 % | 81 % de réponses fausses ou refusées | |
 
-Les trois dernières lignes portent sur des échantillons différents du nôtre : ce sont des repères
-d'ordre de grandeur, pas un match à armes égales.
+Les lignes Mistral, Stanford et papier FinanceBench portent sur des échantillons différents du
+nôtre : ce sont des repères d'ordre de grandeur, pas un match à armes égales.
 
-### Ce que ce run dit, et ce qu'il ne dit pas
-
-- **Le chiffre solide, c'est la preuve transmise au modèle : 15 à 17 questions sur 21 selon le
-  run, contre 14 sans les agents.** Il ne dépend pas des humeurs du LLM — c'est du retrieval — et
-  il tient sur les cinq derniers runs. La recherche corrective se déclenche sur 8 questions
-  (`corrective_rate` 38,1 %) et ramène de la preuve sur 1 d'entre elles sur ce run.
-- **L'écart d'accuracy avec la baseline est à lire avec prudence** — +1 question sur ce run
-  (17 contre 16). Mistral Large n'est pas déterministe à température 0 : sur un contexte
-  strictement identique, la baseline oscille entre 15 et 19 bonnes réponses d'un run à l'autre,
-  et trois questions ont changé de verdict entre les deux derniers runs sans qu'un seul passage
-  ne change. Ce qui tient d'un run à l'autre : depuis les trois correctifs de la recherche
-  corrective, le mode agentic est au niveau ou au-dessus de la baseline à chaque run
-  (18, 18, 17, 17, 17), alors qu'il était derrière avant (12, 15).
-- **Le prix : la génération est deux fois plus lente** (7,7 s contre 4,0 s par question),
-  le coût des réécritures et de la seconde recherche sur les questions `PARTIAL`.
-- **Le facteur limitant reste le retrieval.** Quand la preuve atteint le modèle, il répond juste
-  13 fois sur 15 ; quand elle ne l'atteint pas, 4 fois sur 6 seulement — et ce sont des questions
-  à réponse négative. L'éval le mesure directement : `page_hit@k` / `page_recall@k`, exacts grâce
-  aux pages annotées.
-
-> Le `refusal_rate` des runs antérieurs au 2 septembre 2026 (~10 %) était un artefact : le juge
-> classait `REFUSAL` toute réponse *contenant* une des phrases de refus du pipeline, y compris au
-> milieu d'une réponse complète et correcte. Corrigé — le refus doit désormais constituer toute
-> la réponse. Les 6 verdicts `REFUSAL` du run précédent portaient sur des réponses de 300 à
-> 1 900 caractères ; après correction, le taux de refus est de 0 %.
+Ce que ce run dit, en trois lignes :
+- Le modèle a appelé les outils sur 9 questions sur 26 (3,9 appels en moyenne, une page entière
+  lue dans 8 cas sur 9). Six questions passent de faux ou refusé à correct par rapport à la
+  baseline, chacune avec sa trace (`corrective_queries` dans `financebench_results.json`) ; une
+  est perdue sans appel d'outil, et un refus devient une réponse fausse (le signe du taux
+  d'imposition de Boeing, lu à l'envers). Preuve transmise au modèle : 18/26 contre 16.
+- Le prix : génération 2,7× plus lente en moyenne (12,7 s contre 4,6 s), inchangée sur les
+  17 questions répondues sans outil.
+- Deux questions du mode agentique sont en erreur technique (bug de lecture de la réponse du
+  modèle, corrigé depuis, non re-mesuré) : elles sont exclues du dénominateur, comme le prévoit
+  le protocole. Sur 26 questions l'IC95 fait ~30 points de large ; Mistral Large n'est pas
+  déterministe à température 0 (la baseline oscille entre 17 et 20 selon le run à contexte
+  identique) — un écart de quelques questions n'est pas une amélioration démontrée.
 
 Détail du protocole, options et notes d'implémentation : [`evaluation/financebench/README.md`](evaluation/financebench/README.md).
-
-## Déploiement
-
-Le projet est configuré pour déployer le frontend sur Vercel et le backend sur Railway.
-
-### Déploiement du Backend sur Railway
-
-1. **Créer un projet sur Railway** : https://railway.app
-2. **Connecter votre repository GitHub**
-3. **Configurer les variables d'environnement** :
-   - `MISTRALAI_API_KEY` : Votre clé API Mistral
-   - `LANGSMITH_API_KEY` : (optionnel) Votre clé API LangSmith
-   - `CORS_ALLOWED_ORIGIN` : L'URL de votre frontend Vercel (ex: `https://your-app.vercel.app`)
-4. **Railway détectera automatiquement** le `Dockerfile` et `railway.toml`
-5. **Notez l'URL de votre backend** Railway (ex: `https://your-app.railway.app`)
-
-### Déploiement du Frontend sur Vercel
-
-1. **Créer un projet sur Vercel** : https://vercel.com
-2. **Connecter votre repository GitHub**
-3. **Configurer les variables d'environnement** :
-   - `VITE_RAILWAY_API_URL` : L'URL de votre backend Railway (ex: `https://your-app.railway.app`)
-4. **Vercel détectera automatiquement** le `vercel.json` et déploiera le frontend
-5. **Mettre à jour CORS_ALLOWED_ORIGIN** sur Railway avec l'URL Vercel
-
-### Structure de déploiement
-
-- **Frontend (Vercel)** : Le répertoire `frontend/` est déployé sur Vercel
-- **Backend (Railway)** : Le répertoire `backend/` est déployé sur Railway via Docker
-- Les fichiers `.vercelignore` et `vercel.json` garantissent que seul le frontend est déployé sur Vercel
-
-Ajoutez une étoile au repo pour soutenir mon travail. 🙏

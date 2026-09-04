@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 /*
- * Chiffres : evaluation/financebench/outputs/financebench_summary.json — run du 2 sept. 2026,
- * 21 questions, 3 rapports 10-K, index combiné, juge LLM au protocole du benchmark.
- * Comptages bruts affichés à côté des pourcentages : on est sur 21 questions.
+ * Chiffres : evaluation/financebench/outputs/financebench_summary.json — run du 4 sept. 2026,
+ * 26 questions, 4 rapports 10-K, index combiné, juge LLM au protocole du benchmark.
+ * Comptages bruts affichés à côté des pourcentages : on est sur 26 questions.
  * Le niveau « RAG naïf » est le chiffre publié dans le papier FinanceBench (Islam et al., 2023)
  * pour un RAG naïf sur vector store partagé, sur le benchmark complet — il n'a pas été re-mesuré
  * sur ce sous-ensemble.
@@ -25,9 +25,9 @@ const levels = [
   {
     label: "Ce système",
     setup:
-      "OCR Mistral · chunking parent / enfant · hybride BM25 + vecteurs · routage · reranking Cohere · vérificateur de pertinence · génération contrainte aux preuves",
-    correct: "81,0 %",
-    wrong: "17 bonnes réponses sur 21 questions",
+      "OCR Mistral · chunking parent / enfant · hybride BM25 + vecteurs · routage · reranking Cohere · vérificateur de pertinence · agent de recherche à outils (search / grep / read_page) · génération contrainte aux preuves",
+    correct: "83,3 %",
+    wrong: "20 bonnes réponses sur 24 questions jugées",
     tone: "brand" as const,
   },
   {
@@ -53,16 +53,16 @@ const rows: Row[] = [
   {
     metric: "Correctes",
     before: 19,
-    after: 81.0,
+    after: 83.3,
     mistral: 86,
-    hint: "accuracy · verdict CORRECT du juge LLM · 17 sur 21",
+    hint: "accuracy · verdict CORRECT du juge LLM · 20 sur 24 jugées (2 erreurs techniques exclues)",
   },
   {
     metric: "Fausses ou refusées",
     before: 81,
-    after: 19.0,
+    after: 16.7,
     mistral: 14,
-    hint: "19,0 % d'hallucinations + 0 % de refus · plus bas = mieux",
+    hint: "16,7 % d'hallucinations + 0 % de refus · plus bas = mieux",
     lowerIsBetter: true,
   },
 ];
@@ -86,18 +86,22 @@ const levers = [
   },
   {
     title: "Agent vérificateur de pertinence",
-    text: "Les passages sont classés CAN_ANSWER / PARTIAL / NO_MATCH avant génération. Sur PARTIAL ou NO_MATCH, la question est réécrite dans le vocabulaire du document et jusqu'à 5 passages sont ajoutés après les 10 initiaux — jamais à leur place. La preuve atteint le modèle sur 16 à 17 questions sur 21 selon le run, contre 14 sans.",
+    text: "Les passages sont classés CAN_ANSWER / PARTIAL / NO_MATCH avant génération. Le verdict est transmis au modèle de réponse comme indice : sur PARTIAL ou NO_MATCH, il sait qu'il doit chercher.",
+  },
+  {
+    title: "Agent de recherche à outils",
+    text: "Le modèle de réponse cherche lui-même avec search (hybride + rerank), grep (occurrences page par page) et read_page (la page entière, tableau compris, 1 à 3 pages), 5 appels au plus, et répond dans la même conversation. Sur ce run : outils appelés sur 9 questions sur 26, une page lue dans 8 cas sur 9, six questions gagnées sur la baseline.",
   },
   {
     title: "Génération contrainte",
-    text: "Mistral Large ne répond qu'à partir des passages retenus et refuse quand la preuve manque.",
+    text: "Mistral Large ne répond qu'à partir des passages retenus et refuse quand la preuve manque — sauf pour calculer un ratio dont les composantes sont sous ses yeux, formule et chiffres cités.",
   },
 ];
 
 const limits = [
   {
     title: "Le recall du retrieval",
-    text: "Sur 6 questions sur 21, la page de preuve n'est jamais récupérée — même après recherche corrective. Ce n'est pas un problème de reranking : quand la preuve est dans les candidats, elle est dans le top 10 dans 14 cas sur 15.",
+    text: "Sur 8 questions sur 26, la page de preuve n'atteint jamais le modèle, outils compris. Quand elle l'atteint, il répond juste dans 15 cas sur 18.",
   },
   {
     title: "La non-déterminance du modèle",
@@ -109,15 +113,16 @@ const limits = [
           alt="Mistral AI"
           className="inline-block h-4 w-auto align-text-bottom"
         />{" "}
-        Mistral rendrait un meilleur verdict : 3 réponses sur 21 changent de verdict d&apos;un run
-        à l&apos;autre, à contexte strictement identique. Un écart d&apos;une ou deux questions ne
+        Mistral rendrait un meilleur verdict : à contexte strictement identique, des réponses
+        changent de verdict d&apos;un run à l&apos;autre — la seule question perdue sur ce run
+        l&apos;a été sans que l&apos;agent ne se déclenche. Un écart d&apos;une ou deux questions ne
         se lit donc pas comme une amélioration.
       </>
     ),
   },
   {
     title: "Le coût en latence",
-    text: "La recherche corrective double la génération : 7,7 s contre 4,0 s par question, le prix des réécritures et de la seconde recherche.",
+    text: "Les outils rendent la génération 2,7× plus lente en moyenne : 12,7 s contre 4,6 s par question, le prix de 3 à 5 appels sur un tiers des questions. Les autres ne changent pas.",
   },
 ];
 
@@ -245,12 +250,12 @@ export function Results() {
       eyebrow="L'évaluation"
       title={
         <>
-          Évalué à 86 % de réponses correctes sur le benchmark{" "}
+          Évalué à 83,3 % de réponses correctes sur le benchmark{" "}
           <span className="accent-italic">FinanceBench</span> de 150 à 260
           pages.
         </>
       }
-      intro="FinanceBench est le benchmark que Mistral utilise pour évaluer leur outil Agentic Search : des questions financières sur des filings SEC denses en tableaux, où chaque chiffre apparaît des dizaines de fois. Évaluation ici sur 21 questions et 3 rapports (AMD, American Express, Boeing)."
+      intro="FinanceBench est le benchmark que Mistral utilise pour évaluer leur outil Agentic Search : des questions financières sur des filings SEC denses en tableaux, où chaque chiffre apparaît des dizaines de fois. Évaluation ici sur 26 questions et 4 rapports (AMD, American Express, Boeing, PepsiCo)."
     >
       {/* trois niveaux */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -295,10 +300,10 @@ export function Results() {
         <div>
           <span className="eyebrow">Ce que les chiffres autorisent à dire</span>
           <blockquote className="display-md mt-3 text-ink">
-            Sur un sous-ensemble de FinanceBench (3 filings, <strong className="font-semibold text-ink">21 questions</strong>, index combiné), le
+            Sur un sous-ensemble de FinanceBench (4 filings, <strong className="font-semibold text-ink">26 questions</strong>, index combiné), le
             système répond correctement à{" "}
-            <span className="accent-italic">17-18 questions selon le run</span>, avec 3 réponses
-            fausses et aucun refus. Le RAG naïf du papier est à ~19 % sur le benchmark complet ;
+            <span className="accent-italic">20 des 24 questions jugées</span>, avec 4 réponses
+            fausses, aucun refus et 2 erreurs techniques exclues. Le RAG naïf du papier est à ~19 % sur le benchmark complet ;
             Mistral Agentic Search annonce 86 % sur <strong className="font-semibold text-ink">150 questions</strong> et 368 filings — un périmètre
             bien plus large, qui n&apos;est pas comparable directement.
           </blockquote>
@@ -341,7 +346,7 @@ export function Results() {
             ))}
           </ol>
           <p className="mt-4 border-t border-sand pt-3 text-xs leading-relaxed text-muted-foreground">
-            21 questions d'évaluation sur 3 filings : assez pour repérer les modes d'échec,
+            26 questions d'évaluation sur 4 filings : assez pour repérer les modes d'échec,
             trop peu pour se comparer à un benchmark complet.
           </p>
         </div>

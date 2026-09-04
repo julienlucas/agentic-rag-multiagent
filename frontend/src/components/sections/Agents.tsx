@@ -8,21 +8,21 @@ const agents = [
     index: "A1",
     title: "Agent vérificateur de pertinence",
     model: "mistral-small",
-    text: "Lit les 3 meilleurs passages rerankés et décide s'ils répondent vraiment à la question : CAN_ANSWER, PARTIAL ou NO_MATCH. C'est lui qui autorise — ou non — la génération.",
+    text: "Lit les 3 meilleurs passages rerankés et décide s'ils répondent vraiment à la question : CAN_ANSWER, PARTIAL ou NO_MATCH. Son verdict est affiché dans le rapport et sert de signal ; il ne bloque la génération que s'il n'y a aucun passage.",
   },
   {
     icon: <Redo2 />,
     index: "A2",
-    title: "Agent de recherche corrective",
-    model: "mistral-small",
-    text: "Si le vérificateur classe les passages PARTIAL ou NO_MATCH, il réécrit la question dans le vocabulaire du document (« legal battles » → litigation), relance la recherche et ajoute jusqu'à 5 passages — reclassés contre la question d'origine — après les 10 initiaux, sans jamais les remplacer. Un tour au plus.",
+    title: "Agent de recherche et de réponse",
+    model: "mistral-large",
+    text: "Reçoit les 10 meilleurs passages et trois outils — search (le retrieval hybride + rerank), grep (occurrences page par page, exhaustif) et read_page (la page entière, tableau compris, sur 1 à 3 pages). Il répond directement si le contexte suffit ; sinon il cherche, en voyant chaque résultat avant de décider du suivant (5 appels au plus), et répond dans la même conversation. Chaque passage ramené reçoit un numéro qu'il cite.",
   },
   {
     icon: <Sparkles />,
     index: "A3",
-    title: "Agent de recherche",
+    title: "Génération contrainte",
     model: "mistral-large",
-    text: "Génère la réponse finale, contrainte aux 10 meilleurs passages parents. Refuse explicitement quand l'information n'y est pas, plutôt que de combler le vide.",
+    text: "La réponse ne s'appuie que sur les passages numérotés, initiaux ou ramenés par les outils, avec une citation [n] après chaque affirmation. Elle refuse explicitement quand l'information n'y est pas — sauf pour calculer un ratio dont les composantes sont sous ses yeux, formule et chiffres cités.",
   },
 ];
 
@@ -37,7 +37,7 @@ export function Agents() {
           Trois agents, orchestrés par <span className="accent-italic">LangGraph</span>.
         </>
       }
-      intro="Le retriever remonte les passages ; les agents décident quand chercher davantage, quand répondre et quand refuser. Le grand modèle n'intervient qu'une fois, pour rédiger."
+      intro="Le retriever remonte les passages ; le grand modèle décide s'il en a assez, cherche davantage s'il le faut, et rédige — dans la même conversation, comme dans l'Agentic Search de Mistral."
     >
       <div className="grid gap-4 md:grid-cols-3">
         {agents.map((a) => (

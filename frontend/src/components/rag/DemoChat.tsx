@@ -471,9 +471,9 @@ export function DemoChat({ children }: { children?: ReactNode }) {
                             turn.signals.correctiveRounds > 0 ? (
                               <p className="mt-3 flex gap-2 border-t border-border pt-3 text-xs text-muted-foreground">
                                 <Sparkles className="mt-0.5 size-3.5 shrink-0 text-brand-deep" />
-                                Recherche corrective déclenchée : la question a
-                                été réécrite dans le vocabulaire du document
-                                avant de répondre.
+                                Le modèle a jugé le contexte insuffisant et a
+                                cherché lui-même (search, grep, read_page) avant
+                                de répondre — le détail est dans le rapport.
                               </p>
                             ) : null}
                           </div>

@@ -40,24 +40,24 @@ export const pipelineSteps: PipelineStep[] = [
   {
     key: "check",
     label: "Agent vérificateur de pertinence",
-    detail: "Classe les 3 meilleurs passages : CAN_ANSWER, PARTIAL ou NO_MATCH.",
+    detail: "Classe les 3 meilleurs passages : CAN_ANSWER, PARTIAL ou NO_MATCH — signal affiché dans le rapport.",
     model: "mistral-small",
     ms: 2200,
   },
   {
     key: "correct",
-    label: "Recherche corrective",
+    label: "Recherche à outils",
     detail:
-      "Déclenchée si NO_MATCH ou score reranker max < 0,50 : 3 requêtes réécrites dans le lexique du document, top 5 protégé, 1 tour max.",
-    model: "mistral-small",
+      "Si le contexte ne suffit pas, le modèle enchaîne search / grep / read_page (5 appels max) ; chaque passage ramené est numéroté et s'ajoute après les 10 initiaux.",
+    model: "mistral-large",
     conditional: true,
     ms: 0,
   },
   {
     key: "research",
-    label: "Agent de recherche",
+    label: "Agent de recherche et de réponse",
     detail:
-      "Rédige la réponse, contraint aux 10 meilleurs passages — refuse explicitement si la preuve est absente.",
+      "Reçoit les 10 meilleurs passages et les outils, rédige la réponse avec citations [n] — refuse explicitement si la preuve est absente.",
     model: "mistral-large",
     ms: 0,
   },

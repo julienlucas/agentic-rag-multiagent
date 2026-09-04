@@ -54,8 +54,8 @@ const steps: {
   },
   {
     icon: <Redo2 />,
-    label: "Recherche corrective",
-    model: "Mistral Small",
+    label: "Recherche à outils",
+    model: "Mistral Large",
     vendor: "mistral",
     tone: "bg-orange-50 text-orange-500",
   },
