@@ -1,7 +1,7 @@
 # RAG Agentique multi-agent évalué sur FinanceBench
 ![RAG Agentique multi-agent Header](./static/header-b.png)
 
-Si vous appréciez, ajoutez une étoile au repo pour soutenir mon travail. 🙏
+Si vous appréciez, ajoutez une ⭐ au repo pour soutenir mon travail. 🙏
 
 Ce système RAG combine un récupérateur hybride (BM25 + embeddings + reranking Cohere), un routage
 par document et des agents spécialisés, sur des rapports SEC de 150 à 260 pages. Il est **mesuré**
