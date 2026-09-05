@@ -46,7 +46,7 @@ Chaque passage ramené par un outil reçoit un numéro `[n]`, affiché dans le r
 - **Reranking Cohere + parent-child + multi-query** : petits chunks pour matcher, gros chunks pour répondre.
 
 ## Stack de modèles
-- ⚡ Mistral OCR
+- ⚡ Mistral OCR 4
 - 🧠 Mistral Embed (embeddings)
 - 🧠 Cohere Rerank v4 Pro multi-langue
 - 💎 Mistral Large (recherche à outils + génération) + Mistral Small (sous-agents : pertinence, routage, multi-query)
