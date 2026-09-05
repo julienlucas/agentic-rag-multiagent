@@ -37,7 +37,7 @@ soit **26 questions** :
 | `AMD_2022_10K` | 7 | 5,1 Mo | ~120 |
 | `AMERICANEXPRESS_2022_10K` | 7 | 2,4 Mo | 260 |
 | `BOEING_2022_10K` | 7 | 1,4 Mo | ~150 |
-| `PEPSICO_2022_10K` | 5 | | ~160 |
+| `PEPSICO_2022_10K` | 5 | | 503 |
 
 Répartition : 17 `domain-relevant` + 7 `novel-generated` + 2 `metrics-generated`, mêlant
 extraction d'information, raisonnement numérique et raisonnement logique.
@@ -61,7 +61,7 @@ LANGSMITH_API_KEY=...   # optionnel
 
 ## Lancer l'évaluation
 
-L'évaluation se fait en deux temps, parce que le coût dominant est l'ingestion (~600 pages à
+L'évaluation se fait en deux temps, parce que le coût dominant est l'ingestion (~1 070 pages à
 OCRiser), pas les questions.
 
 ```bash
@@ -194,11 +194,39 @@ README et l'étude de cas, ils doivent être vérifiables sans relancer l'éval)
 > `--out-dir /tmp/...` pour un essai, `--force-overwrite` si le remplacement est voulu.
 
 
-- `financebench_summary.json` — métriques agrégées par mode, deltas, ventilations
+- `financebench_summary.json` — métriques agrégées par mode, deltas, ventilations, et le bloc
+  `cost` : tokens facturés par modèle (callback LangChain sur chaque appel, juge compris), unités
+  de recherche Cohere (`billed_units` de chaque réponse Rerank), total en dollars et en euros à
+  la grille publique du jour (`evaluation/financebench/cost.py`)
 - `financebench_results.json` — le détail par question (réponse, verdict, raison du juge, latences)
 - `financebench_errors.json` — questions ayant échoué techniquement
 
 Un tableau de synthèse est aussi affiché en fin de run.
+
+## Coût d'un run
+
+Le tableau de fin de run affiche le coût, calculé à partir des tokens réellement facturés et de
+la grille publique de La Plateforme et de Cohere (`cost.py`, avec la date de relevé et le taux de
+change utilisés). Ce n'est pas une estimation : ce sont les `usage` renvoyés par chaque appel.
+
+Run complet du 5 septembre 2026 (26 questions, `--mode both`, juge compris, 260 s) :
+
+| Poste | Volume | Coût |
+|---|---|---|
+| `mistral-large-latest` (génération des deux modes + juge) | 421 872 tokens en entrée, 29 129 en sortie | 0,25 $ |
+| `mistral-small-latest` (sous-agents) | 29 862 en entrée, 137 en sortie | 0,005 $ |
+| Cohere `rerank-v4.0-pro` | 34 recherches (une par appel, ≤ 40 documents de ~300 tokens) | 0,09 $ |
+| **Total** | | **≈ 0,35 $ ≈ 0,30 €** |
+
+Les tokens Mistral sont ceux facturés (`usage` de chaque réponse). Les recherches Cohere sont
+comptées au tarif public par appel tenté : pendant cette mesure, la clé Cohere avait atteint son
+plafond mensuel de facturation (HTTP 402) et le reranker a rendu l'ordre du retriever hybride —
+le run du 4 septembre, celui des chiffres publiés, a subi le même plafond sur ses 14 derniers
+appels Rerank seulement (192 réussis avant).
+
+Ne sont pas comptés les embeddings de requête pendant le run (quelques dizaines de tokens par
+recherche, négligeables) et la préparation, payée une fois : l'OCR des 1 074 pages et l'embedding
+des ~12 400 chunks, soit 4,4 $ ≈ 3,8 € (OCR à 4 $ les 1 000 pages, ~900 k tokens embeddés à 0,10 $/M) à la même grille.
 
 ## Notes d'implémentation
 

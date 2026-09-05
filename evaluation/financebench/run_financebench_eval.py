@@ -25,6 +25,7 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
+import contextvars
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from backend.agents.research_agent import ResearchAgent
@@ -33,6 +34,7 @@ from backend.agents.workflow import AgentState, AgentWorkflow, effective_top_k
 from backend.retriever.page_store import PageStore
 from evaluation.financebench.prepare import load_cached_chunks, load_cached_pages, store_dir_for
 from evaluation.llm_judge import FinanceBenchJudge, aggregate_financebench_verdicts
+from evaluation.financebench.cost import compute_cost, format_cost
 from evaluation.metrics import (
     _context_hits,
     _doc_relevance_flags,
@@ -437,6 +439,8 @@ def print_report(summary: Dict, modes: List[str], k_values: List[int] = None, n_
 
     lines.append("=" * 78)
     lines.append(f"Durée totale: {summary.get('elapsed_sec')}s")
+    if summary.get("cost"):
+        lines.append(format_cost(summary["cost"]))
 
     expected = summary.get("n_questions") or 0
     worst = max((summary.get(m) or {}).get("failed", 0) for m in modes) if modes else 0
@@ -579,10 +583,18 @@ def main():
 
     per_example, errors = [], []
     truncated = False
+    # Tokens facturés, cumulés par modèle sur tous les appels LLM du run (génération,
+    # sous-agents, juge). Le callback vit dans un contextvar : chaque tâche du pool reçoit
+    # une copie du contexte, sinon les threads ne le verraient pas.
+    from langchain_core.callbacks import get_usage_metadata_callback
+    from backend.retriever.builder import RERANK_USAGE
+    usage_cb = get_usage_metadata_callback()
+    usage = usage_cb.__enter__()
     try:
         with ThreadPoolExecutor(max_workers=max(1, args.workers)) as pool:
             futures = {
                 pool.submit(
+                    contextvars.copy_context().run,
                     evaluate_example, ex, get_retriever(ex), modes,
                     workflow, researcher, judge, k_values, args.page_tolerance, page_store,
                 ): ex
@@ -618,6 +630,7 @@ def main():
                         pending.cancel()
                     break
     finally:
+        usage_cb.__exit__(None, None, None)
         if not args.verbose:
             sys.stdout.close()
             sys.stdout = _REAL_STDOUT
@@ -635,6 +648,7 @@ def main():
         "elapsed_sec": round(time.time() - start, 2),
         "truncated": truncated,
         "errors": len(errors),
+        "cost": compute_cost(usage.usage_metadata, dict(RERANK_USAGE)),
     }
     for mode in modes:
         summary[mode] = aggregate(grouped[mode], k_values)

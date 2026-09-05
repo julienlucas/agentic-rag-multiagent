@@ -1,4 +1,5 @@
 import os
+import threading
 from langchain_community.vectorstores import Chroma
 from langchain_mistralai import ChatMistralAI
 from langchain_community.retrievers import BM25Retriever
@@ -206,6 +207,12 @@ class RetrieverBuilder:
         return DocumentRouterRetriever(retriever, router)
 
 
+# Unités de recherche facturées par Cohere (une requête, jusqu'à 100 documents), cumulées
+# sur le process : l'évaluation FinanceBench les lit pour chiffrer le coût d'un run.
+_RERANK_USAGE_LOCK = threading.Lock()
+RERANK_USAGE = {"calls": 0, "search_units": 0.0}
+
+
 class RerankRetriever:
     """
     Reranker utilisant l'API Cohere Rerank.
@@ -249,6 +256,12 @@ class RerankRetriever:
             docs = docs[:MAX_RERANK_CANDIDATES]
         num_to_rerank = len(docs)
 
+        # Compté avant l'appel : une requête tentée est une unité de recherche, qu'elle réussisse
+        # ou non ; si Cohere renvoie le détail facturé, on corrige après.
+        with _RERANK_USAGE_LOCK:
+            RERANK_USAGE["calls"] += 1
+            RERANK_USAGE["search_units"] += 1.0
+
         try:
             # Cohere rerank a une limite de ~10000 docs, largement suffisant
             response = self.client.rerank(
@@ -257,6 +270,12 @@ class RerankRetriever:
                 documents=[d.page_content for d in docs],
                 top_n=min(top_n or settings.RERANK_TOP_K, num_to_rerank),
             )
+
+            billed = getattr(getattr(response, "meta", None), "billed_units", None)
+            units = getattr(billed, "search_units", None)
+            if units is not None:
+                with _RERANK_USAGE_LOCK:
+                    RERANK_USAGE["search_units"] += float(units) - 1.0
 
             # Reconstruire la liste ordonnée par score de reranking
             reranked_docs = []
