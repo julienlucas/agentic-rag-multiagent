@@ -93,7 +93,7 @@ const navLinks = [
   { href: "#demo", label: "Démo" },
   { href: "#resultats", label: "Résultats" },
   { href: "#agents", label: "Agents" },
-  { href: "https://github.com/julienlucas/agentic-rag-multiagent", label: "Repo GitHub", external: true },
+  { href: "https://github.com/julienlucas/agentic-rag-with-tools", label: "Repo GitHub", external: true },
 ];
 
 

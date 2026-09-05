@@ -4,12 +4,16 @@
 Si vous appréciez, ajoutez une ⭐ au repo pour soutenir mon travail. 🙏
 
 Ce système RAG combine un récupérateur hybride (BM25 + embeddings + reranking Cohere), un routage
-par document et des agents spécialisés, sur des rapports SEC de 150 à 260 pages. Il est **mesuré**
-sur [FinanceBench](https://github.com/patronus-ai/financebench), le benchmark utilisé par Mistral
-pour évaluer Agentic Search : **83,3 % de réponses correctes** (20/24) sur le run versionné,
-contre ~19 % pour le RAG naïf du papier. Tous les chiffres cités ici sont
-reproductibles à partir des sorties versionnées dans `evaluation/financebench/outputs/` —
-[résultats et limites](#évaluation-financebench-documents-financiers-difficiles).
+par document et un modèle de réponse équipé d'outils (`search` / `grep` / `read_page`), sur des
+rapports SEC de 150 à 260 pages. Il est **mesuré** sur
+[FinanceBench](https://github.com/patronus-ai/financebench), le benchmark utilisé par Mistral pour
+évaluer Agentic Search (150 questions). Le résultat qui compte est l'ablation, à retrieval
+strictement identique : **83,3 % de réponses correctes avec les outils, contre 65,4 % sans**, et
+des hallucinations qui passent de 26,9 % à 16,7 %. Dix-huit points gagnés par l'agent équipé, sur
+le même index et les mêmes 10 passages initiaux. Le run complet coûte environ 0,30 € à relancer.
+Tous les chiffres sont reproductibles à partir des sorties versionnées dans
+`evaluation/financebench/outputs/` —
+[résultats, coût et limites](#évaluation-financebench-documents-financiers-difficiles).
 
 ## Architecture IA à la base avant améliorations
 
@@ -51,7 +55,7 @@ Chaque passage ramené par un outil reçoit un numéro `[n]`, affiché dans le r
 
 1. **Cloner le projet** :
 ```bash
-git clone https://github.com/julienlucas/agentic-rag-multi-agent
+git clone https://github.com/julienlucas/agentic-rag-with-tools
 ```
 
 2. **Installer les dépendances** :
@@ -103,16 +107,45 @@ uv run python evaluation/financebench/run_financebench_eval.py --mode both
 ```
 
 **Résultats** — run du 4 septembre 2026 (soir), versionné dans `evaluation/financebench/outputs/`.
-26 questions, 4 filings, index combiné, juge LLM au protocole du benchmark, comptages bruts :
+26 questions, 4 filings, index combiné, juge LLM au protocole du benchmark, comptages bruts.
+Les deux premières lignes sont l'ablation : même index, même retrieval, mêmes 10 passages
+initiaux, la seule différence est le modèle de réponse avec ou sans outils.
 
 | | Correctes | Hallucinations | Refus |
 |---|---|---|---|
+| Ce RAG, **avec** les outils (search / grep / read_page) | **83,3 % (20/24)** | 16,7 % (4/24) | 0 |
+| Ce RAG, **sans** les outils (même retrieval, une seule génération) | 65,4 % (17/26) | 26,9 % (7/26) | 2 |
 | Mistral Agentic Search — repère externe (Medium 3.5, 150 questions) | 86 % | | |
-| Ce RAG, **avec** les agents (modèle de réponse équipé des outils) | **83,3 % (20/24)** | 16,7 % (4/24) | 0 |
-| Ce RAG, **sans** les agents (même retrieval, une seule génération) | 65,4 % (17/26) | 26,9 % (7/26) | 2 |
 | Outils RAG juridiques commerciaux (étude Stanford) | 42-65 % | 17-33 % | |
 | RAG naïf — papier FinanceBench (GPT-4-Turbo 2023, benchmark complet) | ~19 % | 81 % de réponses fausses ou refusées | |
 
-Les lignes Mistral, Stanford et papier FinanceBench portent sur des échantillons différents de ce RAG : ce sont des repères d'ordre de grandeur, pas un match à armes égales.
+**Pourquoi 24 et non 26 sur la ligne avec outils.** Deux questions (AMD, American Express) ont
+échoué techniquement en mode avec outils — timeout ou LLM indisponible pendant la boucle d'appels,
+pas une mauvaise réponse. Le protocole les compte à part et les sort du dénominateur, pour ne pas
+les confondre avec des refus. Comptées comme fausses, la ligne serait à 76,9 % (20/26) : toujours
+onze points au-dessus du même système sans outils. Le chiffre canonique du projet est **83,3 %
+(20/24)**.
+
+Les lignes Mistral, Stanford et papier FinanceBench portent sur des échantillons différents de ce
+RAG : ce sont des repères d'ordre de grandeur, pas un match à armes égales. Avec 26 questions,
+l'intervalle de confiance à 95 % fait une trentaine de points : la comparaison qui tient est celle
+des deux premières lignes, pas l'écart de trois points avec Mistral.
+
+**Coût.** Le runner compte les tokens facturés de chaque appel (génération, sous-agents, juge LLM)
+et les unités de recherche Cohere, et écrit le total dans `financebench_summary.json` (`cost`).
+Mesuré le 5 septembre 2026 sur un run complet (26 questions, les deux modes, juge LLM compris) :
+
+| Poste | Volume | Coût |
+|---|---|---|
+| Mistral Large (réponse avec et sans outils, juge) | 422 k tokens en entrée, 29 k en sortie | 0,25 $ |
+| Mistral Small (sous-agents) | 30 k tokens | 0,005 $ |
+| Cohere Rerank 4 Pro | ~35 recherches à 0,0025 $ | 0,09 $ |
+| **Un run complet** (4 à 5 minutes) | | **≈ 0,35 $ ≈ 0,30 €** |
+| Préparation, une seule fois (OCR de 1 074 pages, embedding de 12 400 chunks) | | 4,4 $ ≈ 3,8 € |
+
+Grille publique La Plateforme et Cohere du 5 septembre 2026, 1 $ = 0,86 €. Autrement dit :
+l'évaluation complète, reproductible, sur quatre 10-K, se relance pour le prix d'un café, et le
+chiffre de précision qu'on annonce à un client est re-mesurable à chaque changement de prompt.
+
 
 Détail du protocole, options et notes d'implémentation : [`evaluation/financebench/README.md`](evaluation/financebench/README.md).

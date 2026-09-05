@@ -303,7 +303,8 @@ export function Results() {
             Sur un sous-ensemble de FinanceBench (4 filings, <strong className="font-semibold text-ink">26 questions</strong>, index combiné), le
             système répond correctement à{" "}
             <span className="accent-italic">20 des 24 questions jugées</span>, avec 4 réponses
-            fausses, aucun refus et 2 erreurs techniques exclues. Le RAG naïf du papier est à ~19 % sur le benchmark complet ;
+            fausses, aucun refus et 2 erreurs techniques exclues. Le même système sans les outils, à retrieval identique, est à{" "}
+            <span className="accent-italic">17 sur 26</span> avec 7 réponses fausses : c&apos;est l&apos;écart qui compte. Le RAG naïf du papier est à ~19 % sur le benchmark complet ;
             Mistral Agentic Search annonce 86 % sur <strong className="font-semibold text-ink">150 questions</strong> et 368 filings — un périmètre
             bien plus large, qui n&apos;est pas comparable directement.
           </blockquote>
