@@ -38,6 +38,7 @@ from typing import Callable, Dict, List, Optional
 from langchain_core.documents import Document
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.tools import tool
+from langsmith import traceable
 
 from ..config.settings import settings
 from ..retriever.page_store import PageStore, doc_label
@@ -233,6 +234,14 @@ def build_tools(
     return [search, grep, read_page, open_document, navigate]
 
 
+@traceable(name="tool_decision", run_type="chain",
+           process_inputs=lambda inputs: {"messages": inputs.get("messages")})
+def _tool_decision(bound, messages: List) -> AIMessage:
+    """Un tour de la boucle : appeler un outil, ou répondre. Run nommé « tool_decision »,
+    noté par le juge en ligne « choix d'outil » (evaluation/online_evaluators.py)."""
+    return bound.invoke(messages)
+
+
 def run_tool_loop(llm, tools, messages: List, max_tool_calls: int, final_llm=None) -> Dict:
     """
     Boucle d'appels d'outils bornée. `messages` est complété en place.
@@ -244,7 +253,7 @@ def run_tool_loop(llm, tools, messages: List, max_tool_calls: int, final_llm=Non
     n_calls = 0
     final: Optional[AIMessage] = None
     for _turn in range(max_tool_calls + 1):
-        ai: AIMessage = bound.invoke(messages)
+        ai: AIMessage = _tool_decision(bound, list(messages))  # copie : `messages` grandit ensuite
         messages.append(ai)
         tool_calls = list(getattr(ai, "tool_calls", None) or [])
         if not tool_calls:

@@ -103,7 +103,8 @@ def _feedback(row: Dict) -> List[tuple]:
 
 def log_experiments(client, dataset_path: str, summary: Dict, results: List[Dict],
                     name: Optional[str] = None) -> List[str]:
-    """Une expérience LangSmith par mode, une ligne par question. Retourne les noms des expériences."""
+    """Une expérience LangSmith par mode, une ligne par question et par répétition (les
+    répétitions d'une question se rattachent au même exemple). Retourne les noms des expériences."""
     dataset, example_ids = sync_dataset(client, dataset_path)
     stamp = datetime.now().strftime("%Y-%m-%d %H:%M")
     name = name or settings.REASONING_MODEL_ID
@@ -124,6 +125,9 @@ def log_experiments(client, dataset_path: str, summary: Dict, results: List[Dict
                 "index": summary.get("index"),
                 "documents": summary.get("documents"),
                 "accuracy": fb.get("accuracy"),
+                "reps": summary.get("reps", 1),
+                "pass_all_rate": ((summary.get(mode) or {}).get("repetitions") or {}).get("pass_all_rate"),
+                "verdict_stability": ((summary.get(mode) or {}).get("repetitions") or {}).get("verdict_stability"),
                 "cost_usd": (summary.get("cost") or {}).get("total_usd"),
             },
         )
@@ -143,7 +147,8 @@ def log_experiments(client, dataset_path: str, summary: Dict, results: List[Dict
                 start_time=end - timedelta(seconds=duration),
                 end_time=end,
                 extra={"metadata": {
-                    "mode": mode, "verdict": row.get("verdict"), "question_type": row.get("question_type"),
+                    "mode": mode, "rep": row.get("rep", 0), "verdict": row.get("verdict"),
+                    "question_type": row.get("question_type"),
                     "pages_read": row.get("pages_read"), "tool_queries": row.get("corrective_queries"),
                     "gold_rank": row.get("gold_rank"),
                 }},

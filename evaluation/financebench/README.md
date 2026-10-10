@@ -103,6 +103,7 @@ Seuls `dataset.jsonl` et ce README sont versionnés ; PDF, caches et résultats 
 | `--workers N` | Questions en parallèle (défaut 3). **Passer à 1 avec une clé Cohere trial** (~10 req/min) |
 | `--max-items N` | Limite le nombre de questions (test rapide) |
 | `--no-judge` | Désactive le juge LLM (pas de métriques d'accuracy) |
+| `--reps N` | Rejoue la génération N fois par question (retrieval une seule fois) : ajoute exactitude moyenne, pass^k et stabilité du verdict. Les métriques du protocole restent calculées sur la 1re répétition. Coût × N |
 | `--time-budget S` | Arrêt propre au-delà de S secondes, avec résultats partiels (défaut 600) |
 | `--per-doc` | Un index par document au lieu de l'index combiné |
 | `--page-tolerance N` | Écart de pagination toléré entre PDF annoté et OCR (défaut 1) |

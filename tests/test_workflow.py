@@ -188,3 +188,14 @@ def test_generator_with_tools_without_tool_calls_is_not_reported_as_corrective(w
     wf_tools.relevance_checker.check = lambda question, documents, k=3: "CAN_ANSWER"
     out = wf_tools.full_pipeline("question", FakeRetriever(default=[make_doc("a")]))
     assert "non nécessaire" in out["verification_report"]
+
+
+def test_pipeline_output_carries_the_context_seen_by_the_generator(wf_tools):
+    """Sortie du run racine « question » : le juge en ligne de fidélité y lit les passages."""
+    wf_tools.researcher.generate_with_tools = lambda q, docs, r, page_store=None, scope=None, relevance=None: {
+        "draft_answer": "réponse [2]", "citations": [], "documents": docs, "tool_calls": 1, "queries": ["grep: x"],
+        "context_used": "[1] (DOC)\na\n\n[2] (DOC)\npage lue",
+    }
+    wf_tools.relevance_checker.check = lambda question, documents, k=3: "CAN_ANSWER"
+    out = wf_tools.full_pipeline("question", FakeRetriever(default=[make_doc("a")]))
+    assert out["context_used"] == "[1] (DOC)\na\n\n[2] (DOC)\npage lue"

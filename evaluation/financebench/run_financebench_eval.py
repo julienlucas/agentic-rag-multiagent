@@ -18,7 +18,7 @@ import os
 import sys
 import threading
 import time
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 from statistics import mean
 from typing import Dict, List, Optional
@@ -167,8 +167,13 @@ def evaluate_example(
     page_tolerance: int,
     page_store: Optional[PageStore] = None,
     relevancy: Optional[AnswerRelevancy] = None,
+    reps: int = 1,
 ) -> List[Dict]:
-    """Récupère une seule fois, puis génère une réponse par mode évalué."""
+    """Récupère une seule fois, puis génère une réponse par mode évalué et par répétition.
+
+    Le retrieval est déterministe : seule la génération (et le juge) est rejouée `reps` fois,
+    pour savoir si un succès est stable ou un tirage heureux.
+    """
     question = example["question"].strip()
     expected = example.get("expected_answer", "").strip()
     gold_pages = example.get("gold_pages", [])
@@ -183,8 +188,9 @@ def evaluate_example(
     top_docs = docs[:top_k]
 
     rows = []
-    for mode in modes:
+    for rep, mode in ((r, m) for r in range(max(1, reps)) for m in modes):
         row = {
+            "rep": rep,
             "id": example.get("id"),
             "doc_name": example.get("doc_name"),
             "question": question,
@@ -357,6 +363,34 @@ def aggregate(results: List[Dict], k_values: List[int]) -> Dict:
     return base
 
 
+def repetition_stats(results: List[Dict]) -> Dict:
+    """Stabilité sur les répétitions d'un même mode : une seule exécution ne dit pas si un
+    succès est reproductible.
+
+    - pass_all_rate (pass^k) : part des questions CORRECTES à toutes les répétitions ;
+    - mean_accuracy : exactitude moyenne, toutes répétitions confondues ;
+    - verdict_stability : part moyenne du verdict majoritaire d'une question (1 = toujours le même).
+    Seules les répétitions jugées comptent (ni échec, ni erreur du juge).
+    """
+    by_question: Dict[str, List[str]] = defaultdict(list)
+    for r in results:
+        verdict = r.get("verdict")
+        if not r.get("failed") and verdict and verdict != "ERROR":
+            by_question[r["id"]].append(verdict)
+    if not by_question:
+        return {}
+    verdicts = [v for vs in by_question.values() for v in vs]
+    return {
+        "reps": max(len(vs) for vs in by_question.values()),
+        "questions": len(by_question),
+        "pass_all_rate": round(sum(all(v == "CORRECT" for v in vs) for vs in by_question.values())
+                               / len(by_question), 4),
+        "mean_accuracy": round(sum(v == "CORRECT" for v in verdicts) / len(verdicts), 4),
+        "verdict_stability": round(mean(Counter(vs).most_common(1)[0][1] / len(vs)
+                                        for vs in by_question.values()), 4),
+    }
+
+
 def breakdown(results: List[Dict], field: str, k_values: List[int]) -> Dict:
     """Ventile accuracy / page_hit par type ou par raisonnement de question."""
     groups = defaultdict(list)
@@ -449,6 +483,13 @@ def print_report(summary: Dict, modes: List[str], k_values: List[int] = None, n_
         row("Refus (REFUSAL)", lambda b: _pct(fb(b).get("refusal_rate")))
         row("  questions", lambda b: _count(b, "refusal"))
         row("Faithfulness moyenne /5", lambda b: str(fb(b).get("mean_faithfulness") or "—"))
+        lines.append("-" * 78)
+    if any((summary.get(m) or {}).get("repetitions") for m in modes):
+        reps = lambda b: b.get("repetitions") or {}
+        row("Répétitions par question", lambda b: str(reps(b).get("reps", "—")))
+        row("  exactitude moyenne", lambda b: _pct(reps(b).get("mean_accuracy")))
+        row("  correcte à chaque fois (pass^k)", lambda b: _pct(reps(b).get("pass_all_rate")))
+        row("  stabilité du verdict", lambda b: _pct(reps(b).get("verdict_stability")))
         lines.append("-" * 78)
     row("Answer relevancy (0-1)", lambda b: str(b.get("mean_answer_relevancy") or "—"))
     row("Preuve transmise au LLM", lambda b: _pct(b.get("evidence_seen_rate")))
@@ -547,6 +588,8 @@ def main():
                         help="Écart de pagination toléré entre PDF annoté et OCR")
     parser.add_argument("--per-doc", action="store_true",
                         help="Un index par document au lieu d'un index combiné (plus facile)")
+    parser.add_argument("--reps", type=int, default=1,
+                        help="Répétitions de la génération par question (≥ 3 pour mesurer la stabilité)")
     parser.add_argument("--verbose", action="store_true", help="N'étouffe pas les logs du pipeline")
     parser.add_argument("--force-overwrite", action="store_true",
                         help="Autorise un run partiel à écraser les sorties versionnées")
@@ -636,6 +679,7 @@ def main():
                     contextvars.copy_context().run,
                     evaluate_example, ex, get_retriever(ex), modes,
                     workflow, researcher, judge, k_values, args.page_tolerance, page_store, relevancy,
+                    args.reps,
                 ): ex
                 for ex in dataset
             }
@@ -684,16 +728,22 @@ def main():
         "documents": docs_in_dataset,
         "index": "per-doc" if args.per_doc else "combined",
         "n_questions": len(dataset),
+        "reps": args.reps,
         "elapsed_sec": round(time.time() - start, 2),
         "truncated": truncated,
         "errors": len(errors),
         "cost": compute_cost(usage.usage_metadata, dict(RERANK_USAGE)),
     }
     for mode in modes:
-        summary[mode] = aggregate(grouped[mode], k_values)
-        if grouped[mode]:
-            summary[mode]["by_question_type"] = breakdown(grouped[mode], "question_type", k_values)
-            summary[mode]["by_reasoning"] = breakdown(grouped[mode], "question_reasoning", k_values)
+        # Métriques du protocole sur la 1re répétition : comparables aux runs à une seule
+        # exécution, et IC95 calculés sur le vrai nombre de questions (pas questions × reps).
+        first = [r for r in grouped[mode] if r.get("rep", 0) == 0]
+        summary[mode] = aggregate(first, k_values)
+        if args.reps > 1 and summary[mode]:
+            summary[mode]["repetitions"] = repetition_stats(grouped[mode])
+        if first:
+            summary[mode]["by_question_type"] = breakdown(first, "question_type", k_values)
+            summary[mode]["by_reasoning"] = breakdown(first, "question_reasoning", k_values)
 
     if len(modes) == 2 and summary["baseline"] and summary["agentic"]:
         b_fb = summary["baseline"].get("financebench") or {}

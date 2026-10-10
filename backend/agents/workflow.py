@@ -28,6 +28,7 @@ class AgentState(TypedDict, total=False):
     tool_calls: int           # appels d'outils consommés (agent de recherche ou générateur)
     search_note: str          # conclusion de l'agent de recherche, transmise au générateur
     context_size: int         # nb de passages réellement vus par le générateur (mode outils)
+    context_used: str         # passages numérotés vus par le générateur (juge en ligne de fidélité)
 
 def build_verification_report(state: "AgentState") -> str:
     """
@@ -299,10 +300,13 @@ class AgentWorkflow:
 
             final_state = self.compiled_workflow.invoke(initial_state)
 
+            # `context_used` n'est pas renvoyé au client (views ne le lit pas) : il part dans
+            # la sortie du run racine « question », pour le juge en ligne de fidélité.
             return {
                 "draft_answer": final_state["draft_answer"],
                 "verification_report": final_state.get("verification_report", ""),
                 "citations": final_state.get("citations", []),
+                "context_used": final_state.get("context_used", ""),
             }
         except Exception as e:
             logger.error(f"L'exécution du workflow a échoué: {e}")
@@ -350,6 +354,7 @@ class AgentWorkflow:
                     "draft_answer": result["draft_answer"],
                     "verification_report": build_verification_report(report_state),
                     "citations": result.get("citations", []),
+                    "context_used": result.get("context_used", ""),
                 })
                 return update
 
@@ -361,6 +366,7 @@ class AgentWorkflow:
                 "draft_answer": result["draft_answer"],
                 "verification_report": build_verification_report(state),
                 "citations": result.get("citations", []),
+                "context_used": result.get("context_used", ""),
             }
         except Exception as e:
             # Un rate limit doit remonter : l'appelant (éval, retry externe) sait le

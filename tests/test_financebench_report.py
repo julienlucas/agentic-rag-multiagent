@@ -35,3 +35,41 @@ def test_aggregate_and_report_show_new_metrics(monkeypatch):
     assert "Answer relevancy (0-1)" in text and "0.8" in text
     assert "page_precision@5" in text and "precision@5 (texte)" in text
     assert "Faithfulness moyenne /5" in text
+
+
+def _rep(qid, rep, verdict):
+    return {"id": qid, "rep": rep, "verdict": verdict}
+
+
+def test_repetition_stats_separate_stable_from_lucky_successes():
+    rows = [_rep("q1", r, "CORRECT") for r in range(3)]                       # toujours juste
+    rows += [_rep("q2", 0, "CORRECT"), _rep("q2", 1, "INCORRECT"), _rep("q2", 2, "CORRECT")]  # tirage
+    stats = R.repetition_stats(rows)
+    assert stats["reps"] == 3 and stats["questions"] == 2
+    assert stats["pass_all_rate"] == 0.5          # seule q1 passe à chaque fois
+    assert stats["mean_accuracy"] == round(5 / 6, 4)
+    assert stats["verdict_stability"] == round((1 + 2 / 3) / 2, 4)
+
+
+def test_repetition_stats_ignore_failures_and_judge_errors():
+    rows = [_rep("q1", 0, "CORRECT"), _rep("q1", 1, "ERROR"), {"id": "q1", "rep": 2, "failed": True}]
+    assert R.repetition_stats(rows)["pass_all_rate"] == 1.0
+    assert R.repetition_stats([{"id": "q", "failed": True}]) == {}
+
+
+def test_each_repetition_regenerates_but_retrieves_once():
+    class Retriever:
+        calls = 0
+
+        def invoke(self, q):
+            Retriever.calls += 1
+            return [make_doc("x")]
+
+    class Researcher:
+        def generate(self, q, docs):
+            return {"draft_answer": "réponse"}
+
+    rows = R.evaluate_example({"id": "q1", "question": "q ?", "expected_answer": "r"}, Retriever(),
+                              ["baseline"], None, Researcher(), None, [5], 0, reps=3)
+    assert [r["rep"] for r in rows] == [0, 1, 2]
+    assert Retriever.calls == 1

@@ -1,6 +1,8 @@
 import re
 from typing import Optional
 
+from langsmith import traceable
+
 from ..llm.models import small_llm
 from ..config.settings import settings
 import logging
@@ -11,6 +13,12 @@ class RelevanceChecker:
     def __init__(self):
         self.model = small_llm(max_tokens=10)
 
+    # Run nommé « relevance_check » (question, passages jugés → label) : c'est lui que note
+    # le juge en ligne du vérificateur (evaluation/online_evaluators.py). Sans tracing, no-op.
+    @traceable(name="relevance_check", run_type="chain", process_inputs=lambda inputs: {
+        "question": inputs.get("question"),
+        "passages": "\n\n".join(d.page_content for d in (inputs.get("documents") or [])[:inputs.get("k", 3)]),
+    })
     def check(self, question: str, documents, k=3) -> str:
         """
         1. Utiliser les documents déjà récupérés (pas de nouvel appel retriever).

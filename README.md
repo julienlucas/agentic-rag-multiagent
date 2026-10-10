@@ -171,6 +171,32 @@ qu'un jeton signé qui lie la trace à son espace : en production, définir `DJA
 Les réponses 👍 ne sont pas injectées dans le prompt comme exemples : elles viennent des documents
 d'un utilisateur et fuiraient vers les autres espaces. Elles servent de références de test.
 
+## Les 3 évaluations de l'agent (dans LangSmith)
+
+**1. Les vraies questions** — *tout seul, à chaque question*
+
+4 juges (Mistral Large, pas Claude) relisent chaque question posée en production et disent oui
+ou non : l'agent a-t-il bien choisi entre chercher et répondre (`tool_selection`) ? le
+vérificateur de pertinence a-t-il donné le bon label (`relevance_check_correct`) ? la réponse
+ne dit-elle que ce qu'il y a dans les passages (`faithfulness`) ? répond-elle à la question
+posée (`answer_relevance`) ? ~0,01 à 0,04 $ par question. Les règles se créent une fois avec
+`evaluation/online_evaluators.py`, après avoir ajouté `MISTRAL_API_KEY` dans LangSmith
+(Settings → Secrets). `evaluation/judge_calibration.py` mesure ensuite l'accord de ces juges
+avec les 👍/👎 (lecture seule, gratuit).
+
+**2. Les expériences** — *à la main, avant de merger un changement*
+
+FinanceBench (ci-dessous) : 26 questions, avec et sans outils, ~1,20 $. `--reps 3` rejoue
+chaque génération 3 fois et ajoute la stabilité : exactitude moyenne, part des questions
+justes à chaque fois (pass^k), stabilité du verdict.
+
+**3. La convergence** — *à la main*
+
+La même question FinanceBench (quick ratio d'AMD) formulée de 15 façons : l'agent
+trouve-t-il la bonne réponse, et par le chemin le plus court ? Une note de 0 à 1 par
+exécution (1 = bonne réponse en un minimum d'appels d'outils, 0 = réponse fausse).
+~0,50 $. `uv run python evaluation/convergence.py`
+
 ## Évaluation FinanceBench (documents financiers difficiles)
 
 L'évaluation, sur [FinanceBench](https://github.com/patronus-ai/financebench) (Patronus AI) —
