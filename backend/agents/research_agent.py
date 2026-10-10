@@ -202,7 +202,8 @@ Quand les utiliser — dans le doute, vérifiez : un appel d'outil coûte moins 
         que la réponse puisse le citer. `documents` retourné = tout ce que le modèle a vu.
         """
         import hashlib
-        from .search_agent import build_tools, message_text, run_tool_loop
+        from ..tools.tools import build_tools
+        from .search_agent import message_text, run_tool_loop
 
         budget = settings.GENERATOR_MAX_TOOL_CALLS if max_tool_calls is None else max_tool_calls
         seen_docs: List[Document] = list(documents)

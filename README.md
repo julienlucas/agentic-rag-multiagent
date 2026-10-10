@@ -11,8 +11,8 @@ rapports SEC de 150 à 260 pages. Il est **mesuré** sur
 strictement identique : **96,2 % de réponses correctes avec les outils, contre 76,9 % sans**, et
 des hallucinations qui passent de 15,4 % à 3,8 %. Dix-neuf points gagnés par l'agent équipé, sur
 le même index et les mêmes 10 passages initiaux. Le run complet coûte environ 1 € à relancer.
-Tous les chiffres sont reproductibles à partir des sorties dans
-`evaluation/financebench/outputs_sonnet5/` —
+Tous les chiffres sont vérifiables question par question dans l'expérience LangSmith
+« Claude Sonnet 5 (API Anthropic, Chroma) · agentic » du dataset FinanceBench —
 [résultats, coût et limites](#évaluation-financebench-documents-financiers-difficiles).
 
 ## Architecture IA à la base avant améliorations
@@ -30,7 +30,7 @@ La réponse ne s'appuie que sur les passages numérotés — initiaux ou ramené
 
 ## Cet agent a des outils à dispo
 
-Cinq opérations façon système de fichiers — les cinq de l'[Agentic Search de Mistral](https://mistral.ai/fr/news/agentic-search/) (search, open, navigate, read, grep) —, données au modèle de réponse. Les pages OCR sont conservées entières (`backend/retriever/page_store.py`) à côté des chunks : les chunks servent à *trouver*, les pages à *lire*.
+Cinq opérations façon système de fichiers — les cinq de l'[Agentic Search de Mistral](https://mistral.ai/fr/news/agentic-search/) (search, open, navigate, read, grep) —, données au modèle de réponse, définies dans `backend/tools/tools.py`. Les pages OCR sont conservées entières (`backend/retriever/page_store.py`) à côté des chunks : les chunks servent à *trouver*, les pages à *lire*.
 
 | Outil | Ce qu'il fait |
 |---|---|
@@ -44,7 +44,7 @@ Cinq opérations façon système de fichiers — les cinq de l'[Agentic Search d
 
 ### Le système inclut un retriever hybride pour maximiser la pertinence
 - **Algo BM25 + Embeddings, côté Qdrant** : chaque chunk porte un vecteur sparse BM25 (précision lexicale) et un vecteur dense (sens contextuel) ; les deux recherches sont fusionnées par RRF dans une seule requête Qdrant. Métrique explicite (`VECTOR_SPACE = "cosine"`).
-- **Un espace par utilisateur** : une collection Qdrant partagée, chaque point porte un `tenant_id` (index `is_tenant`), HNSW désactivé globalement (`m=0`) et construit par tenant (`payload_m`). Toutes les lectures passent par `backend/vectorstore/qdrant_store.py`, qui impose le filtre `tenant_id`. Les documents sont persistés : un fichier déjà indexé n'est ni ré-OCRisé ni ré-embeddé.
+- **Un espace par utilisateur** : une collection Qdrant partagée, chaque point porte un `tenant_id` (index `is_tenant`), HNSW désactivé globalement (`m=0`) et construit par tenant (`payload_m`). Toutes les lectures passent par `backend/vectorstore/qdrant_store.py`, qui impose le filtre `tenant_id`. Les documents sont persistés : un fichier déjà indexé n'est ni ré-OCRisé ni ré-embeddé. L'index d'évaluation (FinanceBench) a ses propres collections, `eval_chunks` / `eval_pages` : il ne côtoie jamais les documents des utilisateurs (`chunks` / `pages`).
 - **Routage par document** : avant de chercher, le système cible le(s) document(s) que la question désigne (nom d'entreprise ou de fichier) — indispensable quand plusieurs documents longs sont indexés ensemble.
 - **Reranking Cohere + parent-child + multi-query** : petits chunks pour matcher, gros chunks pour répondre.
 
@@ -153,20 +153,20 @@ Sous chaque réponse, un 👍 / 👎 (le 👎 ouvre un commentaire facultatif). 
 qu'un jeton signé qui lie la trace à son espace : en production, définir `DJANGO_SECRET_KEY`.
 
 1. **Récolter** : chaque vote est rangé automatiquement, en arrière-plan, dans le dataset LangSmith
-   « Retours utilisateurs » (`backend/feedback_dataset.py`), quelques secondes après le clic, le temps
+   « agentic-search · Retours utilisateurs » (`backend/evals/feedback/votes_dataset.py`), quelques secondes après le clic, le temps
    que la trace arrive. Un 👍 y entre avec sa réponse comme référence. Un 👎 y entre avec sa réponse
-   rejetée et le commentaire en métadonnées. `uv run python evaluation/feedback/collect.py` rattrape les
+   rejetée et le commentaire en métadonnées. `uv run python backend/evals/feedback/collect.py` rattrape les
    votes manqués (redémarrage du serveur, LangSmith indisponible), sans doublon.
    `FEEDBACK_AUTO_COLLECT=false` coupe le rangement automatique.
 2. **Analyser** : chaque 👎 reçoit une cause d'échec proposée par le juge (Mistral, pas Claude) :
    `mauvais_document`, `passage_manquant`, `erreur_lecture`, `erreur_calcul`, `refus_a_tort`,
    `hors_corpus`, `forme` ou `autre`. Elle est aussi posée en feedback `failure_category` sur la trace,
    et `collect.py` affiche la répartition de ce qu'il rattrape. La cause dit où corriger : routage, retrieval, prompt ou outils.
-3. **Corriger** : `uv run python evaluation/feedback/replay.py` rejoue les exemples qui ont une
+3. **Corriger** : `uv run python backend/evals/feedback/replay.py` rejoue les exemples qui ont une
    référence, sur les mêmes documents du même espace, et les juge. Un 👍 qui n'est plus retrouvé est
    une **régression** (code de sortie 1). Un 👎 dont on a écrit la bonne réponse dans `outputs.answer`
-   (depuis LangSmith) passe en `CORRIGÉ` le jour où le système la trouve. `--push` enregistre le rejeu
-   comme expérience du dataset, comparable aux précédentes.
+   (depuis LangSmith) passe en `CORRIGÉ` le jour où le système la trouve. Chaque rejeu est enregistré
+   comme expérience du dataset, comparable aux précédentes (rien n'est écrit en local).
 
 Les réponses 👍 ne sont pas injectées dans le prompt comme exemples : elles viennent des documents
 d'un utilisateur et fuiraient vers les autres espaces. Elles servent de références de test.
@@ -180,9 +180,14 @@ ou non : l'agent a-t-il bien choisi entre chercher et répondre (`tool_selection
 vérificateur de pertinence a-t-il donné le bon label (`relevance_check_correct`) ? la réponse
 ne dit-elle que ce qu'il y a dans les passages (`faithfulness`) ? répond-elle à la question
 posée (`answer_relevance`) ? ~0,01 à 0,04 $ par question. Les règles se créent une fois avec
-`evaluation/online_evaluators.py`, après avoir ajouté `MISTRAL_API_KEY` dans LangSmith
-(Settings → Secrets). `evaluation/judge_calibration.py` mesure ensuite l'accord de ces juges
+`backend/evals/online_evaluators.py`, après avoir ajouté `MISTRAL_API_KEY` dans LangSmith
+(Settings → Secrets). `backend/evals/judge_calibration.py` mesure ensuite l'accord de ces juges
 avec les 👍/👎 (lecture seule, gratuit).
+
+Un seul projet LangSmith, `agentic-search` : les vraies questions, et tout ce que produisent les
+évaluations, filtrable par tag (`eval` pour les résumés de runs, `evaluator` pour les évaluateurs
+des expériences). Les juges en ligne ne laissent pas de trace à part : leur verdict et leur
+raisonnement sont sur la trace notée.
 
 **2. Les expériences** — *à la main, avant de merger un changement*
 
@@ -195,7 +200,7 @@ justes à chaque fois (pass^k), stabilité du verdict.
 La même question FinanceBench (quick ratio d'AMD) formulée de 15 façons : l'agent
 trouve-t-il la bonne réponse, et par le chemin le plus court ? Une note de 0 à 1 par
 exécution (1 = bonne réponse en un minimum d'appels d'outils, 0 = réponse fausse).
-~0,50 $. `uv run python evaluation/convergence.py`
+~0,50 $. `uv run python backend/evals/convergence.py`
 
 ## Évaluation FinanceBench (documents financiers difficiles)
 
@@ -203,17 +208,52 @@ L'évaluation, sur [FinanceBench](https://github.com/patronus-ai/financebench) (
 le benchmark utilisé par [Mistral pour évaluer Agentic Search](https://mistral.ai/news/agentic-search/) :
 QA sur des filings SEC de 150 à 260 pages, denses en tableaux.
 
-**Préparation, l'indexation des documents (une seule fois, ~10-20 min)** — télécharge, OCRise et met en cache 4 10-K (AMD, American Express, Boeing, PepsiCo) :
+### Récupérer et indexer le jeu d'évaluation (une seule fois)
+
+Rien n'est livré dans le dépôt : ni PDF, ni questions, ni index. Une seule commande refait tout
+à partir des sources publiques de Patronus AI, et range chaque morceau à sa place.
+
+**1. Prérequis dans le `.env`** — le script les vérifie avant tout appel payant :
+
+| Variable | Sert à |
+|---|---|
+| `LANGSMITH_API_KEY` | écrire le dataset de questions dans LangSmith |
+| `MISTRALAI_API_KEY` | l'OCR des PDF (Mistral OCR) |
+| `QDRANT_URL`, `QDRANT_API_KEY` | l'index persistant (sans `QDRANT_URL`, Qdrant tourne en mémoire et l'index serait perdu) |
+| AWS (`MODEL_PROVIDER=bedrock`) ou `COHERE_API_KEY` (`direct`) | les embeddings Cohere Embed v4 des chunks |
+
+**2. Lancer la préparation** (~10-20 min) :
 ```bash
-uv run python evaluation/financebench/prepare.py
+uv run python backend/evals/financebench/prepare.py --clean
 ```
+
+**3. Ce qui se passe** :
+
+1. **Téléchargement** des 150 questions open source et des 4 rapports 10-K du protocole (AMD,
+   American Express, Boeing, PepsiCo) depuis le [GitHub de FinanceBench](https://github.com/patronus-ai/financebench).
+2. **Dataset LangSmith** « agentic-search · FinanceBench » : les 26 questions des 4 rapports, avec réponse de
+   référence, pages et passages de preuve. C'est la seule source des questions pour les expériences.
+3. **OCR** page par page (Mistral OCR, ~1 070 pages), puis découpage parent / enfant par page.
+4. **Indexation Qdrant** dans les collections d'évaluation `eval_chunks` (chunks + embeddings dense
+   et BM25) et `eval_pages` (pages OCR, pour les outils grep / read_page), séparées des documents
+   des utilisateurs (`chunks` / `pages`).
+5. Avec `--clean`, les PDF et le cache local sont supprimés : tout est dans Qdrant et LangSmith.
+
+**Coût, payé une fois** (estimation) : ~4,30 $ d'OCR (1 070 pages à 0,004 $), plus quelques dizaines
+de centimes d'embeddings. Relancer le script ne repaie rien : un rapport déjà présent dans l'index
+Qdrant est sauté (ni téléchargement, ni OCR, ni embeddings). `--force` reconstruit tout.
+
+**Variantes** : `--docs extended` prépare le jeu étendu (18 rapports, 70 questions, dataset
+« agentic-search · FinanceBench (extended) », ~2 000 pages d'OCR en plus) ; `--docs AMD_2022_10K,BOEING_2022_10K` un
+sous-ensemble (dataset « agentic-search · FinanceBench (custom) »).
 
 **Lancer l'évaluation (5-10 min)** :
 ```bash
-uv run python evaluation/financebench/run_financebench_eval.py --mode both
+uv run python backend/evals/experiment.py --mode both
 ```
 
-**Résultats** — run du 28 septembre 2026, dans `evaluation/financebench/outputs_sonnet5/`.
+**Résultats** — run du 28 septembre 2026, expérience LangSmith « Claude Sonnet 5 (API Anthropic,
+Chroma) » du dataset FinanceBench (aucun résultat n'est conservé en local).
 Modèle de raisonnement : Claude Sonnet 5. 26 questions, 4 filings, index combiné, juge LLM
 (Mistral Large) au protocole du benchmark, comptages bruts.
 Les deux premières lignes sont l'ablation : même index, même retrieval, mêmes 10 passages
@@ -228,7 +268,7 @@ initiaux, la seule différence est le modèle de réponse avec ou sans outils.
 | RAG naïf — papier FinanceBench (GPT-4-Turbo 2023, benchmark complet) | ~19 % | 81 % de réponses fausses ou refusées | |
 
 Aucune erreur technique sur ce run : les 26 questions sont jugées dans les deux modes. Le run
-précédent, sur Mistral Large (4 septembre 2026, `evaluation/financebench/outputs/`), donnait
+précédent, sur Mistral Large (4 septembre 2026, expérience « Mistral Large (run du 4 sept. 2026) »), donnait
 83,3 % (20/24) avec outils et 65,4 % sans. Le retrieval mesuré diffère aussi entre les deux runs
 (recall@5 : 20 % → 42 %) : l'écart ne mesure donc pas le seul effet du modèle.
 
@@ -255,4 +295,4 @@ l'évaluation complète, reproductible, sur quatre 10-K, se relance pour le prix
 chiffre de précision qu'on annonce à un client est re-mesurable à chaque changement de prompt.
 
 
-Détail du protocole, options et notes d'implémentation : [`evaluation/financebench/README.md`](evaluation/financebench/README.md).
+Détail du protocole, options et notes d'implémentation : [`backend/evals/financebench/README.md`](backend/evals/financebench/README.md).

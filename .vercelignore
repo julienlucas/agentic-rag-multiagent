@@ -11,7 +11,7 @@ railway.toml
 backend/
 
 # Evaluation
-evaluation/
+backend/evals/
 
 # Environments
 .venv/

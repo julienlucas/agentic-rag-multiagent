@@ -4,7 +4,6 @@ from typing import Optional
 from langsmith import traceable
 
 from ..llm.models import small_llm
-from ..config.settings import settings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -14,7 +13,7 @@ class RelevanceChecker:
         self.model = small_llm(max_tokens=10)
 
     # Run nommé « relevance_check » (question, passages jugés → label) : c'est lui que note
-    # le juge en ligne du vérificateur (evaluation/online_evaluators.py). Sans tracing, no-op.
+    # le juge en ligne du vérificateur (backend/evals/online_evaluators.py). Sans tracing, no-op.
     @traceable(name="relevance_check", run_type="chain", process_inputs=lambda inputs: {
         "question": inputs.get("question"),
         "passages": "\n\n".join(d.page_content for d in (inputs.get("documents") or [])[:inputs.get("k", 3)]),

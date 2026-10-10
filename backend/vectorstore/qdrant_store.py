@@ -19,6 +19,10 @@ La collection `pages` (sans vecteurs) garde les pages OCR pour grep / read_page,
 `kind="document"` par fichier : le registre des documents du tenant. Ce point est écrit EN
 DERNIER : un document n'existe qu'une fois tous ses chunks et pages écrits.
 
+Deux paires de collections, même schéma : `chunks` / `pages` pour les documents des
+utilisateurs (get_store), `eval_chunks` / `eval_pages` pour l'évaluation FinanceBench
+(get_eval_store). Les données de test ne côtoient jamais celles de la production.
+
 SÉCURITÉ : ce module est le seul à parler à Qdrant. Tout accès passe par TenantStore, qui
 ajoute le filtre `tenant_id` à chaque lecture, recherche et suppression. Ne jamais exposer
 le client hors d'ici.
@@ -82,12 +86,13 @@ def _batches(items: List, size: int) -> Iterable[List]:
 class QdrantStore:
     """Connexion + schéma des collections. Ne s'utilise qu'à travers for_tenant()."""
 
-    def __init__(self, client: QdrantClient = None, embeddings=None, sparse: Bm25Encoder = None):
+    def __init__(self, client: QdrantClient = None, embeddings=None, sparse: Bm25Encoder = None,
+                 chunks: str = None, pages: str = None):
         self._client = client or self._connect()
         self._embeddings = embeddings
         self.sparse = sparse or Bm25Encoder()
-        self.chunks = settings.QDRANT_CHUNKS_COLLECTION
-        self.pages = settings.QDRANT_PAGES_COLLECTION
+        self.chunks = chunks or settings.QDRANT_CHUNKS_COLLECTION
+        self.pages = pages or settings.QDRANT_PAGES_COLLECTION
         self._ensure_schema()
 
     @staticmethod
@@ -331,3 +336,16 @@ def get_store() -> QdrantStore:
         if _store is None:
             _store = QdrantStore()
         return _store
+
+
+_eval_store: Optional[QdrantStore] = None
+
+
+def get_eval_store() -> QdrantStore:
+    """Collections de l'évaluation (FinanceBench), séparées de celles des utilisateurs."""
+    global _eval_store
+    with _store_lock:
+        if _eval_store is None:
+            _eval_store = QdrantStore(chunks=settings.QDRANT_EVAL_CHUNKS_COLLECTION,
+                                      pages=settings.QDRANT_EVAL_PAGES_COLLECTION)
+        return _eval_store

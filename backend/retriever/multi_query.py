@@ -3,7 +3,7 @@ Multi-Query Retrieval.
 Génère plusieurs reformulations de la question pour améliorer le recall.
 """
 import hashlib
-from typing import List, Set
+from typing import List
 from langchain_core.documents import Document
 from ..llm.models import small_llm
 from ..config.settings import settings

@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: Optional[str] = None
 
     # Identifiants de modèles : vides = défaut du fournisseur (PROVIDER_DEFAULTS ci-dessous).
-    MODEL_ID: Optional[str] = None  # HyDE, décomposition, compression
+    MODEL_ID: Optional[str] = None
     MODEL_SMALL_ID: Optional[str] = None  # Sous-agents (classif, reformulation)
     EMBEDDING_MODEL_ID: Optional[str] = None
     EMBEDDING_DIMENSIONS: int = 1024
@@ -71,7 +71,7 @@ class Settings(BaseSettings):
     # Tracking LangSmith (si besoin)
     LANGSMITH_API_KEY: Optional[str] = None  # optionnel : le README le dit, le code ne le permettait pas
     # Chaque vote est rangé en arrière-plan dans le dataset « Retours utilisateurs »
-    # (backend/feedback_dataset.py) ; evaluation/feedback/collect.py rattrape les manqués.
+    # (backend/evals/feedback/votes_dataset.py) ; backend/evals/feedback/collect.py rattrape les manqués.
     FEEDBACK_AUTO_COLLECT: bool = True
 
     # Paramètres optionnels avec valeurs par défaut
@@ -81,6 +81,9 @@ class Settings(BaseSettings):
     QDRANT_API_KEY: Optional[str] = None
     QDRANT_CHUNKS_COLLECTION: str = "chunks"
     QDRANT_PAGES_COLLECTION: str = "pages"  # pages OCR (grep / read_page) + registre des documents
+    # Évaluation (FinanceBench) : collections séparées, jamais mélangées aux documents des utilisateurs
+    QDRANT_EVAL_CHUNKS_COLLECTION: str = "eval_chunks"
+    QDRANT_EVAL_PAGES_COLLECTION: str = "eval_pages"
     # HNSW : pas de graphe global (m=0), un graphe par tenant (payload_m) — chaque utilisateur
     # a son index, et une recherche ne parcourt jamais les vecteurs des autres.
     QDRANT_HNSW_PAYLOAD_M: int = 16
@@ -111,16 +114,6 @@ class Settings(BaseSettings):
     # Multi-Query - 1 reformulation (compromis latence/recall pour la prod)
     MULTI_QUERY_ENABLED: bool = True
     MULTI_QUERY_COUNT: int = 1
-
-    # HyDE - DÉSACTIVÉ (nuit au retrieval sur ce corpus)
-    HYDE_ENABLED: bool = False
-
-    # Query Decomposition - DÉSACTIVÉ
-    QUERY_DECOMPOSITION_ENABLED: bool = False
-
-    # Contextual Compression - DÉSACTIVÉ
-    CONTEXTUAL_COMPRESSION_ENABLED: bool = False
-    CONTEXTUAL_COMPRESSION_TOP_K: int = 5
 
     # Routage par document : avant de chercher, cibler le(s) document(s) que la question
     # désigne (nom d'entreprise / de fichier). Réduit la dilution quand plusieurs documents

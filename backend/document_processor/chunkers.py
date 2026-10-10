@@ -136,64 +136,6 @@ class SemanticChunkingStrategy(ChunkingStrategy):
         return chunks
 
 
-class SentenceWindowChunkingStrategy(ChunkingStrategy):
-    """
-    Stratégie Sentence Window.
-    Indexe des phrases individuelles mais retourne une fenêtre de contexte autour.
-    Excellent pour le recall car les petits chunks matchent mieux.
-    """
-
-    def __init__(self, window_size: int = 3):
-        """
-        Args:
-            window_size: Nombre de phrases avant/après à inclure dans le contexte
-        """
-        self.window_size = window_size
-
-    def _split_into_sentences(self, text: str) -> List[str]:
-        """Découpe le texte en phrases."""
-        import re
-        # Pattern pour détecter les fins de phrase
-        sentence_endings = re.compile(r'(?<=[.!?])\s+')
-        sentences = sentence_endings.split(text)
-        return [s.strip() for s in sentences if s.strip()]
-
-    def split(self, text: str, metadata: Optional[Dict[str, Any]] = None) -> List[Document]:
-        """
-        Crée des chunks basés sur des phrases avec contexte de fenêtre.
-        Le chunk indexé est petit (1 phrase) mais metadata contient le contexte étendu.
-        """
-        metadata = metadata or {}
-        sentences = self._split_into_sentences(text)
-
-        if len(sentences) <= 1:
-            return [Document(page_content=text, metadata=metadata)]
-
-        chunks = []
-        for i, sentence in enumerate(sentences):
-            # Calculer les indices de la fenêtre
-            start_idx = max(0, i - self.window_size)
-            end_idx = min(len(sentences), i + self.window_size + 1)
-
-            # Construire le contexte de fenêtre
-            window_sentences = sentences[start_idx:end_idx]
-            window_text = " ".join(window_sentences)
-
-            chunk_metadata = {
-                **metadata,
-                "sentence_index": i,
-                "window_start": start_idx,
-                "window_end": end_idx,
-                "window_context": window_text,  # Contexte élargi pour la génération
-            }
-
-            # On indexe la phrase seule pour la recherche précise
-            chunks.append(Document(page_content=sentence, metadata=chunk_metadata))
-
-        logger.debug(f"SentenceWindowChunking: {len(chunks)} chunks créés")
-        return chunks
-
-
 class ParentChildChunkingStrategy(ChunkingStrategy):
     """
     Stratégie Parent-Child.
@@ -396,10 +338,6 @@ def get_chunking_strategy(embeddings=None) -> ChunkingStrategy:
     if strategy == "semantic":
         logger.info("Utilisation du chunking sémantique (sans parent-child)")
         return SemanticChunkingStrategy(embeddings=embeddings)
-
-    elif strategy == "sentence_window":
-        logger.info("Utilisation du chunking Sentence Window")
-        return SentenceWindowChunkingStrategy(window_size=3)
 
     else:
         logger.info("Utilisation du chunking récursif standard")

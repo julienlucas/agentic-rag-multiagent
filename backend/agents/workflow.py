@@ -300,7 +300,7 @@ class AgentWorkflow:
 
             final_state = self.compiled_workflow.invoke(initial_state)
 
-            # `context_used` n'est pas renvoyé au client (views ne le lit pas) : il part dans
+            # `context_used` n'est pas renvoyé au client (endpoints ne le lit pas) : il part dans
             # la sortie du run racine « question », pour le juge en ligne de fidélité.
             return {
                 "draft_answer": final_state["draft_answer"],

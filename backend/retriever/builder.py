@@ -5,10 +5,6 @@ from ..utils.logging import logger
 from .embeddings import get_embeddings
 from .parent_child_retriever import ParentChildRetriever
 from .multi_query import MultiQueryRetriever
-from .hyde import HyDERetriever
-from .query_decomposition import QueryDecompositionRetriever
-from .contextual_compression import ContextualCompressionRetriever
-from .sentence_window_retriever import SentenceWindowRetriever
 from .document_router import DocumentRouter, DocumentRouterRetriever, ScopedHybridRetriever
 
 
@@ -43,42 +39,22 @@ class RetrieverBuilder:
         logger.info(f"Récupérateur hybride Qdrant créé (tenant {tenant_store.tenant_id}).")
 
         # Chaîner les composants optimisés pour le recall :
-        # Hybrid → SentenceWindow → ParentChild → HyDE → MultiQuery → QueryDecomp → Rerank → Compression
-
-        # Sentence Window (étend les phrases au contexte de fenêtre)
-        if settings.CHUNKING_STRATEGY.lower() == "sentence_window":
-            retriever = SentenceWindowRetriever(retriever)
-            logger.info("Sentence Window retriever activé.")
+        # Hybrid → ParentChild → MultiQuery → Rerank → routage par document
 
         # Parent-Child (retourne parents des children matchés)
         if settings.PARENT_CHILD_ENABLED:
             retriever = ParentChildRetriever(retriever)
             logger.info("Parent-Child retriever activé.")
 
-        # HyDE (génère une réponse hypothétique pour améliorer les embeddings)
-        if settings.HYDE_ENABLED:
-            retriever = HyDERetriever(retriever, self.llm)
-            logger.info("HyDE retriever activé.")
-
         # Multi-Query (génère variations de la question)
         if settings.MULTI_QUERY_ENABLED:
             retriever = MultiQueryRetriever(retriever, self.llm_text)
             logger.info("Multi-Query retriever activé.")
 
-        # Query Decomposition (décompose les questions complexes)
-        if settings.QUERY_DECOMPOSITION_ENABLED:
-            retriever = QueryDecompositionRetriever(retriever, self.llm)
-            logger.info("Query Decomposition retriever activé.")
-
         # Reranker (améliore la précision du ranking)
         if settings.RERANK_ENABLED:
             retriever = RerankRetriever(retriever, self.embeddings, self.llm)
             logger.info(f"Reranker activé: {settings.RERANK_MODEL}")
-
-        # Contextual Compression (filtre le contenu non pertinent)
-        if settings.CONTEXTUAL_COMPRESSION_ENABLED:
-            retriever = ContextualCompressionRetriever(retriever, self.llm)
-            logger.info("Contextual Compression activé.")
 
         # Routage par document (le plus externe : décide du périmètre avant tout)
         if settings.DOCUMENT_ROUTING_ENABLED:

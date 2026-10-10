@@ -23,7 +23,7 @@ jobs:
       - run: uv sync --frozen --group dev
       # Gate minimal aujourd'hui (erreurs de syntaxe + noms non définis = ce qui a cassé
       # l'éval FinanceBench le 1er sept.). Passer à --select E,F quand E501/E402 sont traités.
-      - run: uv run ruff check --select E9,F63,F7,F82 backend evaluation tests
+      - run: uv run ruff check --select E9,F63,F7,F82 backend
       - run: uv run pytest -q
 
   frontend:

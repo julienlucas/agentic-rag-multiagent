@@ -2,7 +2,7 @@
 Parent-Child Retriever.
 Récupère les children matchés et retourne les parents pour plus de contexte.
 """
-from typing import List, Dict, Set
+from typing import List, Dict
 from langchain_core.documents import Document
 from ..config.settings import settings
 from ..utils.logging import logger
