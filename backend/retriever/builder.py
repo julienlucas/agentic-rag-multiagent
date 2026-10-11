@@ -73,16 +73,16 @@ class RetrieverBuilder:
         return DocumentRouterRetriever(retriever, router)
 
 
-# Unités de recherche facturées par Cohere (une requête, jusqu'à 100 documents), cumulées
-# sur le process : l'évaluation FinanceBench les lit pour chiffrer le coût d'un run.
+# Requêtes de rerank facturées (une requête, jusqu'à 100 documents), cumulées sur le process :
+# l'évaluation FinanceBench les lit pour chiffrer le coût d'un run.
 _RERANK_USAGE_LOCK = threading.Lock()
 RERANK_USAGE = {"calls": 0, "search_units": 0.0}
 
 
 class RerankRetriever:
     """
-    Reranker utilisant l'API Cohere Rerank.
-    Top-tier performance, excellent multilingue.
+    Reranker Cohere : Rerank 3.5 sur Bedrock, ou Rerank 4 Pro par l'API Cohere, selon
+    MODEL_PROVIDER (voir llm/models.reranker).
     """
 
     def __init__(self, retriever, embeddings, llm):
@@ -94,10 +94,10 @@ class RerankRetriever:
 
     @property
     def client(self):
-        """Lazy loading du client Cohere."""
+        """Lazy loading du client de rerank."""
         if self._client is None:
-            import cohere
-            self._client = cohere.Client(api_key=settings.COHERE_API_KEY)
+            from ..llm.models import reranker
+            self._client = reranker()
         return self._client
 
     def invoke(self, query: str):

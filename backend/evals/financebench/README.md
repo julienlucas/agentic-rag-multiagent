@@ -68,13 +68,66 @@ La préparation OCRise 14 documents de plus. Coût estimé, pas mesuré : de l'o
 soit ~8 $ d'OCR à la grille de `cost.py`. Un run complet coûte environ 70/26 fois celui du
 protocole à 26 questions.
 
+### Corpus complet : 84 documents, 150 questions
+
+Les 150 questions open source portent sur **84 documents** (64 10-K, 8 10-Q, 6 earnings, 6 8-K) ;
+52 documents n'en portent qu'une. Deux préréglages de `--docs` s'ajoutent à `extended` :
+
+| Préréglage | Documents | Questions | Dataset LangSmith |
+|---|---|---|---|
+| `pilot` | les 20 qui portent le plus de questions (dont les 4 du protocole) | 65 sur 74 | « agentic-search · FinanceBench (pilot 20) » |
+| `all` | les 84 | 139 sur 150 | « agentic-search · FinanceBench (84 docs) » |
+
+Les questions retirées ont une preuve sur une page absente du texte indexé (voir ci-dessous).
+
+### Source du texte : markdown recalé sur le PDF (par défaut)
+
+OCRiser les 84 documents (~12 000 pages) coûterait ~48 $. Le texte vient donc par défaut du dataset
+Hugging Face [`shhdwi/financebench-markdown`](https://huggingface.co/datasets/shhdwi/financebench-markdown),
+un markdown OCR des 84 documents de même qualité que Mistral OCR (texte, chiffres, tableaux structurés),
+mais qui pose trois problèmes, traités par `markdown_corpus.py` :
+
+- **Pas de pagination.** Ses balises `<page_number>` reprennent les numéros imprimés (table des
+  matières comprise), pas les pages du PDF où sont annotées les preuves. Chaque bloc (paragraphe,
+  ligne de tableau) est rattaché à la page du PDF dont le texte, extrait par pypdf, contient ses
+  n-grammes, sans jamais reculer d'une page. Validé sur les 4 documents du protocole contre les
+  pages de Mistral OCR : 99 à 100 % des blocs à la même page.
+- **Des doublons.** Le markdown recopie souvent une page juste après elle-même (la moitié des
+  paragraphes longs d'AMD 2022). Un bloc déjà présent sur sa page n'y est pas répété : le volume
+  retombe sur celui de Mistral OCR (421 k caractères contre 426 k pour AMD).
+- **Des pages manquantes** : ~6 % des pages du corpus (764 sur 12 013), dont des pages de preuve.
+  Par défaut (`--fill none`), elles restent vides et **les questions dont une preuve y tombe sont
+  retirées du dataset** (11 sur 150) : insolubles pour tout RAG, elles ne mesureraient rien. Le
+  dataset du protocole publié (26 questions) n'est jamais élagué. `--fill ocr` passe ces pages à
+  Mistral OCR, ainsi que les pages scannées (~900 pages, ~3,60 $) ; `--fill pdf-text` les comble
+  avec le texte brut du PDF (gratuit, tableaux aplatis).
+
+Les tableaux HTML sont rendus en tableaux markdown, le format de Mistral OCR. Chaque chunk porte
+`pdf_url`, le PDF annoté de Patronus AI (copie GitHub), à ouvrir à la page `page + 1`.
+
+Avant les embeddings, `prepare.py` vérifie que chaque preuve annotée se retrouve dans le texte à sa
+page (±1) et liste les preuves introuvables. `--skip-embeddings` s'arrête là, sans appel Bedrock.
+Sur les 84 documents, 11 preuves restent signalées : leur texte est présent, mais recopié d'un
+tableau sous une autre forme (elles ne correspondent pas mieux au texte brut du PDF).
+
+`--source ocr` reprend l'ancien chemin (Mistral OCR de tout le PDF). Chaque source a son propre
+espace Qdrant : passer la même option `--source` à `experiment.py`.
+
+```bash
+uv run python backend/evals/financebench/prepare.py --docs pilot --skip-embeddings  # contrôle, sans embeddings
+uv run python backend/evals/financebench/prepare.py --docs pilot                    # indexation (Cohere Embed v4)
+uv run python backend/evals/experiment.py --mode both --dataset "agentic-search · FinanceBench (pilot 20)"
+```
+
 ## Prérequis
 
 Un fichier `.env` à la racine du projet :
 
 ```bash
-MISTRALAI_API_KEY=...
-COHERE_API_KEY=...
+MODEL_PROVIDER=bedrock  # Claude, embeddings, rerank (Cohere 3.5 à Francfort) et juges sur Bedrock
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+MISTRALAI_API_KEY=...   # seulement pour --source ocr ou --fill ocr
 LANGSMITH_API_KEY=...   # optionnel
 ```
 
@@ -92,8 +145,8 @@ uv run python backend/evals/financebench/prepare.py --clean
 uv run python backend/evals/experiment.py --mode both
 ```
 
-La préparation met en cache l'OCR (`cache/*.ocr.json`) et les chunks (`cache/*.chunks.pkl`), puis
-indexe chunks, embeddings et pages OCR dans les **collections d'évaluation de Qdrant**
+La préparation met en cache les pages (`cache/*.markdown.json`, `cache/*.ocr.json`) et les chunks
+(`cache/*.<source>.chunks.pkl`), puis indexe chunks, embeddings et pages dans les **collections d'évaluation de Qdrant**
 (`eval_chunks` / `eval_pages`), séparées de celles des utilisateurs (`chunks` / `pages`). Les
 expériences lisent uniquement cet index. Le cache local (`cache/`) n'est qu'un intermédiaire de
 `prepare.py`, supprimable une fois l'index écrit (`--clean`) ; seul `--per-doc` en a besoin. Relancé,
@@ -143,12 +196,12 @@ uv run python backend/evals/financebench/prepare.py   # assemble et construit l'
 
 ### Protocole FinanceBench (comparable au chiffre public de Mistral)
 
-Chaque réponse reçoit un verdict ternaire d'un juge LLM, Pixtral Large 25.02 sur Bedrock
-(`EVAL_JUDGE_MODEL_ID`). Jusqu'au 3 octobre 2026, c'était `mistral-large-latest` par l'API
-Mistral : rejugées par Pixtral Large, les 26 réponses du run « 5 outils » (expérience LangSmith
-« eu.anthropic.claude-sonnet-4-6 · agentic ») reçoivent le
-même verdict (26/26). Bedrock n'a pas de Mistral Large récent ; Pixtral Large en reprend la base
-(Mistral Large 2).
+Chaque réponse reçoit un verdict ternaire d'un juge LLM, gpt-oss-120b sur Bedrock à Francfort
+(`EVAL_JUDGE_MODEL_ID`, `EVAL_JUDGE_REGION`) : un modèle de raisonnement hors famille Claude,
+qui ne note donc pas sa propre famille. Ses verdicts ne sont pas comparables à ceux des juges
+précédents : `mistral-large-latest` par l'API Mistral jusqu'au 3 octobre 2026, puis Pixtral
+Large 25.02 sur Bedrock jusqu'au 11 octobre 2026 (rejugées par Pixtral Large, les 26 réponses
+du run « 5 outils » recevaient le même verdict que sous Mistral Large, 26/26).
 
 - **`accuracy`** — réponses `CORRECT` (tolérante aux écarts de format, d'unité et d'arrondi).
 - **`hallucination_rate`** — réponses `INCORRECT` : le système répond avec assurance **et** se

@@ -98,7 +98,7 @@ const levers = [
   },
   {
     title: "Génération contrainte",
-    text: "Claude Sonnet 5 ne répond qu'à partir des passages retenus et refuse quand la preuve manque — sauf pour calculer un ratio dont les composantes sont sous ses yeux, formule et chiffres cités.",
+    text: "Le modèle de réponse ne répond qu'à partir des passages retenus et refuse quand la preuve manque — sauf pour calculer un ratio dont les composantes sont sous ses yeux, formule et chiffres cités.",
   },
   {
     title: "Chunking parent / enfant",

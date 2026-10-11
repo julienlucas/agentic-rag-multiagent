@@ -6,7 +6,8 @@ le choix se fait dans models.py.
   d'inférence régionaux (« eu.anthropic... ») : en eu-west-3, Haiku 4.5 et Sonnet refusent
   l'appel direct à l'ID du modèle (« on-demand throughput isn't supported »).
 - Embeddings : Cohere Embed v4 (InvokeModel), même profil « eu. ».
-Le reranker (Cohere Rerank 4 Pro) reste chez Cohere, par son API : voir retriever/builder.py.
+- Rerank : Cohere Rerank 3.5 (API Rerank de bedrock-agent-runtime), absent de Paris : appelé
+  dans RERANK_REGION (Francfort).
 
 Identifiants AWS : ceux du `.env` du projet s'il en contient, en PRIORITÉ sur l'environnement
 du shell. Un terminal qui a exporté un AWS_SESSION_TOKEN expiré (profil SSO d'un autre compte)
@@ -16,6 +17,7 @@ variables passent avant le `.env` pour load_dotenv et pydantic. Sans clés dans 
 """
 import json
 from functools import lru_cache
+from types import SimpleNamespace
 from pathlib import Path
 from typing import List, Optional
 
@@ -136,3 +138,27 @@ class BedrockCohereEmbeddings(Embeddings):
 
 def embeddings() -> Embeddings:
     return BedrockCohereEmbeddings()
+
+
+class BedrockReranker:
+    """
+    Cohere Rerank 3.5 sur Bedrock, derrière l'interface du client Cohere : `rerank(model, query,
+    documents, top_n)` renvoie `.results` (index, relevance_score), triés par score décroissant.
+    """
+
+    def rerank(self, model: str, query: str, documents: List[str], top_n: int):
+        arn = f"arn:aws:bedrock:{settings.RERANK_REGION}::foundation-model/{model}"
+        response = _client("bedrock-agent-runtime", settings.RERANK_REGION, settings.LLM_TIMEOUT).rerank(
+            queries=[{"type": "TEXT", "textQuery": {"text": query}}],
+            sources=[{"type": "INLINE", "inlineDocumentSource": {"type": "TEXT", "textDocument": {"text": d}}}
+                     for d in documents],
+            rerankingConfiguration={"type": "BEDROCK_RERANKING_MODEL", "bedrockRerankingConfiguration": {
+                "numberOfResults": top_n, "modelConfiguration": {"modelArn": arn}}},
+        )
+        results = [SimpleNamespace(index=r["index"], relevance_score=r["relevanceScore"])
+                   for r in response["results"]]
+        return SimpleNamespace(results=results, meta=None)  # pas d'unités facturées dans la réponse
+
+
+def reranker() -> BedrockReranker:
+    return BedrockReranker()

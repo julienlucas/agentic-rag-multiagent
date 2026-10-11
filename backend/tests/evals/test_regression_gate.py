@@ -117,3 +117,28 @@ def test_prepare_skips_documents_already_in_the_eval_index(monkeypatch):
     tenant.add_document("h", "AMD_2022_10K", [make_doc("bilan", source="AMD_2022_10K")], ["p1"])
 
     assert already_indexed(docs) == ["AMD_2022_10K"]
+
+
+def test_a_document_indexed_for_another_document_set_is_copied_not_re_embedded(monkeypatch):
+    """Les 84 rapports reprennent les vecteurs des 20 de l'essai : aucun appel d'embedding pour eux."""
+    import backend.vectorstore as vectorstore
+    from backend.evals.experiment_utils import index_chunks
+    from conftest import make_store
+
+    store = make_store()
+    monkeypatch.setattr(vectorstore, "get_eval_store", lambda: store)
+    chunks = [make_doc("Total net revenue 23,601", source="AMD_2022_10K"),
+              make_doc("Gaming revenue 6,805", source="AMD_2022_10K")]
+    index_chunks("financebench-pilot", chunks, {"AMD_2022_10K": ["p0", "p1"]})
+
+    calls = []
+    cls = type(store.embeddings)
+    real = cls.embed_documents
+    monkeypatch.setattr(cls, "embed_documents", lambda self, texts: calls.append(texts) or real(self, texts))
+    full = index_chunks("financebench-full", chunks, {"AMD_2022_10K": ["p0", "p1"]})
+
+    assert calls == []
+    assert full.chunk_count() == 2 and full.sources() == ["AMD_2022_10K"]
+    assert full.pages() == {"AMD_2022_10K": ["p0", "p1"]}
+    assert {d.page_content for d in full.hybrid_search("Gaming revenue", 5, 5)} == {c.page_content for c in chunks}
+    assert store.for_tenant("financebench-pilot").chunk_count() == 2  # l'original est intact

@@ -17,11 +17,11 @@ const steps: {
   accent?: boolean;
 }[] = [
   { icon: <ScanText />, label: "OCR", model: "Mistral OCR", vendor: "mistral" },
-  { icon: <Search />, label: "Recherche hybride", model: "Mistral Embed", vendor: "mistral" },
-  { icon: <ArrowDownUp />, label: "Reranking", model: "Cohere Rerank v4 Pro", vendor: "cohere" },
-  { icon: <ShieldCheck />, label: "Vérification de pertinence", model: "Mistral Small", vendor: "mistral" },
-  { icon: <Redo2 />, label: "Recherche à outils", model: "Claude Sonnet 5", vendor: "anthropic" },
-  { icon: <Sparkles />, label: "Réponse sourcée", model: "Claude Sonnet 5", vendor: "anthropic", accent: true },
+  { icon: <Search />, label: "Recherche hybride", model: "Cohere Embed v4", vendor: "cohere" },
+  { icon: <ArrowDownUp />, label: "Reranking", model: "Cohere Rerank 3.5", vendor: "cohere" },
+  { icon: <ShieldCheck />, label: "Vérification de pertinence", model: "Claude Haiku 4.5", vendor: "anthropic" },
+  { icon: <Redo2 />, label: "Recherche à outils", model: "Claude Sonnet 4.6", vendor: "anthropic" },
+  { icon: <Sparkles />, label: "Réponse sourcée", model: "Claude Sonnet 4.6", vendor: "anthropic", accent: true },
 ];
 
 /** Schéma du pipeline : six étapes reliées par un filet continu. */

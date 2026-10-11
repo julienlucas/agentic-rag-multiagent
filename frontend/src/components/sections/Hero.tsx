@@ -6,11 +6,11 @@ const tooling = [
   "Reactjs",
   "LangGraph",
   "LangChain",
-  "Chroma",
+  "Qdrant",
   "BM25 + Vecteurs",
   "Django",
   "Amazon Bedrock",
-  "Modèles Mistral et Cohere",
+  "Claude, Cohere et Mistral OCR",
 ];
 
 export function Hero() {

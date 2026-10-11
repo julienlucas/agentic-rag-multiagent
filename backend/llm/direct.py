@@ -1,6 +1,6 @@
 """
 Accès direct aux modèles, sans Amazon Bedrock : API Anthropic pour Claude, API Cohere pour
-les embeddings. Même interface que bedrock.py ; le choix se fait dans models.py.
+les embeddings et le rerank. Même interface que bedrock.py ; le choix se fait dans models.py.
 
 Les embeddings sont Cohere Embed v4 en 1024 dimensions, comme sur Bedrock : un index Qdrant
 construit avec un fournisseur reste valable avec l'autre.
@@ -86,3 +86,9 @@ class CohereEmbeddings(Embeddings):
 
 def embeddings() -> Embeddings:
     return CohereEmbeddings()
+
+
+def reranker():
+    """Cohere Rerank 4 Pro par l'API Cohere."""
+    import cohere
+    return cohere.Client(api_key=settings.COHERE_API_KEY)

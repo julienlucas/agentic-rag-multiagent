@@ -36,9 +36,11 @@ from backend.agents.research_agent import ResearchAgent
 from backend.config.settings import settings
 from backend.agents.workflow import AgentState, AgentWorkflow, effective_top_k
 from backend.retriever.page_store import PageStore
-from backend.evals.financebench.prepare import eval_tenant_for, load_cached_chunks, load_cached_pages
+from backend.evals.financebench.prepare import (
+    DEFAULT_SOURCE, SOURCES, eval_tenant_for, load_cached_chunks, load_cached_pages,
+)
 from backend.evals.financebench.cost import compute_cost, format_cost
-from backend.evals.financebench.langsmith_sync import DEFAULT_DATASET, get_client, load_rows, push_eval
+from backend.evals.financebench.langsmith_sync import DEFAULT_DATASET, get_client, load_corpus, load_rows, push_eval
 from backend.evals.experiment_utils import (
     AnswerRelevancy,
     FinanceBenchJudge,
@@ -552,6 +554,8 @@ def main():
     parser = argparse.ArgumentParser(description="Évaluation FinanceBench du RAG agentique")
     parser.add_argument("--dataset", default=DEFAULT_DATASET, help="dataset LangSmith (défaut : le protocole publié)")
     parser.add_argument("--docs", default="", help="Sous-ensemble de documents (défaut: ceux du dataset)")
+    parser.add_argument("--source", default=DEFAULT_SOURCE, choices=SOURCES,
+                        help="Index à interroger : texte markdown recalé (défaut) ou Mistral OCR (voir prepare.py)")
     parser.add_argument("--mode", default="both", choices=["baseline", "agentic", "both"])
     parser.add_argument("--max-items", type=int, default=0)
     parser.add_argument("--k-values", default="5,10,20")
@@ -577,6 +581,7 @@ def main():
 
     dataset = load_rows(get_client(), args.dataset)  # questions lues dans LangSmith, seule source
     n_protocol = len(dataset)  # taille du jeu complet, avant tout filtre
+    corpus = load_corpus(get_client(), args.dataset, dataset)  # documents de l'index, distracteurs compris
     if args.docs:
         wanted = {d.strip() for d in args.docs.split(",") if d.strip()}
         dataset = [ex for ex in dataset if ex.get("doc_name") in wanted]
@@ -603,16 +608,19 @@ def main():
         # Un espace par document : indexé à la volée depuis le cache local de prepare.py.
         retrievers = {}
         for doc_name in docs_in_dataset:
-            chunks = load_cached_chunks([doc_name])
+            chunks = load_cached_chunks([doc_name], args.source)
             _log(f"Index {doc_name}: {len(chunks)} chunks")
             retrievers[doc_name] = build_retriever_from_chunks(
-                chunks, eval_tenant_for([doc_name]), load_cached_pages([doc_name])
+                chunks, eval_tenant_for([doc_name], args.source), load_cached_pages([doc_name], args.source)
             )
         get_retriever = lambda ex: retrievers[ex["doc_name"]]
-        page_store = PageStore(load_cached_pages(docs_in_dataset))
+        page_store = PageStore(load_cached_pages(docs_in_dataset, args.source))
     else:
-        retriever, page_store = eval_index(docs_in_dataset)
-        _log(f"Index combiné Qdrant : recherche sur les {len(docs_in_dataset)} documents")
+        # Sans --docs, l'index est celui du corpus entier écrit par prepare.py : un document dont
+        # toutes les questions ont été retirées y reste, et fixe l'espace Qdrant.
+        index_docs = docs_in_dataset if args.docs else corpus
+        retriever, page_store = eval_index(index_docs, args.source)
+        _log(f"Index combiné Qdrant : recherche sur les {len(index_docs)} documents")
         get_retriever = lambda ex: retriever
 
     # Pages OCR entières (page_store), pour les outils grep / read_page de l'agent de recherche.
@@ -694,7 +702,9 @@ def main():
     summary = {
         "dataset": args.dataset,
         "documents": docs_in_dataset,
+        "corpus": corpus,
         "index": "per-doc" if args.per_doc else "combined",
+        "source": args.source,
         "n_questions": len(dataset),
         "reps": args.reps,
         "elapsed_sec": round(time.time() - start, 2),

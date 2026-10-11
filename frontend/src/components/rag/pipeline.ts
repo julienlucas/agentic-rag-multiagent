@@ -19,29 +19,29 @@ export const pipelineSteps: PipelineStep[] = [
     label: "Routage & réécriture",
     detail:
       "Cible le document visé par la question, puis génère une reformulation (multi-query) pour élargir le rappel.",
-    model: "mistral-small",
+    model: "claude-haiku-4-5",
     ms: 1400,
   },
   {
     key: "retrieve",
     label: "Recherche hybride",
     detail:
-      "BM25 (k = 20) + vecteurs Chroma / mistral-embed (k = 20), fusion RRF 0,5 / 0,5, puis remontée des chunks parents (1 200 car.).",
-    model: "mistral-embed",
+      "BM25 (k = 20) + vecteurs Qdrant / Cohere Embed v4 (k = 20), fusion RRF 0,5 / 0,5, puis remontée des chunks parents (1 200 car.).",
+    model: "cohere embed-v4",
     ms: 1800,
   },
   {
     key: "rerank",
     label: "Reranking Cohere",
-    detail: "rerank-v4.0-pro sur ≤ 40 candidats → 30 passages scorés.",
-    model: "cohere rerank-v4",
+    detail: "Cohere Rerank 3.5 (Amazon Bedrock) sur ≤ 40 candidats → 30 passages scorés.",
+    model: "cohere rerank-v3.5",
     ms: 1600,
   },
   {
     key: "check",
     label: "Agent vérificateur de pertinence",
     detail: "Classe les 3 meilleurs passages : CAN_ANSWER, PARTIAL ou NO_MATCH — signal affiché dans le rapport.",
-    model: "mistral-small",
+    model: "claude-haiku-4-5",
     ms: 2200,
   },
   {
@@ -49,7 +49,7 @@ export const pipelineSteps: PipelineStep[] = [
     label: "Recherche à outils",
     detail:
       "Si le contexte ne suffit pas, le modèle enchaîne search / grep / read_page / open_document / navigate (5 appels max) ; chaque passage ramené est numéroté et s'ajoute après les 10 initiaux.",
-    model: "claude-sonnet-5",
+    model: "claude-sonnet-4-6",
     conditional: true,
     ms: 0,
   },
@@ -58,7 +58,7 @@ export const pipelineSteps: PipelineStep[] = [
     label: "Agent de recherche et de réponse",
     detail:
       "Reçoit les 10 meilleurs passages et les outils, rédige la réponse avec citations [n] — refuse explicitement si la preuve est absente.",
-    model: "claude-sonnet-5",
+    model: "claude-sonnet-4-6",
     ms: 0,
   },
 ];

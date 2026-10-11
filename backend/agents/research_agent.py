@@ -111,7 +111,8 @@ Quand les utiliser — dans le doute, vérifiez : un appel d'outil coûte moins 
         Le contexte préfixe chaque extrait par [n] et son document d'origine, pour que
         le modèle puisse citer. `citations` est la table de correspondance renvoyée au
         frontend : un dict par passage avec son numéro, son document, sa page si elle
-        est connue (seul le pipeline FinanceBench pose `page`), et un extrait court.
+        est connue, un extrait court, et de quoi rouvrir le document au passage (`file_hash`,
+        `pdf_url`, texte entier ; complétés par endpoints.locate_citations s'ils manquent).
         """
         import os
 
@@ -131,6 +132,10 @@ Quand les utiliser — dans le doute, vérifiez : un appel d'outil coûte moins 
                 "page": int(page) + 1 if page is not None else None,
                 "locator": locator,
                 "excerpt": " ".join(doc.page_content.split())[:280],
+                # Pour rouvrir le document à la page citée et y surligner le passage entier.
+                "file_hash": meta.get("file_hash"),
+                "pdf_url": meta.get("pdf_url"),
+                "text": doc.page_content,
             })
         return "\n\n".join(parts), citations
 

@@ -19,55 +19,56 @@ export type ExampleDoc = {
   questions: ExampleQuestion[];
 };
 
+/*
+ * Deux rapports annuels du benchmark FinanceBench (Patronus AI) : leurs questions ont une
+ * réponse de référence annotée par des experts, avec la page de la preuve.
+ */
 export const exampleDocs: ExampleDoc[] = [
   {
-    id: "deepseek-r1",
-    title: "DeepSeek-R1 · rapport technique",
-    fileName: "DeepSeek Technical Report.pdf",
+    id: "amd-2022",
+    title: "AMD · rapport annuel 10-K 2022",
+    fileName: "AMD_2022_10K.pdf",
     kind: "PDF",
-    pages: 22,
-    type: "Rapport technique",
+    pages: 121,
+    type: "Rapport annuel (SEC)",
     description:
-      "Papier de recherche dense : tableaux de benchmarks, comparaisons multi-modèles, vocabulaire technique.",
+      "121 pages d'états financiers : bilan, compte de résultat par segment, chaque chiffre répété sur plusieurs exercices.",
     questions: [
       {
-        text: "Résume l'évaluation des performances du modèle DeepSeek-R1 sur toutes les tâches de codage par rapport au modèle OpenAI o1-mini",
-        hint: "Lecture croisée d'un tableau de benchmarks",
-        evidence: [
-          { src: "/static/deepseek-eval.png", caption: "Tableau d'évaluation, DeepSeek-R1 Technical Report" },
-        ],
+        text: "AMD a-t-elle un profil de liquidité sain d'après son quick ratio de l'exercice 2022 ?",
+        hint: "Calcul d'un ratio à partir du bilan · référence : 1,57 (p. 56)",
       },
       {
-        text: "Quelle est la taille (nombre de paramètres) des modèles distillés à partir de DeepSeek-R1 et sur quels modèles de base sont-ils construits ?",
-        hint: "Extraction de valeurs numériques dispersées",
+        text: "Entre 2021 et 2022, hors Embedded, quel segment d'AMD a le plus progressé en proportion de ses ventes ?",
+        hint: "Lecture croisée d'un tableau par segment · référence : Data Center (p. 48)",
       },
       {
-        text: "Quel est le prix d'une action Nvidia aujourd'hui ?",
-        hint: "Hors du document → le système doit refuser",
+        text: "AMD signale-t-elle une concentration de clients sur l'exercice 2022 ?",
+        hint: "Information enfouie dans le texte · référence : un client = 16 % du CA (p. 12)",
       },
     ],
   },
   {
-    id: "google-env-2024",
-    title: "Google · rapport environnemental 2024",
-    fileName: "google-2024-environmental-report.pdf",
+    id: "boeing-2022",
+    title: "Boeing · rapport annuel 10-K 2022",
+    fileName: "BOEING_2022_10K.pdf",
     kind: "PDF",
-    pages: 86,
-    type: "Rapport environnemental",
+    pages: 190,
+    type: "Rapport annuel (SEC)",
     description:
-      "86 pages, tableaux régionaux (PUE, CFE), nombreuses valeurs proches qui piègent les LLM généralistes.",
+      "190 pages : activités par division, litiges, notes fiscales, avec des valeurs proches d'un exercice à l'autre.",
     questions: [
       {
-        text: "Récupère les valeurs d'efficacité PUE du centre de données dans l'installation 2 de Singapour en 2019 et 2022. Récupére également la moyenne régionale CFE en Asie-Pacifique en 2023",
-        hint: "Deux tableaux, deux métriques, plusieurs années",
-        evidence: [
-          { src: "/static/google-pue.png", caption: "Tableau PUE par data center (p. Data centers)" },
-          { src: "/static/google-cfe.png", caption: "Tableau CFE par région" },
-        ],
+        text: "Comment le taux d'imposition effectif de Boeing en 2022 se compare-t-il à celui de 2021 ?",
+        hint: "Deux exercices dans le même tableau · référence : 0,62 % contre −14,76 % (p. 55)",
       },
       {
-        text: "Quel est l'objectif de Google en matière de réduction des émissions d'ici 2030, et où en est l'entreprise en 2023 ?",
-        hint: "Synthèse à partir de plusieurs sections",
+        text: "Boeing fait-elle face à des procédures judiciaires importantes en cours sur l'exercice 2022 ?",
+        hint: "Note aux états financiers · référence : accidents Lion Air et Ethiopian Airlines (p. 113)",
+      },
+      {
+        text: "Quelles évolutions de cadence de production Boeing prévoit-elle pour 2023 ?",
+        hint: "Perspectives de la direction · référence : hausse pour les 737, 777X et 787 (p. 9)",
       },
     ],
   },
@@ -77,57 +78,117 @@ export const SUPPORTED_EXTENSIONS = [".pdf", ".docx", ".txt", ".md"];
 export const MAX_FILE_MB = 50;
 
 /**
- * Sortie obtenue sur le document DeepSeek pré-chargé — affichée comme exemple tant qu'aucune
- * question n'est posée. Les citations [n] reprennent le format renvoyé par l'API ; leurs extraits
- * sont copiés du PDF (Table 4 p. 13 et commentaire p. 14).
+ * Sortie réelle du pipeline sur le rapport AMD pré-chargé (11 oct. 2026), affichée comme exemple
+ * tant qu'aucune question n'est posée. Seule retouche : la phrase de transition de l'agent en tête
+ * de réponse est retirée. Le quick ratio obtenu (1,57) est la réponse de référence de FinanceBench ;
+ * la citation [11] rouvre le bilan consolidé, page 56.
  */
 export const exampleOutput = {
-  docId: "deepseek-r1",
-  question:
-    "Résume l'évaluation des performances du modèle DeepSeek-R1 sur toutes les tâches de codage par rapport au modèle OpenAI o1-mini",
-  elapsed: 10,
-  answer: `Voici l'évaluation des performances du modèle **DeepSeek-R1** par rapport à **OpenAI o1-mini** sur les tâches de codage, **exclusivement** d'après le contexte fourni :
+  docId: "amd-2022",
+  question: "AMD a-t-elle un profil de liquidité sain d'après son quick ratio de l'exercice 2022 ?",
+  elapsed: 14,
+  answer: `## Calcul du Quick Ratio d'AMD – Exercice 2022
 
-### 1. Tâches de codage algorithmique
-- **LiveCodeBench (Pass@1-COT)** : DeepSeek-R1 **65.9%** vs OpenAI o1-mini **53.8%** → DeepSeek-R1 surpasse o1-mini de **12.1 points** [1].
-- **Codeforces (Percentile)** : DeepSeek-R1 **96.3%** vs o1-mini **93.4%** → légèrement supérieur (+2.9 points) [1].
-- **Codeforces (Rating)** : DeepSeek-R1 **2029** vs o1-mini **1820** → +**209 points** [1].
+Le quick ratio (ou « acid-test ratio ») mesure la capacité d'une entreprise à honorer ses passifs courants avec ses actifs les plus liquides, **en excluant les stocks et les charges payées d'avance**.
 
-### 2. Tâches de codage orientées ingénierie
-- **SWE Verified (Resolved)** : DeepSeek-R1 **49.2%** vs o1-mini **41.6%** → +7.6 points [2].
-- **Aider-Polyglot (Accuracy)** : DeepSeek-R1 **53.3%** vs o1-mini **32.9%** → +20.4 points [2].
+**Formule :**
+> **Quick Ratio = (Trésorerie + Placements à court terme + Créances clients) / Passifs courants**
 
-### 3. Comparaison avec OpenAI o1-1217 (mentionné dans le contexte)
-- Le contexte indique que **OpenAI o1-1217** est globalement supérieur à DeepSeek-R1 sur les tâches d'ingénierie (ex. Aider-Polyglot), mais que les performances sont **comparables** sur SWE Verified [3].`,
+**Données issues du bilan consolidé au 31 décembre 2022** [11] :
+
+| Composante | Montant (M$) |
+|---|---|
+| Cash and cash equivalents | 4 835 |
+| Short-term investments | 1 020 |
+| Accounts receivable, net | 4 126 |
+| Receivables from related parties | 2 |
+| **Total actifs rapides** | **9 983** |
+| **Total current liabilities** | **6 369** |
+
+*(Exclusions : Inventories = 3 771 M$ et Prepaid expenses and other current assets = 1 265 M$)* [11]
+
+**Calcul :**
+> Quick Ratio = 9 983 / 6 369 ≈ **1,57**
+
+---
+
+## Interprétation
+
+Avec un quick ratio de **~1,57**, AMD présente un **profil de liquidité sain** pour l'exercice 2022 [11] :
+
+- Un quick ratio **supérieur à 1,0** signifie que l'entreprise dispose de suffisamment d'actifs liquides pour couvrir l'intégralité de ses passifs courants sans avoir à liquider ses stocks ni ses charges prépayées.
+- Le ratio de **1,57** indique qu'AMD possède **1,57 $ d'actifs quasi-liquides pour chaque dollar de dette à court terme**, ce qui reflète une position de liquidité confortable.
+- Cette solidité est notamment soutenue par un niveau de trésorerie et placements à court terme élevé (4 835 + 1 020 = **5 855 M$**) et des créances clients significatives (**4 126 M$**) [11].
+
+En conclusion, d'après son quick ratio de 2022, AMD affiche une **liquidité solide et rassurante**.`,
   report: `**Pertinent:** Oui
-**Pertinence des passages:** CAN_ANSWER — les passages récupérés permettent de répondre à la question
-**Confiance retrieval (reranker):** 0.95 — élevée
-**Recherche corrective:** non nécessaire
-**Sources utilisées:** DeepSeek Technical Report — 10 passages transmis au modèle`,
+**Pertinence des passages:** PARTIAL — couverture partielle — la réponse peut être incomplète
+**Confiance retrieval (reranker):** 0.58 — moyenne
+**Recherche corrective:** déclenchée (2 appels d'outils)
+  • *navigate: "consolidated balance sheet" [AMD_2022_10K]*
+  • *read_page: AMD_2022_10K p. 56*
+**Sources utilisées:** AMD_2022_10K (p. 4, 42, 43, 56, 93, 96…) — 11 passages transmis au modèle`,
   citations: [
     {
-      n: 1,
-      source: "DeepSeek Technical Report.pdf",
-      page: 12,
-      locator: "DeepSeek Technical Report, p. 13",
-      excerpt:
-        "Table 4 · Code — LiveCodeBench (Pass@1-COT) : o1-mini 53.8, DeepSeek-R1 65.9 · Codeforces (Percentile) : 93.4, 96.3 · Codeforces (Rating) : 1820, 2029",
-    },
-    {
-      n: 2,
-      source: "DeepSeek Technical Report.pdf",
-      page: 12,
-      locator: "DeepSeek Technical Report, p. 13",
-      excerpt:
-        "Table 4 · Code — SWE Verified (Resolved) : o1-mini 41.6, DeepSeek-R1 49.2 · Aider-Polyglot (Acc.) : o1-mini 32.9, DeepSeek-R1 53.3",
-    },
-    {
-      n: 3,
-      source: "DeepSeek Technical Report.pdf",
-      page: 13,
-      locator: "DeepSeek Technical Report, p. 14",
-      excerpt:
-        "On engineering-oriented coding tasks, OpenAI-o1-1217 outperforms DeepSeek-R1 on Aider but achieves comparable performance on SWE Verified.",
+      n: 11,
+      source: "AMD_2022_10K",
+      page: 56,
+      locator: "AMD_2022_10K, p. 56",
+      excerpt: "Table of Contents # Advanced Micro Devices, Inc. # Consolidated Balance Sheets | | December 31, 2022 | December 25, 2021 | | --- | --- | --- | | | (In millions, except par value amounts) | | | **ASSETS** | | | | **Current assets:** | | | | Cash and cash equivalents | $ 4,835 | $ ",
+      file_hash: "a3bd74088fae0ad4aa03d04998a1f4c64fd0b3c693841601b0ac49b46cf5c1f4",
+      pdf_url: "/static/AMD_2022_10K.pdf",
+      text: `Table of Contents
+
+# Advanced Micro Devices, Inc.
+
+# Consolidated Balance Sheets
+
+|   | December 31, 2022 | December 25, 2021  |
+| --- | --- | --- |
+|   | (In millions, except par value amounts)  |   |
+|  **ASSETS**  |   |   |
+|  **Current assets:**  |   |   |
+|  Cash and cash equivalents | $ 4,835 | $ 2,535  |
+|  Short-term investments | 1,020 | 1,073  |
+|  Accounts receivable, net | 4,126 | 2,706  |
+|  Inventories | 3,771 | 1,955  |
+|  Receivables from related parties | 2 | 2  |
+|  Prepaid expenses and other current assets | 1,265 | 312  |
+|  **Total current assets** | **15,019** | **8,583**  |
+|  Property and equipment, net | 1,513 | 702  |
+|  Operating lease right-of-use assets | 460 | 367  |
+|  Goodwill | 24,177 | 289  |
+|  Acquisition-related intangibles | 24,118 | —  |
+|  Investment: equity method | 83 | 69  |
+|  Deferred tax assets | 58 | 931  |
+|  Other non-current assets | 2,152 | 1,478  |
+|  **Total assets** | **$ 67,580** | **$ 12,419**  |
+|  **LIABILITIES AND STOCKHOLDERS' EQUITY**  |   |   |
+|  **Current liabilities:**  |   |   |
+|  Accounts payable | $ 2,493 | $ 1,321  |
+|  Payables to related parties | 463 | 85  |
+|  Accrued liabilities | 3,077 | 2,424  |
+|  Current portion of long-term debt, net | — | 312  |
+|  Other current liabilities | 336 | 98  |
+|  **Total current liabilities** | **6,369** | **4,240**  |
+|  Long-term debt, net of current portion | 2,467 | 1  |
+|  Long-term operating lease liabilities | 396 | 348  |
+|  Deferred tax liabilities | 1,934 | 12  |
+|  Other long-term liabilities | 1,664 | 321  |
+|  Commitments and Contingencies (see Notes 16 and 17) |  |   |
+|  **Stockholders' equity:**  |   |   |
+|  Capital stock: |  |   |
+|  Common stock, par value $0.01; shares authorized: 2,250; shares issued: 1,645 and 1,232; shares outstanding: 1,612 and 1,207 | 16 | 12  |
+|  Additional paid-in capital | 58,005 | 11,069  |
+|  Treasury stock, at cost (shares held: 33 and 25) | (3,099) | (2,130)  |
+|  Accumulated deficit | (131) | (1,451)  |
+|  Accumulated other comprehensive loss | (41) | (3)  |
+|  **Total stockholders' equity** | **54,750** | **7,497**  |
+|  **Total liabilities and stockholders' equity** | **$ 67,580** | **$ 12,419**  |
+
+See accompanying notes to consolidated financial statements.
+
+53`,
     },
   ] satisfies Citation[],
 };

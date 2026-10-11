@@ -1,4 +1,7 @@
-from .endpoints import index, upload_file, process_question, load_file, list_documents, delete_document, delete_space, submit_feedback
+from .endpoints import (
+    index, upload_file, process_question, load_file, list_documents, delete_document, delete_space,
+    submit_feedback, document_file, document_page,
+)
 from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
@@ -12,6 +15,8 @@ urlpatterns = [
     path('api/upload-file', upload_file),
     path('api/process-question', process_question),
     path('api/documents', list_documents),
+    path('api/documents/page', document_page),
+    path('api/documents/<str:file_hash>/file', document_file),
     path('api/delete-document', delete_document),
     path('api/delete-space', delete_space),
     path('api/feedback', submit_feedback),

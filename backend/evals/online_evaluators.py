@@ -7,10 +7,14 @@ evaluating-ai-agents/evals/online_evaluators.py).
     uv run python backend/evals/online_evaluators.py            # crée / met à jour, actives
     uv run python backend/evals/online_evaluators.py --disable  # crée / met à jour, coupées
 
-Prérequis : ajouter MISTRAL_API_KEY dans LangSmith (Settings → Secrets). Les juges
-tournent sur les serveurs de LangSmith et y cherchent la clé sous ce nom ; le script ne
-l'envoie jamais. Juge Mistral, comme l'évaluation FinanceBench : l'agent tourne sur
-Claude, un juge de la même famille favoriserait ses propres formulations.
+Prérequis : ajouter AWS_ACCESS_KEY_ID et AWS_SECRET_ACCESS_KEY dans LangSmith (Settings →
+Secrets), idéalement d'un utilisateur IAM limité à bedrock:InvokeModel. Les juges tournent sur
+les serveurs de LangSmith et y cherchent les clés sous ces noms ; le script ne les envoie jamais.
+
+Juge : Claude Sonnet 4.6 sur Bedrock (avant le 11 oct. 2026 : Mistral Large par l'API Mistral,
+dont les verdicts ne sont pas comparables). Choix assumé de tout faire passer par Bedrock : le
+juge est de la même famille que l'agent (Claude), qui risque de favoriser ses propres
+formulations. L'évaluation FinanceBench garde un juge hors famille Claude (gpt-oss-120b).
 
 Quatre règles, une par étape clé de l'agent :
 
@@ -34,7 +38,8 @@ from backend.evals.feedback.votes import TRACE_PROJECT  # noqa: E402
 
 # Préfixe des règles créées par ce script (pour les retrouver et les mettre à jour)
 RULE_PREFIX = "[auto] "
-JUDGE_MODEL = "mistral-large-latest"
+JUDGE_MODEL = "eu.anthropic.claude-sonnet-4-6"  # profil d'inférence « eu. », appelable de Paris
+JUDGE_REGION = "eu-west-3"
 SAMPLING_RATE = 1.0  # toutes les traces : le trafic est faible, ~0,01-0,04 $ par question
 
 TOOL_SELECTION_PROMPT = """Tu évalues une décision d'un agent qui répond à des questions sur des documents.
@@ -113,10 +118,15 @@ _ROOT_QUESTION = 'and(eq(is_root, true), eq(name, "question"))'
 
 
 def serialized_judge() -> dict:
-    """Juge Mistral sérialisé sans la clé : LangSmith la lit dans ses secrets (MISTRAL_API_KEY)."""
+    """
+    Juge Claude (Bedrock) sérialisé sans les clés : la sérialisation ne garde que les noms des
+    secrets (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY), que LangSmith lit dans ses secrets.
+    """
+    from langchain_aws import ChatBedrockConverse
     from langchain_core.load import dumpd
-    from langchain_mistralai import ChatMistralAI
-    return dumpd(ChatMistralAI(model=JUDGE_MODEL, temperature=0, api_key="secret-lu-par-langsmith"))
+    return dumpd(ChatBedrockConverse(model=JUDGE_MODEL, region_name=JUDGE_REGION, temperature=0,
+                                     aws_access_key_id="secret-lu-par-langsmith",
+                                     aws_secret_access_key="secret-lu-par-langsmith"))
 
 
 def llm_judge(key: str, description: str, prompt: str, variable_mapping: dict, judge: dict) -> dict:

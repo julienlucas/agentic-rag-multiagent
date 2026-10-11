@@ -13,6 +13,8 @@ documents, payée une fois — voir `prep_cost_usd`).
 
 from typing import Dict, Optional
 
+from backend.config.settings import settings
+
 # Grille publique La Plateforme (https://mistral.ai/pricing/api) et Cohere
 # (https://cohere.com/pricing), relevée le 5 septembre 2026, en dollars.
 # Claude : grille Anthropic de la Claude API, relevée le 28 septembre 2026.
@@ -31,6 +33,8 @@ PRICES_USD = {
     "mistral-ocr": {"per_page": 4.0 / 1000},
     # $ par unité de recherche (une requête, jusqu'à 100 documents)
     "rerank-v4.0-pro": {"per_search": 0.0025},
+    # Cohere Rerank 3.5 sur Bedrock : 2 $ les 1 000 requêtes (grille Bedrock relevée le 11 oct. 2026).
+    "cohere.rerank-v3-5": {"per_search": 0.002},
 }
 
 # Taux de la BCE au 4 septembre 2026 (api.frankfurter.dev). À mettre à jour avec la grille.
@@ -74,7 +78,8 @@ def compute_cost(usage_by_model: Dict[str, Dict[str, int]],
 
     rerank = rerank_usage or {}
     units = float(rerank.get("search_units") or 0)
-    rerank_cost = units * PRICES_USD["rerank-v4.0-pro"]["per_search"]
+    rerank_price = _price_for(settings.RERANK_MODEL or "") or PRICES_USD["rerank-v4.0-pro"]
+    rerank_cost = units * rerank_price["per_search"]
     total += rerank_cost
     lines["cohere-rerank"] = {"calls": int(rerank.get("calls") or 0),
                               "search_units": round(units, 1), "usd": round(rerank_cost, 4)}

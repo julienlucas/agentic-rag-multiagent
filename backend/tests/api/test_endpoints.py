@@ -104,3 +104,66 @@ def test_pipeline_failure_is_a_json_500(api, monkeypatch):
 
 def test_get_on_api_routes_is_rejected(api):
     assert api.get("/api/process-question").status_code == 405
+
+
+# ── Originaux et ouverture d'une citation ─────────────────────────────────────
+
+def _chunk_metadata(store, tenant_id):
+    flt = store.for_tenant(tenant_id)._filter()
+    records, _ = store._client.scroll(store.chunks, scroll_filter=flt, limit=10, with_payload=True)
+    return [r.payload["metadata"] for r in records]
+
+
+def test_upload_keeps_the_original_and_links_it_from_the_chunks(api, store):
+    pdf = b"%PDF-1.4 rapport annuel"
+    api.post("/api/upload-file", {"file": SimpleUploadedFile("rapport.pdf", pdf), "session_id": "alice"})
+    digest = store.for_tenant("alice").documents()[0]["file_hash"]
+
+    meta = _chunk_metadata(store, "alice")[0]
+    assert meta["file_hash"] == digest and meta["pdf_url"] == f"/api/documents/{digest}/file"
+
+    r = api.get(f"/api/documents/{digest}/file", {"session_id": "alice"})
+    assert r.status_code == 200 and r["Content-Type"] == "application/pdf"
+    assert b"".join(r.streaming_content) == pdf
+    # Un autre espace ne lit pas l'original, même en connaissant son hash.
+    assert api.get(f"/api/documents/{digest}/file", {"session_id": "bob"}).status_code == 404
+
+
+def test_a_document_already_indexed_elsewhere_is_copied_without_ocr(api, store):
+    api.post("/api/upload-file", {"file": SimpleUploadedFile("rapport.pdf", b"%PDF meme"), "session_id": "alice"})
+    calls = FakeProcessor.calls
+    r = api.post("/api/upload-file", {"file": SimpleUploadedFile("rapport.pdf", b"%PDF meme"), "session_id": "bob"})
+    assert r.status_code == 200 and FakeProcessor.calls == calls
+    assert store.for_tenant("bob").sources() == ["rapport.pdf"]
+    assert store.for_tenant("bob").pages() == {"rapport.pdf": ["page 1", "page 2"]}
+
+
+def test_page_text_is_the_fallback_when_the_original_is_missing(api, store):
+    api.post("/api/upload-file", {"file": SimpleUploadedFile("rapport.pdf", b"%PDF-1.4"), "session_id": "alice"})
+    digest = store.for_tenant("alice").documents()[0]["file_hash"]
+    r = api.get("/api/documents/page", {"session_id": "alice", "file_hash": digest, "page": 2})
+    assert r.status_code == 200 and r.json()["text"] == "page 2"
+    assert api.get("/api/documents/page", {"session_id": "bob", "file_hash": digest, "page": 2}).status_code == 404
+    assert api.get("/api/documents/page", {"session_id": "alice", "file_hash": digest, "page": "x"}).status_code == 400
+
+
+def test_citations_of_an_example_point_to_the_static_pdf(api, monkeypatch):
+    monkeypatch.setattr(endpoints._workflow, "full_pipeline", lambda **k: {
+        "draft_answer": "CA [1]", "verification_report": "",
+        "citations": [{"n": 1, "source": "rapport", "page": 3}],  # page lue par read_page : nom seul
+    })
+    post_json(api, "/api/load-file", {"file_name": "rapport.pdf", "session_id": "s"})
+    c = post_json(api, "/api/process-question", {"question": "q", "session_id": "s"}).json()["citations"][0]
+    assert c["pdf_url"] == "/static/rapport.pdf" and len(c["file_hash"]) == 64
+
+
+def test_deleting_the_last_copy_removes_the_original(api, store):
+    from backend.document_processor import storage
+    api.post("/api/upload-file", {"file": SimpleUploadedFile("a.pdf", b"%PDF a"), "session_id": "alice"})
+    api.post("/api/upload-file", {"file": SimpleUploadedFile("a.pdf", b"%PDF a"), "session_id": "bob"})
+    digest = store.for_tenant("alice").documents()[0]["file_hash"]
+
+    post_json(api, "/api/delete-document", {"session_id": "alice", "file_hash": digest})
+    assert storage.find(digest) is not None  # bob l'indexe encore
+    post_json(api, "/api/delete-space", {"session_id": "bob"})
+    assert storage.find(digest) is None

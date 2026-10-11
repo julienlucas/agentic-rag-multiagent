@@ -45,13 +45,8 @@ class FakeLLM:
         if self.error is not None:
             raise self.error
         content = self.contents.pop(0) if self.contents else ""
-
-        class _Resp:
-            pass
-
-        r = _Resp()
-        r.content = content
-        return r
+        from langchain_core.messages import AIMessage
+        return AIMessage(content=content)  # .content et .text, comme un vrai modèle
 
 
 class FakeRetriever:
@@ -183,6 +178,7 @@ def api(monkeypatch, tmp_path, store):
     monkeypatch.setattr(endpoints, "DocumentProcessor", FakeProcessor)
     monkeypatch.setattr(endpoints, "RetrieverBuilder", FakeBuilder)
     monkeypatch.setattr(settings, "EXAMPLES_DIR", str(tmp_path))
+    monkeypatch.setattr(settings, "DOCUMENT_STORAGE_DIR", str(tmp_path / "originals"))
     (tmp_path / "rapport.pdf").write_bytes(b"%PDF-1.4 exemple")
     (tmp_path.parent / "secret.md").write_text("hors du dossier d'exemples")
     return Client()

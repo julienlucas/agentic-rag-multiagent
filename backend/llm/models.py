@@ -29,3 +29,8 @@ def reasoning_llm():
 
 def get_embeddings() -> Embeddings:
     return _provider().embeddings()
+
+
+def reranker():
+    """Client de rerank : `.rerank(model, query, documents, top_n)`, réponse au format Cohere."""
+    return _provider().reranker()

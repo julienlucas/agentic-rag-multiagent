@@ -157,6 +157,15 @@ class QdrantStore:
     def for_tenant(self, tenant_id: str) -> "TenantStore":
         return TenantStore(self, self._client, tenant_id)
 
+    def tenants_with_document(self, file_hash: str) -> List[str]:
+        """Espaces où un fichier (même hash, donc même contenu) est complètement indexé."""
+        flt = models.Filter(must=[
+            models.FieldCondition(key="kind", match=models.MatchValue(value="document")),
+            models.FieldCondition(key="file_hash", match=models.MatchValue(value=file_hash)),
+        ])
+        records, _ = self._client.scroll(self.pages, scroll_filter=flt, limit=100, with_payload=True)
+        return sorted({r.payload["tenant_id"] for r in records})
+
 
 class TenantStore:
     """L'espace d'un utilisateur. Chaque opération est filtrée sur son tenant_id."""
@@ -273,6 +282,48 @@ class TenantStore:
         logger.info(f"Qdrant [{self.tenant_id}] {source}: {len(chunks)} chunks, {len(pages or [])} pages")
         return len(chunks)
 
+    def copy_document_from(self, other: "TenantStore", file_hash: str) -> int:
+        """
+        Recopie un fichier indexé dans l'espace `other` : chunks avec leurs vecteurs (dense et BM25),
+        pages et entrée du registre, sans rien ré-embedder. Réservé à l'évaluation, dont plusieurs
+        jeux de documents partagent les mêmes rapports. Retourne le nombre de chunks copiés.
+        """
+        self.delete_document(file_hash)  # restes d'une copie interrompue
+        flt = other._filter(self._eq("file_hash", file_hash))
+        copied = 0
+        for collection, with_vectors in ((self._store.chunks, True), (self._store.pages, False)):
+            offset = None
+            while True:
+                records, offset = self._client.scroll(
+                    collection, scroll_filter=flt, limit=_UPSERT_BATCH, offset=offset,
+                    with_payload=True, with_vectors=with_vectors,
+                )
+                points = [
+                    models.PointStruct(
+                        id=self._point_id(file_hash, "copy", str(r.id)),
+                        vector=r.vector if with_vectors else {},
+                        payload={**r.payload, "tenant_id": self.tenant_id},
+                    )
+                    # Le registre (kind=document) est écrit en dernier, comme dans add_document.
+                    for r in records if r.payload.get("kind") != "document"
+                ]
+                if points:
+                    self._client.upsert(collection, points, wait=True)
+                copied += len(points) if with_vectors else 0
+                if offset is None:
+                    break
+
+        registry = other._scroll(self._store.pages, other._filter(self._eq("kind", "document"),
+                                                                   self._eq("file_hash", file_hash)))
+        for r in registry:
+            self._client.upsert(self._store.pages, [models.PointStruct(
+                id=self._point_id(file_hash, "document"), vector={},
+                payload={**r.payload, "tenant_id": self.tenant_id, "created_at": time.time()},
+            )], wait=True)
+        source = registry[0].payload.get("source") if registry else file_hash
+        logger.info(f"Qdrant [{self.tenant_id}] {source}: {copied} chunks copiés depuis [{other.tenant_id}]")
+        return copied
+
     def delete_document(self, file_hash: str) -> None:
         flt = self._filter(self._eq("file_hash", file_hash))
         for collection in (self._store.chunks, self._store.pages):
@@ -291,6 +342,12 @@ class TenantStore:
         for r in self._scroll(self._store.pages, self._filter(self._eq("kind", "page"))):
             by_source.setdefault(r.payload["source"], {})[int(r.payload["page"])] = r.payload["text"]
         return {s: [p[i] for i in sorted(p)] for s, p in by_source.items()}
+
+    def page_text(self, file_hash: str, page: int) -> Optional[str]:
+        """Texte OCR d'une page (index à partir de 0) d'un document de l'espace, ou None."""
+        flt = self._filter(self._eq("kind", "page"), self._eq("file_hash", file_hash), self._eq("page", page))
+        records, _ = self._client.scroll(self._store.pages, scroll_filter=flt, limit=1, with_payload=True)
+        return records[0].payload["text"] if records else None
 
     def hybrid_search(self, query: str, bm25_k: int, vector_k: int, weights=(0.5, 0.5),
                       sources: Optional[List[str]] = None) -> List[Document]:

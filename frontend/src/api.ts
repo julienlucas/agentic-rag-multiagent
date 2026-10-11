@@ -29,7 +29,21 @@ export type Citation = {
   page: number | null;
   locator: string;
   excerpt: string;
+  /** De quoi rouvrir le document au passage cité (absents des réponses antérieures). */
+  file_hash?: string | null;
+  /** Original du document : /static/… pour un exemple, /api/documents/…/file pour un dépôt. */
+  pdf_url?: string | null;
+  /** Passage entier transmis au modèle, pour le surligner dans la page. */
+  text?: string;
 };
+
+export type PageTextResponse = { file_hash: string; page: number; text: string };
+
+/** URL de l'original : l'API sert les fichiers déposés (contrôle par espace), le frontend les exemples. */
+export function documentUrl(pdfUrl: string, sessionId: string): string {
+  if (pdfUrl.startsWith("/api/")) return `${API_URL}${pdfUrl}?session_id=${encodeURIComponent(sessionId)}`;
+  return pdfUrl;
+}
 
 export type ProcessQuestionResponse = {
   draft_answer: string;
@@ -66,6 +80,12 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question, session_id: sessionId }),
     }).then((r) => parse<ProcessQuestionResponse>(r));
+  },
+
+  /** Texte OCR d'une page (numérotée à partir de 1) : le repli quand l'original n'est pas disponible. */
+  pageText(fileHash: string, page: number, sessionId: string) {
+    const query = new URLSearchParams({ file_hash: fileHash, page: String(page), session_id: sessionId });
+    return fetch(`${API_URL}/api/documents/page?${query}`).then((r) => parse<PageTextResponse>(r));
   },
 
   /** Vote sur une réponse : 1 = satisfait, 0 = pas satisfait (commentaire facultatif). */

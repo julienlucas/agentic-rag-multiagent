@@ -53,12 +53,12 @@ Claude et les embeddings passent, au choix (`MODEL_PROVIDER`), par **Amazon Bedr
 `eu-west-3`, par défaut) ou directement par les **API Anthropic et Cohere**. Les mêmes modèles
 dans les deux cas :
 - 💎 Claude Sonnet 4.6 (recherche à outils + génération) + Claude Haiku 4.5 (sous-agents : pertinence, routage, multi-query)
-- ⚖️ Évaluation, toujours sur Bedrock : Pixtral Large 25.02 (juge LLM) et Ministral 3 14B (answer relevancy, en eu-west-1). Des Mistral plutôt que Claude : le juge ne note pas sa propre famille
+- ⚖️ Évaluation, toujours sur Bedrock : gpt-oss-120b (juge LLM, à Francfort) et Ministral 3 14B (answer relevancy, en eu-west-1). Hors famille Claude : le juge ne note pas sa propre famille
 - 🧠 Cohere Embed v4 (embeddings, 1024 dimensions) — identique des deux côtés : changer de fournisseur ne demande pas de réindexer
+- 🧠 Cohere Rerank 3.5 (absent de Paris : appelé à Francfort, données en UE). En mode `direct` : Cohere Rerank 4 Pro par l'API Cohere
 
 Toujours par leur propre API :
 - ⚡ Mistral OCR (absent de Bedrock)
-- 🧠 Cohere Rerank 4 Pro
 - 🗄️ Qdrant Cloud (base vectorielle, un espace et un HNSW par utilisateur)
 
 ## Installation
@@ -94,7 +94,6 @@ MODEL_PROVIDER=bedrock
 
 # --- Toujours requis ---
 MISTRALAI_API_KEY=votre_clé_api_mistral_ici      # OCR
-COHERE_API_KEY=votre_clé_api_cohere_ici          # reranker (+ embeddings en mode direct)
 QDRANT_URL=https://xxxx.eu-central-1-0.aws.cloud.qdrant.io:6333
 QDRANT_API_KEY=votre_clé_qdrant_ici
 
@@ -107,25 +106,47 @@ AWS_REGION=eu-west-3
 
 # --- MODEL_PROVIDER=direct ---
 ANTHROPIC_API_KEY=votre_clé_api_anthropic_ici
+COHERE_API_KEY=votre_clé_api_cohere_ici          # embeddings et reranker
 ```
 
 Réglages facultatifs (valeurs par défaut) :
 ```bash
 # Identifiants de modèles : vides = défaut du fournisseur choisi.
-#   bedrock : eu.anthropic.claude-sonnet-4-6, eu.anthropic.claude-haiku-4-5-20251001-v1:0, eu.cohere.embed-v4:0
-#   direct  : claude-sonnet-4-6, claude-haiku-4-5, embed-v4.0
+#   bedrock : eu.anthropic.claude-sonnet-4-6, eu.anthropic.claude-haiku-4-5-20251001-v1:0, eu.cohere.embed-v4:0,
+#             cohere.rerank-v3-5:0 (dans RERANK_REGION=eu-central-1)
+#   direct  : claude-sonnet-4-6, claude-haiku-4-5, embed-v4.0, rerank-v4.0-pro
 REASONING_MODEL_ID=
 MODEL_SMALL_ID=
 MODEL_ID=
 EMBEDDING_MODEL_ID=
 REASONING_EFFORT=medium          # low | medium | high | max
-RERANK_MODEL=rerank-v4.0-pro
+RERANK_MODEL=
+RERANK_REGION=eu-central-1       # Bedrock : Rerank 3.5 n'existe pas à Paris
 BM25_LANGUAGE=english            # langue du stemmer BM25 (réindexer si on la change)
 TENANT_MAX_DOCUMENTS=50          # quotas par espace utilisateur
 TENANT_MAX_CHUNKS=20000
 QDRANT_CHUNKS_COLLECTION=chunks  # collections créées automatiquement au premier démarrage
 QDRANT_PAGES_COLLECTION=pages
+DOCUMENT_STORAGE_DIR=document_storage  # originaux déposés ; en prod, un volume Railway (ex. /data/documents)
 ```
+
+### Ouvrir une citation dans le document
+
+Un clic sur une citation `[n]` ou sur un passage cité ouvre le document à la page citée, le
+passage surligné (pdf.js, `frontend/src/components/rag/DocumentViewer.tsx`).
+
+- **Originaux.** Un fichier déposé est gardé dans `DOCUMENT_STORAGE_DIR`, rangé par hash de
+  contenu, et servi par `GET /api/documents/<hash>/file`, seulement à l'espace qui l'indexe.
+  Il est effacé quand plus aucun espace ne l'indexe. Chaque chunk porte `file_hash` et
+  `pdf_url` dans ses métadonnées Qdrant. Les exemples sont servis par le frontend (`/static/`).
+- **Repli.** Sans original (document déposé avant ce stockage), le panneau affiche le texte OCR
+  de la page (`GET /api/documents/page`), passage surligné.
+- **Exemples.** AMD et Boeing (10-K 2022, FinanceBench) sont livrés avec leurs pages déjà OCRisées
+  (`static/*.ocr.json`) : pas d'OCR à leur chargement. Un document déjà indexé à l'identique dans
+  un autre espace y est recopié avec ses vecteurs, sans OCR ni embeddings.
+- **En production (Railway)** : attacher un volume au service backend (par exemple monté sur
+  `/data`), puis définir `DOCUMENT_STORAGE_DIR=/data/documents`. Sans volume, les originaux sont
+  perdus à chaque redéploiement et les citations retombent sur le texte OCR.
 
 Pour surveiller votre application avec LangSmith (si vous le souhaitez) :
 
@@ -175,13 +196,14 @@ d'un utilisateur et fuiraient vers les autres espaces. Elles servent de référe
 
 **1. Les vraies questions** — *tout seul, à chaque question*
 
-4 juges (Mistral Large, pas Claude) relisent chaque question posée en production et disent oui
+4 juges (Claude Sonnet 4.6 sur Bedrock) relisent chaque question posée en production et disent oui
 ou non : l'agent a-t-il bien choisi entre chercher et répondre (`tool_selection`) ? le
 vérificateur de pertinence a-t-il donné le bon label (`relevance_check_correct`) ? la réponse
 ne dit-elle que ce qu'il y a dans les passages (`faithfulness`) ? répond-elle à la question
 posée (`answer_relevance`) ? ~0,01 à 0,04 $ par question. Les règles se créent une fois avec
-`backend/evals/online_evaluators.py`, après avoir ajouté `MISTRAL_API_KEY` dans LangSmith
-(Settings → Secrets). `backend/evals/judge_calibration.py` mesure ensuite l'accord de ces juges
+`backend/evals/online_evaluators.py`, après avoir ajouté `AWS_ACCESS_KEY_ID` et
+`AWS_SECRET_ACCESS_KEY` dans LangSmith (Settings → Secrets). Le juge est de la même famille que
+l'agent : choix assumé de tout passer par Bedrock (avant le 11 oct. 2026 : Mistral Large). `backend/evals/judge_calibration.py` mesure ensuite l'accord de ces juges
 avec les 👍/👎 (lecture seule, gratuit).
 
 Un seul projet LangSmith, `agentic-search` : les vraies questions, et tout ce que produisent les

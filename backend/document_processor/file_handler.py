@@ -114,25 +114,10 @@ class DocumentProcessor:
 
         logger.info(f"Fichier lu, taille: {len(file_content)} bytes")
 
-        # Encoder le contenu en base64
-        file_base64 = base64.b64encode(file_content).decode('utf-8')
-
         # Traiter le document entier d'un coup
         try:
-            response = self.client.ocr.process(
-                model=settings.MODEL_OCR_ID,
-                document={
-                    "type": "document_url",
-                    "document_url": f"data:application/pdf;base64,{file_base64}"
-                },
-                include_image_base64=True
-            )
-
-            total_pages = len(response.pages)
-            logger.info(f"Document traité avec {total_pages} pages")
-
-            # Collecter tout le markdown
-            all_markdown = [page.markdown for page in response.pages]
+            all_markdown = self._bundled_ocr(file) or self._ocr(file_content)
+            logger.info(f"Document traité avec {len(all_markdown)} pages")
 
             # Assembler le markdown en gardant la trace des frontières de page :
             # le chunking reste sémantique sur le document entier (qualité préservée),
@@ -168,6 +153,37 @@ class DocumentProcessor:
         except Exception as e:
             logger.error(f"Erreur lors du traitement OCR: {str(e)}")
             return [], []
+
+    def _ocr(self, file_content: bytes) -> List[str]:
+        """Mistral OCR du document entier : le markdown de chaque page."""
+        file_base64 = base64.b64encode(file_content).decode('utf-8')
+        response = self.client.ocr.process(
+            model=settings.MODEL_OCR_ID,
+            document={
+                "type": "document_url",
+                "document_url": f"data:application/pdf;base64,{file_base64}"
+            },
+            include_image_base64=True
+        )
+        return [page.markdown for page in response.pages]
+
+    @staticmethod
+    def _bundled_ocr(file) -> List[str]:
+        """
+        Pages déjà OCRisées livrées avec un exemple (« AMD_2022_10K.ocr.json » à côté du PDF,
+        au format du cache de backend/evals/financebench/prepare.py). Les exemples font 120 à
+        190 pages : sans elles, chaque redéploiement repaierait leur OCR au premier chargement.
+        Jamais pour un fichier déposé, qui n'a pas de chemin sur le disque.
+        """
+        if hasattr(file, 'file_obj'):
+            return []
+        sidecar = Path(file.name).with_suffix(".ocr.json")
+        if not sidecar.exists():
+            return []
+        import json
+        pages = json.loads(sidecar.read_text(encoding="utf-8"))["pages"]
+        logger.info(f"Pages OCR livrées avec l'exemple : {sidecar.name}")
+        return [pages.get(str(i), "") for i in range(max(int(k) for k in pages) + 1)]
 
     @staticmethod
     def _attach_pages(chunks, markdown: str, page_spans) -> None:

@@ -79,10 +79,19 @@ def row_from_example(inputs: Dict, outputs: Optional[Dict], metadata: Optional[D
     return row
 
 
-def upsert_dataset(client, name: str, rows: List[Dict]):
-    """Crée le dataset si besoin, ajoute les questions absentes, met à jour celles qui ont changé."""
+def upsert_dataset(client, name: str, rows: List[Dict], prune: bool = False,
+                   corpus: Optional[List[str]] = None):
+    """
+    Crée le dataset si besoin, ajoute les questions absentes, met à jour celles qui ont changé.
+    `prune` : retire aussi les questions du dataset absentes de `rows` (questions écartées).
+    `corpus` : les documents indexés pour ce dataset, gardés dans ses métadonnées (voir load_corpus).
+    """
     dataset = (client.read_dataset(dataset_name=name) if client.has_dataset(dataset_name=name)
                else client.create_dataset(name, description=DESCRIPTION))
+    if corpus is not None and (dataset.metadata or {}).get("corpus") != sorted(corpus):
+        # Le SDK n'a pas d'update_dataset : route PATCH de l'API.
+        client.request_with_retries("PATCH", f"/datasets/{dataset.id}",
+                                    json={"metadata": {**(dataset.metadata or {}), "corpus": sorted(corpus)}})
     known = {(ex.metadata or {}).get("financebench_id"): ex for ex in client.list_examples(dataset_id=dataset.id)}
     new, updated = [], 0
     for row in rows:
@@ -96,8 +105,23 @@ def upsert_dataset(client, name: str, rows: List[Dict]):
     if new:
         client.create_examples(dataset_id=dataset.id, inputs=[e["inputs"] for e in new],
                                outputs=[e["outputs"] for e in new], metadata=[e["metadata"] for e in new])
-    print(f"✓ Dataset LangSmith « {name} » : {len(new)} question(s) ajoutée(s), {updated} mise(s) à jour")
+    wanted = {row["id"] for row in rows}
+    stale = [ex.id for fid, ex in known.items() if fid not in wanted] if prune else []
+    if stale:
+        client.delete_examples(stale)
+    print(f"✓ Dataset LangSmith « {name} » : {len(new)} question(s) ajoutée(s), {updated} mise(s) à jour"
+          + (f", {len(stale)} retirée(s)" if stale else ""))
     return dataset
+
+
+def load_corpus(client, name: str, rows: List[Dict]) -> List[str]:
+    """
+    Documents de l'index d'un dataset. Ce sont ceux enregistrés par prepare.py ; à défaut, ceux de
+    ses questions. Ils peuvent différer : un document dont toutes les questions ont été retirées
+    reste indexé, comme distracteur, et l'espace Qdrant est calculé sur la liste complète.
+    """
+    corpus = (client.read_dataset(dataset_name=name).metadata or {}).get("corpus")
+    return sorted(corpus) if corpus else sorted({row["doc_name"] for row in rows})
 
 
 def load_rows(client, name: str = DEFAULT_DATASET) -> List[Dict]:
@@ -146,6 +170,7 @@ def log_experiments(client, dataset_name: str, summary: Dict, results: List[Dict
                 "embeddings": settings.EMBEDDING_MODEL_ID,
                 "reranker": settings.RERANK_MODEL,
                 "index": summary.get("index"),
+                "source": summary.get("source"),
                 "documents": summary.get("documents"),
                 "accuracy": fb.get("accuracy"),
                 "reps": summary.get("reps", 1),

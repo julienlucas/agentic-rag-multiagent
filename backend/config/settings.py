@@ -13,12 +13,14 @@ PROVIDER_DEFAULTS = {
         "MODEL_SMALL_ID": "eu.anthropic.claude-haiku-4-5-20251001-v1:0",
         "REASONING_MODEL_ID": "eu.anthropic.claude-sonnet-4-6",
         "EMBEDDING_MODEL_ID": "eu.cohere.embed-v4:0",
+        "RERANK_MODEL": "cohere.rerank-v3-5:0",
     },
     "direct": {
         "MODEL_ID": "claude-haiku-4-5",
         "MODEL_SMALL_ID": "claude-haiku-4-5",
         "REASONING_MODEL_ID": "claude-sonnet-4-6",
         "EMBEDDING_MODEL_ID": "embed-v4.0",
+        "RERANK_MODEL": "rerank-v4.0-pro",
     },
 }
 
@@ -52,15 +54,16 @@ class Settings(BaseSettings):
     MISTRALAI_API_KEY: Optional[str] = os.getenv("MISTRALAI_API_KEY")
     MODEL_OCR_ID: str = "mistral-ocr-latest"
 
-    # Évaluation, sur Bedrock quel que soit MODEL_PROVIDER, avec des modèles Mistral (pas
-    # Claude : le juge ne doit pas noter les réponses de sa propre famille). Bedrock n'a ni
-    # Mistral Large récent ni Mistral Small :
-    #  - juge : Pixtral Large 25.02 (base Mistral Large 2), profil « eu. » appelable de Paris ;
+    # Évaluation, sur Bedrock quel que soit MODEL_PROVIDER, avec des modèles hors famille Claude
+    # (le juge ne doit pas noter les réponses de sa propre famille) :
+    #  - juge : gpt-oss-120b (OpenAI, open-weight, modèle de raisonnement), absent de Paris,
+    #    appelé à Francfort ;
     #  - answer relevancy : Ministral 3 14B, absent d'eu-west-3, appelé en eu-west-1.
-    # Changement de juge le 3 oct. 2026 (avant : mistral-large-latest par l'API Mistral) : les
-    # runs antérieurs ne sont pas comparables aux suivants.
-    EVAL_JUDGE_MODEL_ID: str = "eu.mistral.pixtral-large-2502-v1:0"
-    EVAL_JUDGE_REGION: Optional[str] = None  # None = AWS_REGION
+    # Changements de juge : le 3 oct. 2026 (mistral-large-latest par l'API Mistral -> Pixtral
+    # Large 25.02 sur Bedrock), puis le 11 oct. 2026 (-> gpt-oss-120b, Pixtral Large étant un
+    # modèle de vision). Les runs d'un juge ne sont pas comparables à ceux d'un autre.
+    EVAL_JUDGE_MODEL_ID: str = "openai.gpt-oss-120b-1:0"
+    EVAL_JUDGE_REGION: Optional[str] = "eu-central-1"  # None = AWS_REGION
     EVAL_RELEVANCY_MODEL_ID: str = "mistral.ministral-3-14b-instruct"
     EVAL_RELEVANCY_REGION: Optional[str] = "eu-west-1"
 
@@ -98,8 +101,11 @@ class Settings(BaseSettings):
     # cosinus explicite. ⚠️ La changer impose de recréer la collection et de ré-embedder.
     VECTOR_SPACE: str = "cosine"
 
-    # Rerank : Cohere Rerank 4 Pro, par l'API Cohere (pas Bedrock, qui ne propose que la 3.5).
-    COHERE_API_KEY: Optional[str] = None
+    # Rerank. Bedrock : Cohere Rerank 3.5 (Bedrock n'a pas la 4), absent de Paris, appelé à
+    # Francfort (RERANK_REGION), données en UE. Direct : Cohere Rerank 4 Pro par l'API Cohere.
+    # Passage à Bedrock le 11 oct. 2026 : les runs antérieurs (Rerank 4 Pro) ne sont pas comparables.
+    COHERE_API_KEY: Optional[str] = None  # MODEL_PROVIDER=direct seulement
+    RERANK_REGION: str = "eu-central-1"
 
     # Paramètres d'embeddings
 
@@ -109,7 +115,7 @@ class Settings(BaseSettings):
     HYBRID_RETRIEVER_WEIGHTS: tuple = (0.5, 0.5)  # Équilibré — BM25 crucial pour termes exacts
     RERANK_ENABLED: bool = True
     RERANK_TOP_K: int = 30  # Top N résultats après reranking de TOUS les candidats
-    RERANK_MODEL: str = "rerank-v4.0-pro"
+    RERANK_MODEL: Optional[str] = None  # vide = défaut du fournisseur (PROVIDER_DEFAULTS)
 
     # Multi-Query - 1 reformulation (compromis latence/recall pour la prod)
     MULTI_QUERY_ENABLED: bool = True
@@ -184,8 +190,13 @@ class Settings(BaseSettings):
     CACHE_DIR: str = "document_cache"
     CACHE_EXPIRE_DAYS: int = 7
 
-    # Répertoire des exemples
+    # Répertoire des exemples. Un exemple peut être accompagné de ses pages déjà OCRisées
+    # (« <nom>.ocr.json » à côté du PDF) : son chargement ne repaie pas Mistral OCR.
     EXAMPLES_DIR: str = "./static"
+
+    # Originaux des documents déposés, pour les rouvrir depuis une citation (storage.py).
+    # En production : un volume Railway persistant, par exemple /data/documents.
+    DOCUMENT_STORAGE_DIR: str = "document_storage"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
@@ -194,6 +205,14 @@ class Settings(BaseSettings):
         for field, value in PROVIDER_DEFAULTS[self.MODEL_PROVIDER].items():
             if not getattr(self, field):
                 setattr(self, field, value)
+        # Un identifiant Cohere direct (« rerank-v4.0-pro ») envoyé à Bedrock y échoue à chaque
+        # appel, et le reranker rend alors les passages dans l'ordre, sans rien dire : on refuse.
+        bedrock_rerank = self.RERANK_MODEL.startswith(("cohere.", "amazon."))
+        if self.RERANK_ENABLED and bedrock_rerank != (self.MODEL_PROVIDER == "bedrock"):
+            raise ValueError(
+                f"RERANK_MODEL={self.RERANK_MODEL!r} ne correspond pas à MODEL_PROVIDER={self.MODEL_PROVIDER!r} "
+                f"(défaut : {PROVIDER_DEFAULTS[self.MODEL_PROVIDER]['RERANK_MODEL']!r}). Videz RERANK_MODEL dans le .env."
+            )
         return self
 
 settings = Settings()

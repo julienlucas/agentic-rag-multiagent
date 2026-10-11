@@ -20,6 +20,7 @@ import { renderMarkdown } from "@/lib/markdown";
 import { parseVerificationReport } from "@/lib/verification";
 import { useElapsed } from "@/hooks/useTimer";
 import { CorpusPanel } from "./CorpusPanel";
+import { DocumentViewer } from "./DocumentViewer";
 import { exampleDocs, exampleOutput, type ExampleDoc } from "./examples";
 import { pipelineSteps } from "./pipeline";
 import type { DocState, Turn } from "./types";
@@ -83,10 +84,23 @@ function CollapsibleAnswer({ children }: { children: ReactNode }) {
   );
 }
 
-/** Marqueur de citation [n] : renvoie au passage transmis au modèle. */
-function CiteMark({ n, citation }: { n: number; citation?: Citation }) {
+/** Ouvre le document d'une citation à la page citée ; null si elle ne peut pas l'être. */
+type OpenCitation = ((c: Citation) => void) | null;
+
+/** Marqueur de citation [n] : renvoie au passage transmis au modèle ; un clic ouvre le document. */
+function CiteMark({ n, citation, onOpen }: { n: number; citation?: Citation; onOpen?: OpenCitation }) {
+  const openable = Boolean(citation && onOpen);
   const mark = (
-    <sup className="mono-xs ml-0.5 cursor-help rounded bg-brand-surface-strong px-1 py-px text-[0.6rem] text-brand-deep">
+    <sup
+      role={openable ? "button" : undefined}
+      tabIndex={openable ? 0 : undefined}
+      onClick={openable ? () => onOpen!(citation!) : undefined}
+      onKeyDown={openable ? (e) => e.key === "Enter" && onOpen!(citation!) : undefined}
+      className={cn(
+        "mono-xs ml-0.5 rounded bg-brand-surface-strong px-1 py-px text-[0.6rem] text-brand-deep",
+        openable ? "cursor-pointer hover:bg-brand hover:text-on-brand" : "cursor-help",
+      )}
+    >
       {n}
     </sup>
   );
@@ -97,13 +111,22 @@ function CiteMark({ n, citation }: { n: number; citation?: Citation }) {
       <TooltipContent className="max-w-sm bg-brand text-on-brand">
         <span className="mono-xs block text-on-brand/75">{citation.locator}</span>
         <span className="mt-1 block text-xs leading-relaxed">{citation.excerpt}</span>
+        {openable ? <span className="mono-xs mt-1.5 block text-on-brand/75">cliquer pour ouvrir le passage</span> : null}
       </TooltipContent>
     </Tooltip>
   );
 }
 
-/** Liste des passages réellement cités dans la réponse. */
-function CitedSources({ answer, citations }: { answer: string; citations: Citation[] }) {
+/** Liste des passages réellement cités dans la réponse ; un clic ouvre le document au passage. */
+function CitedSources({
+  answer,
+  citations,
+  onOpen,
+}: {
+  answer: string;
+  citations: Citation[];
+  onOpen?: OpenCitation;
+}) {
   const used = Array.from(new Set([...answer.matchAll(/\[(\d+)\]/g)].map((m) => Number(m[1]))))
     .sort((a, b) => a - b)
     .map((n) => citations.find((c) => c.n === n))
@@ -113,16 +136,34 @@ function CitedSources({ answer, citations }: { answer: string; citations: Citati
     <div className="mt-3 border-t border-hairline pt-3">
       <span className="eyebrow">Passages cités</span>
       <ul className="mt-2 space-y-1.5">
-        {used.map((c) => (
-          <li key={c.n} className="flex gap-2 text-[0.7rem] leading-relaxed text-muted-foreground">
-            <span className="mono-xs mt-px inline-grid size-4 shrink-0 place-items-center rounded bg-brand-surface-strong text-[0.6rem] leading-none text-brand-deep">
-              {c.n}
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="font-medium text-ink-muted">{c.locator}</span> — {c.excerpt}
-            </span>
-          </li>
-        ))}
+        {used.map((c) => {
+          const body = (
+            <>
+              <span className="mono-xs mt-px inline-grid size-4 shrink-0 place-items-center rounded bg-brand-surface-strong text-[0.6rem] leading-none text-brand-deep">
+                {c.n}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="font-medium text-ink-muted">{c.locator}</span> — {c.excerpt}
+              </span>
+            </>
+          );
+          return (
+            <li key={c.n} className="text-[0.7rem] leading-relaxed text-muted-foreground">
+              {onOpen ? (
+                <button
+                  type="button"
+                  onClick={() => onOpen(c)}
+                  title="Ouvrir le document à ce passage"
+                  className="flex w-full cursor-pointer gap-2 rounded-sm text-left transition-colors hover:bg-brand-surface hover:text-ink"
+                >
+                  {body}
+                </button>
+              ) : (
+                <div className="flex gap-2">{body}</div>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
@@ -261,6 +302,7 @@ export function DemoChat({ children }: { children?: ReactNode }) {
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const viewport = useRef<HTMLDivElement>(null);
   const loadToken = useRef(0);
+  const [opened, setOpened] = useState<Citation | null>(null);
 
   const clearTimers = () => {
     timers.current.forEach(clearTimeout);
@@ -397,6 +439,14 @@ export function DemoChat({ children }: { children?: ReactNode }) {
     setDraft("");
   };
 
+  /* Fichier déposé pendant la session, si la citation vient de lui (même nom sans extension). */
+  const sessionFile = (c: Citation) =>
+    doc?.source === "upload" && doc.file && doc.fileName.replace(/\.[^.]+$/, "") === c.source ? doc.file : undefined;
+  const openCitation = (c: Citation) => {
+    if (c.pdf_url || c.file_hash || sessionFile(c)) setOpened(c);
+    else toast.info("Ce passage ne peut pas être rouvert", { description: "Déposez à nouveau le document." });
+  };
+
   const activeExample = doc?.source === "example" ? exampleDocs.find((e) => e.id === doc.id) : undefined;
   const suggestions = activeExample?.questions ?? [];
   const showExample = turns.length === 0 && !pending && doc?.id === exampleOutput.docId;
@@ -456,11 +506,19 @@ export function DemoChat({ children }: { children?: ReactNode }) {
                               <CollapsibleAnswer>
                                 <div className="prose-rag">
                                   {renderMarkdown(exampleOutput.answer, (n) => (
-                                    <CiteMark n={n} citation={exampleOutput.citations.find((c) => c.n === n)} />
+                                    <CiteMark
+                                      n={n}
+                                      citation={exampleOutput.citations.find((c) => c.n === n)}
+                                      onOpen={openCitation}
+                                    />
                                   ))}
                                 </div>
                               </CollapsibleAnswer>
-                              <CitedSources answer={exampleOutput.answer} citations={exampleOutput.citations} />
+                              <CitedSources
+                                answer={exampleOutput.answer}
+                                citations={exampleOutput.citations}
+                                onOpen={openCitation}
+                              />
                             </div>
                           </div>
                         </div>
@@ -553,13 +611,17 @@ export function DemoChat({ children }: { children?: ReactNode }) {
                                 <CollapsibleAnswer>
                                   <div className="prose-rag">
                                     {renderMarkdown(turn.answer, (n) => (
-                                      <CiteMark n={n} citation={turn.citations.find((c) => c.n === n)} />
+                                      <CiteMark
+                                        n={n}
+                                        citation={turn.citations.find((c) => c.n === n)}
+                                        onOpen={openCitation}
+                                      />
                                     ))}
                                   </div>
                                 </CollapsibleAnswer>
                               )}
                               {!turn.failed ? (
-                                <CitedSources answer={turn.answer} citations={turn.citations} />
+                                <CitedSources answer={turn.answer} citations={turn.citations} onOpen={openCitation} />
                               ) : null}
                               {!turn.failed &&
                               turn.signals.correctiveRounds > 0 ? (
@@ -692,6 +754,16 @@ export function DemoChat({ children }: { children?: ReactNode }) {
           </div>
         </div>
       </div>
+
+      {opened ? (
+        <DocumentViewer
+          key={`${opened.source}-${opened.n}-${opened.page}`}
+          citation={opened}
+          sessionId={sessionId}
+          file={sessionFile(opened)}
+          onClose={() => setOpened(null)}
+        />
+      ) : null}
     </div>
   );
 }

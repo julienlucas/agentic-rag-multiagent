@@ -45,11 +45,13 @@ def test_verdict_is_binary_with_reasoning_first():
         assert schema["required"] == ["comment", key]
 
 
-def test_judge_is_mistral_and_never_carries_the_key():
+def test_judge_is_claude_on_bedrock_and_never_carries_the_keys():
     judge = serialized_judge()
-    assert judge["id"][-1] == "ChatMistralAI"
-    # La clé est une référence au secret LangSmith, jamais sa valeur.
-    assert judge["kwargs"]["mistral_api_key"] == {"lc": 1, "type": "secret", "id": ["MISTRAL_API_KEY"]}
+    assert judge["id"][-1] == "ChatBedrockConverse"
+    assert judge["kwargs"]["model_id"] == "eu.anthropic.claude-sonnet-4-6"
+    # Les clés sont des références aux secrets LangSmith, jamais leur valeur.
+    for name in ("aws_access_key_id", "aws_secret_access_key"):
+        assert judge["kwargs"][name] == {"lc": 1, "type": "secret", "id": [name.upper()]}
     assert "secret-lu-par-langsmith" not in json.dumps(judge)
 
 

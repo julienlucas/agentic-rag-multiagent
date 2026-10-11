@@ -109,12 +109,15 @@ def index_chunks(tenant_id: str, chunks: List, pages_by_doc: Optional[Dict[str, 
                  force: bool = False):
     """
     Indexe des chunks déjà produits dans l'espace Qdrant `tenant_id`, document par document.
-    Idempotent : un document dont les chunks n'ont pas changé n'est pas ré-embeddé.
+    Idempotent : un document dont les chunks n'ont pas changé n'est pas ré-embeddé. S'il est déjà
+    indexé, à l'identique, dans l'espace d'un autre jeu de documents (l'essai sur 20 rapports avant
+    les 84), ses vecteurs y sont recopiés au lieu d'être recalculés.
     Retourne le TenantStore.
     """
     from backend.vectorstore import get_eval_store
 
-    tenant = get_eval_store().for_tenant(tenant_id)  # collections d'éval, jamais celles des utilisateurs
+    store = get_eval_store()
+    tenant = store.for_tenant(tenant_id)  # collections d'éval, jamais celles des utilisateurs
     by_source: Dict[str, List] = {}
     for chunk in chunks:
         by_source.setdefault(str(chunk.metadata.get("source")), []).append(chunk)
@@ -125,12 +128,16 @@ def index_chunks(tenant_id: str, chunks: List, pages_by_doc: Optional[Dict[str, 
         file_hash = digest.hexdigest()
         if tenant.has_document(file_hash) and not force:
             continue
+        donors = [] if force else [t for t in store.tenants_with_document(file_hash) if t != tenant_id]
+        if donors:
+            tenant.copy_document_from(store.for_tenant(donors[0]), file_hash)
+            continue
         pages = (pages_by_doc or {}).get(source, [])
         tenant.add_document(file_hash, source, doc_chunks, pages, enforce_quota=False)
     return tenant
 
 
-def eval_index(docs: List[str]):
+def eval_index(docs: List[str], source: Optional[str] = None):
     """
     (retriever, PageStore) d'un jeu de documents, lus dans les collections d'évaluation de Qdrant.
 
@@ -138,11 +145,11 @@ def eval_index(docs: List[str]):
     embeddings, pages), les expériences ne font que le lire, avec la même chaîne de retrieval que la
     production. Rien n'est recalculé ici.
     """
-    from backend.evals.financebench.prepare import eval_tenant_for
+    from backend.evals.financebench.prepare import DEFAULT_SOURCE, eval_tenant_for
     from backend.retriever.page_store import PageStore
     from backend.vectorstore import get_eval_store
 
-    tenant = get_eval_store().for_tenant(eval_tenant_for(docs))
+    tenant = get_eval_store().for_tenant(eval_tenant_for(docs, source or DEFAULT_SOURCE))
     if not tenant.chunk_count():
         raise SystemExit(f"Espace Qdrant {tenant.tenant_id} vide ({', '.join(docs)}) : "
                          "lancer d'abord backend/evals/financebench/prepare.py")
@@ -400,7 +407,9 @@ class FinanceBenchJudge:
     def _get_llm(self):
         if self.llm is None:
             from backend.llm.bedrock import chat_model
-            self.llm = chat_model(self.model, max_tokens=250, region=settings.EVAL_JUDGE_REGION)
+            # Le juge raisonne avant de répondre, et ce raisonnement compte dans max_tokens :
+            # à 250, il épuisait le budget avant d'écrire le verdict.
+            self.llm = chat_model(self.model, max_tokens=2000, region=settings.EVAL_JUDGE_REGION)
         return self.llm
 
     @staticmethod
@@ -484,7 +493,9 @@ class FinanceBenchJudge:
         )
         try:
             response = self._get_llm().invoke(prompt)
-            return self._parse(response.content)
+            # .text : les seuls blocs de texte. Un modèle de raisonnement renvoie une liste
+            # (raisonnement, puis texte) que _parse ne savait pas lire.
+            return self._parse(response.text)
         except Exception as e:
             # Un rate limit doit remonter à l'appelant pour être rejoué (backoff) ;
             # l'avaler en verdict ERROR fausserait le dénominateur de l'accuracy.

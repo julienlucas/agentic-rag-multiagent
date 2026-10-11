@@ -2,10 +2,11 @@ import json
 import hashlib
 import os
 import uuid
-from django.http import JsonResponse
+from django.http import FileResponse, JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
+from .document_processor import storage
 from .document_processor.file_handler import DocumentProcessor
 from .retriever.builder import RetrieverBuilder
 from .retriever.page_store import PageStore
@@ -71,13 +72,63 @@ def file_hash(file) -> str:
     return hashlib.sha256(content).hexdigest()
 
 
+def _is_example(f) -> bool:
+    return not hasattr(f, 'file_obj')
+
+
+def document_url(f, digest: str):
+    """
+    Lien vers l'original d'un PDF, gardé dans les métadonnées de ses chunks (`pdf_url`).
+    Un exemple est servi par le frontend (static/, copié par vercel.json) ; un fichier déposé
+    est rangé dans le stockage des originaux et servi par l'API (document_file).
+    """
+    if not f.name.lower().endswith(".pdf"):
+        return None
+    if _is_example(f):
+        return f"/static/{os.path.basename(f.name)}"
+    return storage.api_url(digest)
+
+
+def _store_original(f, digest: str):
+    """Garde l'original d'un fichier déposé ; un échec ne bloque pas l'indexation (repli : texte OCR)."""
+    if _is_example(f):
+        return
+    try:
+        f.file_obj.seek(0)
+        storage.save(digest, f.name, f.file_obj.read())
+        f.file_obj.seek(0)
+    except OSError as e:
+        logger.error(f"Original de {f.name} non sauvegardé ({e}) : la citation s'ouvrira sur le texte OCR")
+
+
+def _release_original(file_hash: str):
+    """Efface l'original quand plus aucun espace n'indexe ce document."""
+    if not get_store().tenants_with_document(file_hash):
+        storage.remove(file_hash)
+
+
 def process_files(file_objects, session_id, success_message="Fichiers traités avec succès"):
-    """Indexe les fichiers dans l'espace Qdrant du tenant ; un fichier déjà indexé est ignoré."""
+    """
+    Indexe les fichiers dans l'espace Qdrant du tenant ; un fichier déjà indexé est ignoré.
+    Un fichier déjà indexé à l'identique dans un autre espace (un exemple, surtout) y est recopié
+    avec ses vecteurs, sans OCR ni embeddings : charger AMD ou Boeing devient immédiat.
+    """
     tenant = _tenant(session_id)
     hashes = {id(f): file_hash(f) for f in file_objects}
-    pending = [f for f in file_objects if not tenant.has_document(hashes[id(f)])]
+    new_files = [f for f in file_objects if not tenant.has_document(hashes[id(f)])]
 
     indexed = 0
+    store = get_store()
+    pending = []
+    for f in new_files:
+        digest = hashes[id(f)]
+        _store_original(f, digest)
+        donors = [t for t in store.tenants_with_document(digest) if t != tenant.tenant_id]
+        if donors:
+            indexed += tenant.copy_document_from(store.for_tenant(donors[0]), digest)
+        else:
+            pending.append(f)
+
     if pending:
         processor = DocumentProcessor()
         chunks = processor.process(pending)
@@ -89,12 +140,19 @@ def process_files(file_objects, session_id, success_message="Fichiers traités a
             file_chunks = by_source.get(f.name, [])
             if not file_chunks:
                 return JsonResponse({"error": f"Aucun texte extrait de {os.path.basename(f.name)}."}, status=422)
+            # Identifiant et lien de l'original sur chaque chunk : une citation rouvre le document.
+            url = document_url(f, hashes[id(f)])
+            for chunk in file_chunks:
+                chunk.metadata["file_hash"] = hashes[id(f)]
+                if url:
+                    chunk.metadata["pdf_url"] = url
             indexed += tenant.add_document(hashes[id(f)], f.name, file_chunks, processor.pages.get(f.name, []))
 
     documents = tenant.documents()
-    logger.info(f"Tenant {tenant.tenant_id}: {len(documents)} document(s), {indexed} chunks ajoutés")
+    logger.info(f"Tenant {tenant.tenant_id}: {len(documents)} document(s), {indexed} chunks ajoutés "
+                f"({len(new_files) - len(pending)} recopié(s) d'un autre espace)")
     return JsonResponse({
-        "message": success_message if pending else "Document déjà indexé",
+        "message": success_message if new_files else "Document déjà indexé",
         "chunks_count": sum(d["chunk_count"] for d in documents if d["file_hash"] in hashes.values()),
     })
 
@@ -206,7 +264,7 @@ def process_question(request):
         return JsonResponse({
             "draft_answer": result["draft_answer"],
             "verification_report": result["verification_report"],
-            "citations": result.get("citations", []),
+            "citations": locate_citations(result.get("citations", []), documents),
             "feedback_token": votes.issue_token(run_id, tenant.tenant_id) if votes.enabled() else None,
         })
 
@@ -215,6 +273,62 @@ def process_question(request):
     except Exception as e:
         logger.error(f"Erreur lors du traitement de la question: {str(e)}")
         return JsonResponse({"error": str(e)}, status=500)
+
+
+def locate_citations(citations, documents):
+    """
+    Complète chaque citation avec l'identifiant (`file_hash`) et le lien (`pdf_url`) de son
+    document, pour que le frontend l'ouvre à la page citée. Les chunks indexés depuis le
+    stockage des originaux les portent déjà ; les pages lues par read_page et les documents
+    indexés avant n'ont que leur nom, retrouvé ici parmi les documents de l'espace.
+    """
+    by_name = {os.path.splitext(os.path.basename(d["source"]))[0]: d for d in documents}
+    for c in citations:
+        doc = by_name.get(c.get("source"))
+        if doc is None:
+            continue
+        c.setdefault("file_hash", None)
+        c["file_hash"] = c["file_hash"] or doc["file_hash"]
+        if not c.get("pdf_url") and doc["source"].lower().endswith(".pdf"):
+            examples_dir = os.path.realpath(settings.EXAMPLES_DIR)
+            if os.path.dirname(os.path.realpath(doc["source"])) == examples_dir:
+                c["pdf_url"] = f"/static/{os.path.basename(doc['source'])}"
+            elif storage.find(doc["file_hash"]) is not None:
+                c["pdf_url"] = storage.api_url(doc["file_hash"])
+    return citations
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def document_file(request, file_hash):
+    """L'original d'un document déposé, s'il appartient à l'espace du tenant."""
+    try:
+        tenant = _tenant(request.GET.get('session_id', 'default'))
+    except BadTenant as e:
+        return JsonResponse({"error": str(e)}, status=400)
+    path = storage.find(file_hash) if tenant.has_document(file_hash) else None
+    if path is None:
+        return JsonResponse({"error": "Original indisponible pour ce document."}, status=404)
+    content_type = "application/pdf" if path.suffix == ".pdf" else "application/octet-stream"
+    return FileResponse(open(path, "rb"), content_type=content_type, as_attachment=False)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def document_page(request):
+    """Texte OCR d'une page (numérotée à partir de 1) : le repli quand l'original n'est pas disponible."""
+    try:
+        tenant = _tenant(request.GET.get('session_id', 'default'))
+        file_hash = request.GET.get('file_hash', '')
+        page = int(request.GET.get('page', ''))
+    except BadTenant as e:
+        return JsonResponse({"error": str(e)}, status=400)
+    except ValueError:
+        return JsonResponse({"error": "page doit être un entier."}, status=400)
+    text = tenant.page_text(file_hash, page - 1) if page >= 1 else None
+    if text is None:
+        return JsonResponse({"error": "Page introuvable dans cet espace."}, status=404)
+    return JsonResponse({"file_hash": file_hash, "page": page, "text": text})
 
 
 @csrf_exempt
@@ -243,6 +357,7 @@ def delete_document(request):
         if not tenant.has_document(target):
             return JsonResponse({"error": "Document inconnu dans cet espace."}, status=404)
         tenant.delete_document(target)
+        _release_original(target)
         return JsonResponse({"message": "Document supprimé"})
     except BadTenant as e:
         return JsonResponse({"error": str(e)}, status=400)
@@ -254,7 +369,11 @@ def delete_space(request):
     """Vide l'espace du tenant."""
     data = json.loads(request.body)
     try:
-        _tenant(data.get('session_id', 'default')).delete_all()
+        tenant = _tenant(data.get('session_id', 'default'))
+        hashes = [d["file_hash"] for d in tenant.documents()]
+        tenant.delete_all()
+        for digest in hashes:
+            _release_original(digest)
         return JsonResponse({"message": "Espace vidé"})
     except BadTenant as e:
         return JsonResponse({"error": str(e)}, status=400)
