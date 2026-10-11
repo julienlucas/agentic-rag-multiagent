@@ -205,7 +205,12 @@ def log_experiments(client, dataset_name: str, summary: Dict, results: List[Dict
         client.flush()  # les runs doivent exister avant leurs feedbacks
         for run_id, row in run_ids:
             for key, score, comment in _feedback(row):
-                client.create_feedback(run_id, key=key, score=score, comment=comment)
+                # session_id : sans lui, LangSmith n'attachait pas tous les verdicts à l'expérience.
+                client.create_feedback(run_id, key=key, score=score, comment=comment,
+                                       trace_id=run_id, session_id=project.id)
+        # Les feedbacks partent en arrière-plan : sans flush, le script se terminait avant leur
+        # envoi (run du 11 oct. 2026 : 48 verdicts sur 65 dans LangSmith).
+        client.flush()
         client.update_project(project.id, end_time=datetime.now(timezone.utc))
         experiments.append(project.name)
         acc = fb.get("accuracy")

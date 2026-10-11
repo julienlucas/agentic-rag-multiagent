@@ -196,12 +196,29 @@ uv run python backend/evals/financebench/prepare.py   # assemble et construit l'
 
 ### Protocole FinanceBench (comparable au chiffre public de Mistral)
 
-Chaque réponse reçoit un verdict ternaire d'un juge LLM, gpt-oss-120b sur Bedrock à Francfort
-(`EVAL_JUDGE_MODEL_ID`, `EVAL_JUDGE_REGION`) : un modèle de raisonnement hors famille Claude,
-qui ne note donc pas sa propre famille. Ses verdicts ne sont pas comparables à ceux des juges
-précédents : `mistral-large-latest` par l'API Mistral jusqu'au 3 octobre 2026, puis Pixtral
-Large 25.02 sur Bedrock jusqu'au 11 octobre 2026 (rejugées par Pixtral Large, les 26 réponses
-du run « 5 outils » recevaient le même verdict que sous Mistral Large, 26/26).
+Chaque réponse reçoit un verdict ternaire d'un juge LLM, Qwen3 235B sur Bedrock à Francfort
+(`EVAL_JUDGE_MODEL_ID`, `EVAL_JUDGE_REGION`) : hors famille Claude, il ne note donc pas sa
+propre famille. Il est calibré sur annotation humaine (voir « Calibrer le juge » ci-dessous).
+Son prompt suit le protocole FinanceBench : même information que la référence, à la
+formulation, à l'unité et à l'arrondi près.
+
+Historique du juge, dont les verdicts ne se comparent pas d'un juge à l'autre :
+`mistral-large-latest` (API Mistral) jusqu'au 3 octobre 2026, Pixtral Large 25.02 (Bedrock)
+jusqu'au 11 octobre 2026, puis Qwen3 235B.
+
+#### Calibrer le juge
+
+Sur les mêmes 65 réponses de l'essai (11 octobre 2026), Pixtral Large donne
+83,1 %, gpt-oss-120b 70,8 % et Qwen3 235B 69,2 % : le choix du juge pèse plus que bien des
+changements du système. Un juge se choisit donc sur son accord avec une annotation humaine,
+pas sur le score qu'il donne :
+
+```bash
+# File d'annotation LangSmith, à l'aveugle : les réponses où les juges divergent d'abord
+uv run python backend/evals/financebench/annotation.py queue --experiment "<expérience agentic>" --size 30
+# Après annotation (clé human_correct) : accord de chaque juge candidat avec l'humain
+uv run python backend/evals/financebench/annotation.py agreement --project "<projet d'annotation>"
+```
 
 - **`accuracy`** — réponses `CORRECT` (tolérante aux écarts de format, d'unité et d'arrondi).
 - **`hallucination_rate`** — réponses `INCORRECT` : le système répond avec assurance **et** se

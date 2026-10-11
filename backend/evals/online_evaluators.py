@@ -14,7 +14,7 @@ les serveurs de LangSmith et y cherchent les clés sous ces noms ; le script ne 
 Juge : Claude Sonnet 4.6 sur Bedrock (avant le 11 oct. 2026 : Mistral Large par l'API Mistral,
 dont les verdicts ne sont pas comparables). Choix assumé de tout faire passer par Bedrock : le
 juge est de la même famille que l'agent (Claude), qui risque de favoriser ses propres
-formulations. L'évaluation FinanceBench garde un juge hors famille Claude (gpt-oss-120b).
+formulations. L'évaluation FinanceBench garde un juge hors famille Claude (Qwen3 235B).
 
 Quatre règles, une par étape clé de l'agent :
 

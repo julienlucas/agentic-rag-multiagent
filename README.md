@@ -53,7 +53,7 @@ Claude et les embeddings passent, au choix (`MODEL_PROVIDER`), par **Amazon Bedr
 `eu-west-3`, par défaut) ou directement par les **API Anthropic et Cohere**. Les mêmes modèles
 dans les deux cas :
 - 💎 Claude Sonnet 4.6 (recherche à outils + génération) + Claude Haiku 4.5 (sous-agents : pertinence, routage, multi-query)
-- ⚖️ Évaluation, toujours sur Bedrock : gpt-oss-120b (juge LLM, à Francfort) et Ministral 3 14B (answer relevancy, en eu-west-1). Hors famille Claude : le juge ne note pas sa propre famille
+- ⚖️ Évaluation, toujours sur Bedrock : Qwen3 235B (juge LLM, à Francfort, calibré sur annotation humaine) et Ministral 3 14B (answer relevancy, en eu-west-1). Hors famille Claude : le juge ne note pas sa propre famille
 - 🧠 Cohere Embed v4 (embeddings, 1024 dimensions) — identique des deux côtés : changer de fournisseur ne demande pas de réindexer
 - 🧠 Cohere Rerank 3.5 (absent de Paris : appelé à Francfort, données en UE). En mode `direct` : Cohere Rerank 4 Pro par l'API Cohere
 

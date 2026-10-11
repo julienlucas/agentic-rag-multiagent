@@ -56,13 +56,16 @@ class Settings(BaseSettings):
 
     # Évaluation, sur Bedrock quel que soit MODEL_PROVIDER, avec des modèles hors famille Claude
     # (le juge ne doit pas noter les réponses de sa propre famille) :
-    #  - juge : gpt-oss-120b (OpenAI, open-weight, modèle de raisonnement), absent de Paris,
-    #    appelé à Francfort ;
+    #  - juge : Qwen3 235B A22B (2507), absent de Paris, appelé à Francfort. Parmi les modèles
+    #    hors Claude ouverts sur le compte (GPT-5.x/6, Grok, GLM, Kimi : accès refusé au
+    #    11 oct. 2026), avec gpt-oss-120b le plus rigoureux : les deux s'accordent sur 60 des
+    #    65 réponses de l'essai, Pixtral sur 57 ;
     #  - answer relevancy : Ministral 3 14B, absent d'eu-west-3, appelé en eu-west-1.
-    # Changements de juge : le 3 oct. 2026 (mistral-large-latest par l'API Mistral -> Pixtral
-    # Large 25.02 sur Bedrock), puis le 11 oct. 2026 (-> gpt-oss-120b, Pixtral Large étant un
-    # modèle de vision). Les runs d'un juge ne sont pas comparables à ceux d'un autre.
-    EVAL_JUDGE_MODEL_ID: str = "openai.gpt-oss-120b-1:0"
+    # Historique : mistral-large-latest (API Mistral) jusqu'au 3 oct. 2026, Pixtral Large 25.02
+    # (Bedrock) jusqu'au 11 oct. 2026, puis Qwen3 235B, au protocole FinanceBench
+    # (experiment_utils.FINANCEBENCH_JUDGE_PROMPT), à calibrer sur annotation humaine
+    # (financebench/annotation.py). Les runs d'un juge ne sont pas comparables à ceux d'un autre.
+    EVAL_JUDGE_MODEL_ID: str = "qwen.qwen3-235b-a22b-2507-v1:0"
     EVAL_JUDGE_REGION: Optional[str] = "eu-central-1"  # None = AWS_REGION
     EVAL_RELEVANCY_MODEL_ID: str = "mistral.ministral-3-14b-instruct"
     EVAL_RELEVANCY_REGION: Optional[str] = "eu-west-1"

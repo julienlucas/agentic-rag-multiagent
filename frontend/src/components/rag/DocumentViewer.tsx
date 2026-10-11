@@ -1,21 +1,18 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, ExternalLink, FileText, X } from "lucide-react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
-import type { TextItem } from "pdfjs-dist/types/src/display/api";
 import workerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { api, documentUrl, type Citation } from "@/api";
 import { matchSegments } from "@/lib/passage";
 import { cn } from "@/lib/utils";
 
 /*
- * Ouvre le document d'une citation à la page citée et y surligne le passage.
+ * Ouvre le document d'une citation à la page citée (sans surlignage dans le PDF).
  *
  * Source, dans l'ordre : l'original servi par l'URL de la citation (exemple ou dépôt
  * conservé), le fichier encore en mémoire s'il vient d'être déposé, sinon le texte OCR de
  * la page lu dans l'index (documents déposés avant que les originaux soient conservés).
  */
-
-type Box = { left: number; top: number; width: number; height: number };
 
 async function loadPdfjs() {
   const pdfjs = await import("pdfjs-dist");
@@ -41,7 +38,6 @@ export function DocumentViewer({
   const [mode, setMode] = useState<"loading" | "pdf" | "text" | "error">("loading");
   const [text, setText] = useState<string | null>(null);
   const [width, setWidth] = useState(0);
-  const [boxes, setBoxes] = useState<Box[]>([]);
   const [rendering, setRendering] = useState(false);
   const frame = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -106,15 +102,13 @@ export function DocumentViewer({
     return () => ro.disconnect();
   }, [mode]);
 
-  /* Rendu de la page, et des zones surlignées sur la page citée. */
+  /* Rendu de la page à la largeur du panneau. */
   useEffect(() => {
     if (!pdf || !width || !canvas.current) return;
     let cancelled = false;
     let task: { cancel: () => void; promise: Promise<void> } | null = null;
     (async () => {
       setRendering(true);
-      firstMark.current = null;
-      const pdfjs = await loadPdfjs();
       const p = await pdf.getPage(Math.min(Math.max(page, 1), pdf.numPages));
       const base = p.getViewport({ scale: 1 });
       const viewport = p.getViewport({ scale: width / base.width });
@@ -134,39 +128,18 @@ export function DocumentViewer({
       } catch {
         return; // rendu annulé par un changement de page
       }
-      if (cancelled) return;
-
-      if (page !== cited) {
-        setBoxes([]);
-      } else {
-        const content = await p.getTextContent();
-        const items = content.items.filter((it): it is TextItem => "str" in it);
-        const marked = matchSegments(
-          items.map((it) => it.str),
-          passage,
-        );
-        setBoxes(
-          items
-            .filter((_, i) => marked[i])
-            .map((it) => {
-              const tx = pdfjs.Util.transform(viewport.transform, it.transform);
-              const height = Math.hypot(tx[2], tx[3]);
-              return { left: tx[4], top: tx[5] - height, width: it.width * viewport.scale, height };
-            }),
-        );
-      }
-      setRendering(false);
+      if (!cancelled) setRendering(false);
     })();
     return () => {
       cancelled = true;
       task?.cancel();
     };
-  }, [pdf, page, width, cited, passage]);
+  }, [pdf, page, width]);
 
-  /* Amène le passage surligné à l'écran. */
+  /* Texte OCR : amène le passage surligné à l'écran. */
   useEffect(() => {
     firstMark.current?.scrollIntoView({ block: "center", behavior: "smooth" });
-  }, [boxes, text]);
+  }, [text]);
 
   const lines = text?.split("\n") ?? [];
   const markedLines = page === cited ? matchSegments(lines, passage) : lines.map(() => false);
@@ -184,7 +157,7 @@ export function DocumentViewer({
             <p className="meta">
               {mode === "text"
                 ? "texte OCR de la page (original indisponible)"
-                : `passage [${citation.n}] surligné sur la page citée`}
+                : `page citée par le passage [${citation.n}]`}
             </p>
           </div>
           <div className="flex items-center gap-1">
@@ -245,14 +218,6 @@ export function DocumentViewer({
             {mode === "pdf" ? (
               <div className={cn("relative bg-white shadow-sm transition-opacity", rendering && "opacity-60")}>
                 <canvas ref={canvas} className="block" />
-                {boxes.map((b, i) => (
-                  <span
-                    key={i}
-                    ref={i === 0 ? (el) => void (firstMark.current = el) : undefined}
-                    className="pointer-events-none absolute rounded-[2px] bg-brand/40 mix-blend-multiply"
-                    style={{ left: b.left - 1, top: b.top - 1, width: b.width + 2, height: b.height + 2 }}
-                  />
-                ))}
               </div>
             ) : null}
 

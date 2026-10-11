@@ -1,3 +1,4 @@
+import re
 from typing import Dict, List, Optional
 from langchain_core.documents import Document
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -20,11 +21,21 @@ class ResearchAgent:
         self.model_tools = self.model
         logger.info("ModelInference initialisé avec succès.")
 
+    # Phrases sur la démarche que le modèle écrit parfois en tête malgré la consigne
+    # (« I now have all the data needed. Let me calculate. », « J'ai maintenant toutes les… »).
+    _PREAMBLE = re.compile(
+        r"^\s*(?:(?:i now have|i have all|i've now|now i have|let me|j'ai maintenant|j'ai toutes|"
+        r"j'ai désormais|je peux maintenant|je vais (?:maintenant )?calculer|voici le calcul)[^\n]*\n+|"
+        r"-{3,}\s*\n+)+",
+        re.IGNORECASE,
+    )
+
     def sanitize_response(self, response_text: str) -> str:
         """
-        Nettoyer la réponse du LLM en supprimant les espaces inutiles.
+        Nettoyer la réponse du LLM : espaces inutiles, et phrases de démarche en tête de réponse.
         """
-        return response_text.strip()
+        cleaned = self._PREAMBLE.sub("", response_text.strip(), count=1).strip()
+        return cleaned or response_text.strip()
 
     RULES = """**RÈGLES STRICTES:**
 1. Répondez UNIQUEMENT avec des informations EXPLICITEMENT présentes dans le contexte
@@ -34,13 +45,59 @@ class ResearchAgent:
    chaque chiffre d'entrée avec son passage [n], donnez le résultat. Ne dites jamais qu'un
    ratio « n'est pas fourni » quand ses composantes le sont.
 3. Si l'information n'est PAS dans le contexte, répondez: "Cette information n'est pas disponible dans le document."
+   Réservez cette réponse au cas où le document ne dit RIEN du sujet. Une indication
+   qualitative suffit à répondre : « deleverage of store payroll » veut dire que les salaires
+   ont pesé plus lourd en % des ventes, donc qu'ils ont augmenté en % des ventes. Répondez alors
+   Oui / Non en citant cette phrase, et dites qu'aucun chiffre isolé n'est publié.
 4. Citez les chiffres et faits EXACTEMENT comme ils apparaissent, signe et unité compris
    (une valeur entre parenthèses dans un tableau financier est négative)
 5. N'ajoutez JAMAIS de connaissances externes
 6. Chaque passage du contexte est numéroté. Après CHAQUE affirmation, indiquez entre
    crochets le ou les numéros des passages qui la soutiennent : [1] ou [2][5].
    N'utilisez JAMAIS un numéro qui n'apparaît pas dans le contexte, et n'affirmez
-   rien qui ne puisse être rattaché à un passage."""
+   rien qui ne puisse être rattaché à un passage.
+7. Ratios financiers : si la question donne la formule, appliquez-la exactement et donnez un
+   seul résultat. Sinon, plusieurs conventions usuelles coexistent : donnez le résultat avec
+   chacune, sur une ligne chacune, en nommant la convention :
+   - quick ratio = (trésorerie et équivalents + placements à court terme + créances clients
+     nettes) / passifs courants ; et (actifs courants − stocks) / passifs courants ;
+   - rotation des stocks = coût des ventes / stock moyen (début et fin d'exercice) ; et coût
+     des ventes / stock de fin d'exercice ;
+   - ROA = résultat net / total actif moyen ; et résultat net / total actif de fin d'exercice ;
+   - couverture des intérêts = résultat opérationnel / charges d'intérêts ;
+   - une marge = l'indicateur / le chiffre d'affaires.
+   Écrivez chaque formule, puis son résultat, arrondi comme la question le demande. La
+   conclusion (Oui / Non, amélioration / dégradation) vaut pour toutes les conventions ; si
+   elles divergent, dites-le.
+8. Format : court et précis dès la première phrase.
+   - Question fermée (« Is… ? », « Does… ? », « Has… ? », « Did… ? », « Est-ce que… ? ») : la
+     réponse commence TOUJOURS par « Oui » ou « Non », jamais par une explication.
+   - La PREMIÈRE phrase contient la réponse précise elle-même : le nom, le chiffre, l'élément,
+     avec sa citation [n] — pas une phrase générale (« Oui, plusieurs événements ont… » ne
+     suffit pas : écrivez « Oui : le gain sur la création de la coentreprise Consumer
+     Healthcare (8,1 Md$) [3] »). Répondez au niveau demandé (le total avant le détail).
+   - Toute conclusion s'appuie sur AU MOINS UN CHIFFRE PRÉCIS du document, cité [n] : montant,
+     ratio, pourcentage, nombre, avec son unité et son exercice. Une explication sans chiffre
+     ne suffit pas.
+   - Ensuite, au plus 3 à 5 lignes : les éléments qui justifient la réponse (chiffres d'entrée
+     d'un calcul, formule), en puces courtes. Pas de titres, pas de sections, pas de résumé final.
+   - N'ajoutez pas d'éléments que la question ne demande pas.
+   - Commencez directement par la réponse : pas de phrase sur votre démarche ou vos recherches
+     (« J'ai maintenant toutes les données… »).
+9. Questions d'analyse (« la liquidité est-elle saine ? », « la marge s'améliore-t-elle ? »,
+   « l'entreprise est-elle capitalistique ? », « quel segment a le plus progressé ? ») : ne
+   vous contentez pas d'une appréciation. Calculez vous-même l'indicateur qui tranche (quick
+   ratio, marge, variation en %, capex / chiffre d'affaires, total actif / chiffre
+   d'affaires…), sur chaque exercice comparé, puis concluez par Oui / Non ou par l'élément
+   demandé. Posez le calcul : formule, chiffres d'entrée cités [n], résultat.
+10. Exactitude des chiffres : recopiez les chiffres du document tels quels (sans les arrondir
+   avant un calcul), vérifiez l'exercice et l'unité (millions ou milliards), et refaites chaque
+   opération avant d'écrire le résultat.
+11. Exercices fiscaux : un exercice se désigne souvent par l'année où il se TERMINE (« FY2023 »
+   = l'exercice clos en janvier 2023, que l'entreprise peut appeler « fiscal 2022 »). Si
+   l'exercice demandé n'existe pas sous ce nom dans le document, prenez celui qui se termine
+   dans l'année demandée et dites-le, au lieu de répondre que l'information n'est pas
+   disponible."""
 
     TOOLS_GUIDE = """**OUTILS:**
 Le contexte ci-dessous est ce que la recherche initiale a trouvé : des extraits, pas des pages.
@@ -208,7 +265,7 @@ Quand les utiliser — dans le doute, vérifiez : un appel d'outil coûte moins 
         """
         import hashlib
         from ..tools.tools import build_tools
-        from .search_agent import message_text, run_tool_loop
+        from .search_agent import message_text, run_tool_loop, strip_pseudo_calls
 
         budget = settings.GENERATOR_MAX_TOOL_CALLS if max_tool_calls is None else max_tool_calls
         seen_docs: List[Document] = list(documents)
@@ -246,7 +303,7 @@ Quand les utiliser — dans le doute, vérifiez : un appel d'outil coûte moins 
             logger.error(f"Erreur lors de l'inférence du modèle (outils): {e}")
             raise RuntimeError("Échec de la génération de réponse en raison d'une erreur de modèle.") from e
 
-        answer = message_text(loop["final"]).strip()
+        answer = strip_pseudo_calls(message_text(loop["final"]))
         draft_answer = self.sanitize_response(answer) if answer else \
             "Je ne peux pas répondre à cette question basée sur les documents fournis."
         full_context, citations = self.build_numbered_context(seen_docs)

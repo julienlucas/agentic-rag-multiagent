@@ -650,10 +650,22 @@ def main():
     usage = usage_cb.__enter__()
     try:
         with ThreadPoolExecutor(max_workers=max(1, args.workers)) as pool:
+            # Repère de progression : chaque question annonce son numéro au démarrage (« 12/65 »).
+            # Avec plusieurs workers, les fins arrivent dans le désordre ; les départs, eux, suivent l'ordre.
+            started_lock = threading.Lock()
+            started = [0]
+
+            def announced(ex, *args):
+                with started_lock:
+                    started[0] += 1
+                    n = started[0]
+                _log(f"▶ Question {n}/{len(dataset)} · {ex['id']} ({ex['doc_name']}) : {ex['question'][:90]}")
+                return evaluate_example(ex, *args)
+
             futures = {
                 pool.submit(
                     contextvars.copy_context().run,
-                    evaluate_example, ex, get_retriever(ex), modes,
+                    announced, ex, get_retriever(ex), modes,
                     workflow, researcher, judge, k_values, args.page_tolerance, page_store, relevancy,
                     args.reps,
                 ): ex
@@ -675,12 +687,12 @@ def main():
                     verdicts = "/".join(
                         ("ÉCHEC" if r.get("failed") else r.get("verdict", "ok")) for r in rows
                     )
-                    _log(f"[{done}/{len(dataset)}] {example['id']} ({example['doc_name']}) -> {verdicts}")
+                    _log(f"✓ terminée [{done}/{len(dataset)}] {example['id']} ({example['doc_name']}) -> {verdicts}")
                 except Exception as e:
                     errors.append({"id": example.get("id"), "mode": "*",
                                    "type": type(e).__name__, "error": root_cause(e),
                                    "rate_limited": is_rate_limit(e)})
-                    _log(f"[{done}/{len(dataset)}] {example['id']} ÉCHEC: {root_cause(e)[:160]}")
+                    _log(f"✗ terminée [{done}/{len(dataset)}] {example['id']} ÉCHEC: {root_cause(e)[:160]}")
 
                 if args.time_budget and time.time() - start > args.time_budget:
                     truncated = True

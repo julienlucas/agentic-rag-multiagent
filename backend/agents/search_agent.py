@@ -15,6 +15,7 @@ backend/tools/tools.py. Deux usages :
 Dans les deux cas, le contrat avec le reste du pipeline est le même : les RESEARCH_TOP_K
 passages initiaux sont intouchables, les outils ne peuvent qu'AJOUTER après eux.
 """
+import re
 from typing import Dict, List, Optional
 
 from langchain_core.documents import Document
@@ -58,6 +59,35 @@ def _tool_decision(bound, messages: List) -> AIMessage:
     return bound.invoke(messages)
 
 
+# Dernier tour, sans outils : le modèle doit conclure. Sans outils déclarés, langchain-aws réécrit
+# les appels d'outils de l'historique en texte (« [Called read_page with parameters: …] ») ; sans
+# consigne explicite, le modèle imitait ce format en guise de réponse (PepsiCo 2022, run
+# FinanceBench du 11 oct. 2026).
+FINAL_INSTRUCTION = (
+    "Le budget d'appels d'outils est épuisé : n'appelez plus aucun outil et n'écrivez aucun appel "
+    "d'outil dans votre texte. Rédigez maintenant votre réponse finale à la question, à partir de "
+    "ce que vous avez déjà lu, avec ses citations [n]."
+)
+_PSEUDO_CALL = re.compile(r"^\s*\[Called \w+ with parameters:.*$", re.MULTILINE)
+
+
+def strip_pseudo_calls(text: str) -> str:
+    """Retire les appels d'outils écrits en texte (« [Called read_page with parameters: …] »)."""
+    return _PSEUDO_CALL.sub("", text).strip()
+
+
+def _conclude(llm, messages: List) -> AIMessage:
+    """Tour final sans outils, relancé une fois si le modèle n'écrit qu'un appel d'outil en texte."""
+    messages.append(HumanMessage(content=FINAL_INSTRUCTION))
+    final = llm.invoke(messages)
+    if not strip_pseudo_calls(message_text(final)):
+        messages.append(final)
+        messages.append(HumanMessage(content=FINAL_INSTRUCTION))
+        final = llm.invoke(messages)
+    messages.append(final)
+    return final
+
+
 def run_tool_loop(llm, tools, messages: List, max_tool_calls: int, final_llm=None) -> Dict:
     """
     Boucle d'appels d'outils bornée. `messages` est complété en place.
@@ -93,12 +123,10 @@ def run_tool_loop(llm, tools, messages: List, max_tool_calls: int, final_llm=Non
                 output = f"Erreur outil: {type(e).__name__}"
             messages.append(ToolMessage(content=str(output), tool_call_id=call["id"]))
         if n_calls >= max_tool_calls:
-            final = (final_llm or llm).invoke(messages)
-            messages.append(final)
+            final = _conclude(final_llm or llm, messages)
             break
     if final is None:
-        final = (final_llm or llm).invoke(messages)
-        messages.append(final)
+        final = _conclude(final_llm or llm, messages)
     return {"tool_calls": n_calls, "final": final}
 
 
