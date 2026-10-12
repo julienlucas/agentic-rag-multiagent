@@ -80,6 +80,23 @@ Les 150 questions open source portent sur **84 documents** (64 10-K, 8 10-Q, 6 e
 
 Les questions retirées ont une preuve sur une page absente du texte indexé (voir ci-dessous).
 
+Le corpus complet fait **12 013 pages** (179 134 chunks) indexées ensemble dans un seul espace
+Qdrant ; le pilote, 3 048 pages (43 493 chunks).
+
+**Résultats du 12 octobre 2026** (Claude Sonnet 4.6, juge Qwen3 235B, avec outils) : **88,1 %** sur le
+corpus complet (119 / 135 questions jugées ; 4 bloquées par le quota Bedrock) et **92,3 %** sur le pilote
+(60 / 65). Sans outils, sur le pilote : 53,8 %. Détail, ablation et coût : README principal,
+« Évaluation FinanceBench ».
+
+**Références corrigées.** Deux réponses de référence de FinanceBench sont fausses, vérifié dans le
+document : elles sont corrigées par `REFERENCE_CORRECTIONS` (`prepare.py`), la référence d'origine
+restant lisible dans la justification.
+
+| Question | Référence FinanceBench | Corrigée |
+|---|---|---|
+| `financebench_id_00283` — reste à payer pour la séparation d'Upjohn | 77,78 (700/9) | 70 (10 % de 700 M$) |
+| `financebench_id_02419` — Pfizer scinde-t-il un segment au T2 2023 ? | Oui, Upjohn | Non : scission faite le 16 nov. 2020 |
+
 ### Source du texte : markdown recalé sur le PDF (par défaut)
 
 OCRiser les 84 documents (~12 000 pages) coûterait ~48 $. Le texte vient donc par défaut du dataset
@@ -109,6 +126,14 @@ Avant les embeddings, `prepare.py` vérifie que chaque preuve annotée se retrou
 page (±1) et liste les preuves introuvables. `--skip-embeddings` s'arrête là, sans appel Bedrock.
 Sur les 84 documents, 11 preuves restent signalées : leur texte est présent, mais recopié d'un
 tableau sous une autre forme (elles ne correspondent pas mieux au texte brut du PDF).
+
+**Tableaux corrompus dans le markdown.** Certains tableaux du markdown shhdwi sont décalés d'une
+ligne : sur la page de garde du 10-Q T2 2023 de 3M, la note 2026 se retrouvait cotée au Chicago Stock
+Exchange, et dans le tableau de croissance organique du 10-K 2022 de 3M, chaque segment portait le
+chiffre du suivant. Un document listé dans `FULL_OCR_DOCS` (`prepare.py`) est OCRisé en entier par
+Mistral OCR, même en source markdown (aujourd'hui `3M_2023Q2_10Q`, 92 pages, ~0,37 $). Après l'ajout
+d'un document à la liste, `--reindex DOC` le ré-indexe dans un espace qui le contient déjà : l'ancienne
+version est remplacée, et une copie depuis un autre espace remplace aussi la sienne.
 
 `--source ocr` reprend l'ancien chemin (Mistral OCR de tout le PDF). Chaque source a son propre
 espace Qdrant : passer la même option `--source` à `experiment.py`.
@@ -158,12 +183,14 @@ détail des étapes : README principal, « Récupérer et indexer le jeu d'éval
 
 | Flag | Effet |
 |---|---|
+| `--dataset NOM` | Dataset LangSmith évalué : « agentic-search · FinanceBench (pilot 20) », « … (84 docs) »… |
 | `--mode baseline\|agentic\|both` | Défaut `both` (mesure l'apport de la boucle agentique) |
+| `--ids ID1,ID2` | Seulement ces questions (`financebench_id`), sur l'index du corpus entier : relancer les échecs d'un run pour quelques dizaines de centimes |
 | `--workers N` | Questions en parallèle (défaut 3). **Passer à 1 avec une clé Cohere trial** (~10 req/min) |
 | `--max-items N` | Limite le nombre de questions (test rapide) |
 | `--no-judge` | Désactive le juge LLM (pas de métriques d'accuracy) |
 | `--reps N` | Rejoue la génération N fois par question (retrieval une seule fois) : ajoute exactitude moyenne, pass^k et stabilité du verdict. Les métriques du protocole restent calculées sur la 1re répétition. Coût × N |
-| `--time-budget S` | Arrêt propre au-delà de S secondes, avec résultats partiels (défaut 600) |
+| `--time-budget S` | Arrêt propre au-delà de S secondes, avec résultats partiels (défaut 600 ; **0 = sans limite**, nécessaire au-delà de ~45 questions) |
 | `--per-doc` | Un index par document au lieu de l'index combiné |
 | `--page-tolerance N` | Écart de pagination toléré entre PDF annoté et OCR (défaut 1) |
 | `--verbose` | N'étouffe pas les logs de debug du pipeline |
@@ -218,7 +245,36 @@ pas sur le score qu'il donne :
 uv run python backend/evals/financebench/annotation.py queue --experiment "<expérience agentic>" --size 30
 # Après annotation (clé human_correct) : accord de chaque juge candidat avec l'humain
 uv run python backend/evals/financebench/annotation.py agreement --project "<projet d'annotation>"
+# Annotations → exemples du juge (judge_examples.json, versionné)
+uv run python backend/evals/financebench/annotation.py examples --project "<projet d'annotation>"
 ```
+
+Ce que le juge reçoit, en plus de la question, de la référence et de la réponse :
+
+- **Les réponses annotées comme exemples** (`judge_examples.json`), verdict et commentaire de
+  l'annotateur compris, **sauf celle de la question qu'il note** : sinon il recopierait le verdict
+  humain, et l'accord mesuré par `agreement` ne vaudrait plus rien. Un commentaire qui dit *pourquoi*
+  pèse plus qu'un verdict seul.
+- **Une rubrique au critère de l'annotateur** : CORRECT si l'élément demandé est présent et les
+  chiffres cités justes (écart d'arrondi ≤ 1 %) ; une granularité différente, plus de précision ou un
+  détail secondaire inexact ne rendent pas faux ; INCORRECT pour un mauvais chiffre, un autre élément,
+  une conclusion inverse, ou une question fermée sans Oui / Non tranché.
+- **Une grille à remplir avant le verdict** (élément demandé, présent, chiffres justes, question
+  fermée tranchée) : le verdict en découle, au lieu d'une comparaison d'un bloc avec la référence.
+- **Les passages cités par la réponse en premier**, sur 16 000 caractères : coupé à 6 000 dans
+  l'ordre de récupération, le contexte perdait les pages lues par les outils, et le juge prenait des
+  chiffres présents dans le document pour des inventions.
+
+**Contrôle numérique.** Quand la référence est un nombre seul (9 questions sur 65 dans le pilote),
+le calcul tranche : si les deux premières lignes de la réponse contiennent la même valeur, à
+l'arrondi de la référence ou à 1 % près, éventuellement à une autre échelle (millions / milliards,
+ratio / pourcentage), le verdict est CORRECT. Seulement dans ce sens : une valeur exprimée autrement
+reste à l'appréciation du juge.
+
+Mesuré sur les 10 réponses annotées le 11 octobre : le juge reste plus strict que l'annotateur sur
+2 à 3 réponses justes sur le fond (granularité, détail secondaire), et n'en valide jamais une fausse.
+Il varie d'un run à l'autre sur ces cas limites : il faut davantage d'annotations commentées pour
+le stabiliser.
 
 - **`accuracy`** — réponses `CORRECT` (tolérante aux écarts de format, d'unité et d'arrondi).
 - **`hallucination_rate`** — réponses `INCORRECT` : le système répond avec assurance **et** se
@@ -229,8 +285,10 @@ uv run python backend/evals/financebench/annotation.py agreement --project "<pro
 Chaque taux est publié avec son **comptage brut** (`counts`) et son **intervalle de confiance à
 95 %** (Wilson, `*_ci95`), et le tableau de synthèse les affiche.
 
-> ⚠️ **26 questions, c'est peu.** L'IC95 d'une accuracy autour de 80 % fait environ **30 points de
-> large** : 20/26 et 22/26 ne sont pas distinguables. Une différence d'une ou deux questions entre
+> ⚠️ **Peu de questions, c'est du bruit.** L'IC95 d'une accuracy autour de 85 % fait environ
+> **30 points de large sur 26 questions, 17 sur 65 et 11 sur 135** : d'un run à l'autre sur le même code,
+> le pilote a varié de 72 à 83 %. Comparer deux runs question par question (gagnées / perdues), pas sur
+> le seul pourcentage. Une différence d'une ou deux questions entre
 > deux configurations n'est pas une amélioration, c'est du bruit — le run l'écrit explicitement en
 > fin de rapport. Ne citer un gain que s'il tient sur plusieurs questions **et** que les intervalles
 > ne se recouvrent quasiment plus.
@@ -328,28 +386,29 @@ Un tableau de synthèse est aussi affiché en fin de run.
 
 ## Coût d'un run
 
-Le tableau de fin de run affiche le coût, calculé à partir des tokens réellement facturés et de
-la grille publique de La Plateforme et de Cohere (`cost.py`, avec la date de relevé et le taux de
-change utilisés). Ce n'est pas une estimation : ce sont les `usage` renvoyés par chaque appel.
+Le tableau de fin de run affiche le coût, calculé à partir des tokens réellement facturés et des
+grilles publiques (`cost.py`, avec la date de relevé et le taux de change utilisés). Ce n'est pas une estimation : ce sont les `usage` renvoyés par chaque appel.
 
-Run complet du 5 septembre 2026 (26 questions, `--mode both`, juge compris, 260 s) :
+Runs du 12 octobre 2026, avec outils seul (`--mode agentic`), Claude Sonnet 4.6 sur Bedrock :
 
-| Poste | Volume | Coût |
-|---|---|---|
-| `mistral-large-latest` (génération des deux modes + juge) | 421 872 tokens en entrée, 29 129 en sortie | 0,25 $ |
-| `mistral-small-latest` (sous-agents) | 29 862 en entrée, 137 en sortie | 0,005 $ |
-| Cohere `rerank-v4.0-pro` | 34 recherches (une par appel, ≤ 40 documents de ~300 tokens) | 0,09 $ |
-| **Total** | | **≈ 0,35 $ ≈ 0,30 €** |
+| Run | Claude Sonnet 4.6 | Haiku 4.5 | Cohere Rerank 3.5 | Total |
+|---|---|---|---|---|
+| Pilote, 65 questions (595 s) | 1 151 565 tokens en entrée, 58 351 en sortie : 4,33 $ | 0,09 $ | 95 recherches : 0,19 $ | **4,61 $** |
+| Corpus complet, 139 questions (2 080 s) | 2 464 547 en entrée, 102 418 en sortie : 8,93 $ | 0,27 $ | 200 recherches : 0,40 $ | **9,60 $** |
 
-Les tokens Mistral sont ceux facturés (`usage` de chaque réponse). Les recherches Cohere sont
-comptées au tarif public par appel tenté : pendant cette mesure, la clé Cohere avait atteint son
-plafond mensuel de facturation (HTTP 402) et le reranker a rendu l'ordre du retriever hybride —
-le run du 4 septembre, celui des chiffres publiés, a subi le même plafond sur ses 14 derniers
-appels Rerank seulement (192 réussis avant).
+Soit ≈ 0,07 $ par question, ≈ 18 000 tokens lus. Le juge Qwen3 235B et Ministral 3 14B (answer
+relevancy) ne sont pas dans la grille de `cost.py` : listés « non chiffrés », quelques dizaines de
+centimes par run. `--mode both` ajoute la baseline sans outils, ≈ 3 000 tokens par question (≈ +1 $ sur
+le pilote).
+
+Le quota quotidien de tokens de Claude Sonnet 4.6 sur Bedrock se compte sur le compte AWS : plusieurs
+runs complets dans la journée l'épuisent (« ThrottlingException … Too many tokens per day »), et les
+questions concernées sont listées en échec. Les relancer le lendemain avec `--ids`, ou demander une
+hausse dans AWS Service Quotas.
 
 Ne sont pas comptés les embeddings de requête pendant le run (quelques dizaines de tokens par
-recherche, négligeables) et la préparation, payée une fois : l'OCR des 1 074 pages et l'embedding
-des ~12 400 chunks, soit 4,4 $ ≈ 3,8 € (OCR à 4 $ les 1 000 pages, ~900 k tokens embeddés à 0,10 $/M) à la même grille.
+recherche, négligeables) et la préparation, payée une fois : les embeddings des chunks (le texte
+markdown est gratuit) et l'OCR des documents de `FULL_OCR_DOCS` (4 $ les 1 000 pages).
 
 ## Garde-fous de régression
 

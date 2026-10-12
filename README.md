@@ -1,19 +1,23 @@
-# RAG Agentique évalué ~96 % de réponses correctes sur un sous-ensemble de FinanceBench
-![RAG Agentique multi-agent Header](./static/header-c.webp)
+# RAG agentique évalué à 88 % de réponses correctes sur FinanceBench (84 rapports, 12 000 pages)
+![RAG Agentique multi-agent Header](./static/header.png)
 
 Si vous appréciez, ajoutez une ⭐ au repo pour soutenir mon travail. 🙏
 
 Ce système RAG combine un récupérateur hybride (BM25 + embeddings dans Qdrant, reranking Cohere), un routage
-par document et un modèle de réponse équipé d'outils (`search` / `grep` / `read_page` / `open_doc` / `navigate`), sur des
-rapports SEC de 150 à 260 pages. Il est **mesuré** sur
-[FinanceBench](https://github.com/patronus-ai/financebench), le benchmark utilisé par Mistral pour
-évaluer Agentic Search (150 questions). Le résultat qui compte est l'ablation, à retrieval
-strictement identique : **96,2 % de réponses correctes avec les outils, contre 76,9 % sans**, et
-des hallucinations qui passent de 15,4 % à 3,8 %. Dix-neuf points gagnés par l'agent équipé, sur
-le même index et les mêmes 10 passages initiaux. Le run complet coûte environ 1 € à relancer.
-Tous les chiffres sont vérifiables question par question dans l'expérience LangSmith
-« Claude Sonnet 5 (API Anthropic, Chroma) · agentic » du dataset FinanceBench —
-[résultats, coût et limites](#évaluation-financebench-documents-financiers-difficiles).
+par document et un modèle de réponse équipé d'outils de navigation (`search` / `grep` / `read_page` / `open_doc` /
+`navigate`). Il est **mesuré** sur [FinanceBench](https://github.com/patronus-ai/financebench) (Patronus AI) :
+les **84 rapports SEC** des questions open source (10-K, 10-Q, résultats, 8-K), soit **12 000 pages indexées
+ensemble** dans un seul index.
+
+- **88,1 % de réponses correctes** sur le corpus complet (119 sur 135 questions jugées), 11,1 % de
+  réponses fausses, 1 refus ; **92,3 %** sur le pilote des 20 rapports qui portent le plus de questions.
+- **Les outils de navigation font gagner 29 points pour 4 secondes de plus** : à retrieval identique, sur
+  les mêmes 65 questions, 53,8 % de réponses correctes sans outils, 83,1 % avec ; −63 % de réponses
+  fausses ou refusées.
+- **≈ 0,07 $ par question** (Claude Sonnet 4.6 sur Bedrock, ≈ 18 000 tokens).
+
+Tous les chiffres sont vérifiables question par question dans les expériences LangSmith du
+12 octobre 2026 — [résultats, coût et limites](#évaluation-financebench-documents-financiers-difficiles).
 
 ## Architecture IA à la base avant améliorations
 
@@ -23,24 +27,24 @@ Tous les chiffres sont vérifiables question par question dans l'expérience Lan
 Évalue si les passages récupérés répondent réellement à la question (CAN_ANSWER / PARTIAL / NO_MATCH). Son verdict ne bloque plus la génération : il est transmis au modèle de réponse comme indice (« le contexte initial a été jugé partiel, cherchez ce qui manque »).
 
 ### 2. **Agent de Recherche et de réponse, avec outils**
-Le modèle de génération reçoit les 10 meilleurs passages et les [cinq outils](#les-outils) décrits plus bas. Il répond directement si le contexte suffit ; sinon il cherche — en voyant chaque résultat avant de décider du suivant, 5 appels au plus — et répond **dans la même conversation** : le modèle qui cherche est celui qui répond, comme dans l'[Agentic Search](https://mistral.ai/news/agentic-search/) de Mistral. Les outils sont disponibles sur **toutes** les questions ; le mode conditionnel (agent de recherche séparé, ou réécriture de la question) reste disponible pour comparaison via `GENERATOR_TOOLS_ENABLED` et `CORRECTIVE_MODE`.
+Le modèle de génération reçoit les 10 meilleurs passages et les [cinq outils](#les-outils) décrits plus bas. Il répond directement si le contexte suffit ; sinon il cherche — en voyant chaque résultat avant de décider du suivant, 5 appels au plus — et répond **dans la même conversation** : le modèle qui cherche est celui qui répond. Les outils sont disponibles sur **toutes** les questions ; le mode conditionnel (agent de recherche séparé, ou réécriture de la question) reste disponible pour comparaison via `GENERATOR_TOOLS_ENABLED` et `CORRECTIVE_MODE`.
 
 ### 3. **Génération contrainte**
-La réponse ne s'appuie que sur les passages numérotés — initiaux ou ramenés par les outils — avec une citation `[n]` après chaque affirmation, et refuse quand l'information n'y est pas. Deux règles de prompt tirées des runs FinanceBench : un ratio ou une marge dont les composantes sont dans le contexte se **calcule** (formule, chiffres cités, résultat) ; et « non disponible » ne s'écrit qu'après un `grep` sans résultat.
+La réponse ne s'appuie que sur les passages numérotés — initiaux ou ramenés par les outils — avec une citation `[n]` après chaque affirmation, et refuse quand l'information n'y est pas. Les règles du prompt (`backend/agents/research_agent.py`) sont des principes valables pour tout document : la réponse précise dès la première phrase, Oui / Non tranché pour une question fermée, une seule réponse, le calcul de ce qui se calcule, la section consacrée au sujet plutôt qu'une mention en passant, « non disponible » seulement si le document ne dit rien du sujet. Les conventions propres aux rapports financiers (ratios, net income attribuable, litiges, exercices fiscaux) forment un bloc à part, ajouté seulement quand le contexte contient un rapport financier.
 
 ## Cet agent a des outils à dispo
 
-Cinq opérations façon système de fichiers — les cinq de l'[Agentic Search de Mistral](https://mistral.ai/fr/news/agentic-search/) (search, open, navigate, read, grep) —, données au modèle de réponse, définies dans `backend/tools/tools.py`. Les pages OCR sont conservées entières (`backend/retriever/page_store.py`) à côté des chunks : les chunks servent à *trouver*, les pages à *lire*.
+Cinq opérations façon système de fichiers, données au modèle de réponse, définies dans `backend/tools/tools.py`. Les pages OCR sont conservées entières (`backend/retriever/page_store.py`) à côté des chunks : les chunks servent à *trouver*, les pages à *lire*.
 
 | Outil | Ce qu'il fait |
 |---|---|
 | `search(query, doc)` | Le retrieval hybride du pipeline (BM25 + vecteurs dans Qdrant, routage, rerank Cohere), relancé avec une nouvelle requête, optionnellement restreint à un document. Renvoie 8 extraits avec document et page. |
-| `grep(pattern, doc)` | Occurrences littérales d'un motif (regex, insensible à la casse), page par page, sur tout le document. Exhaustif : 0 résultat permet d'affirmer qu'un terme n'y figure pas. |
+| `grep(pattern, doc)` | Occurrences littérales d'un motif (regex, insensible à la casse), page par page, sur tout le document. Exhaustif : 0 résultat permet d'affirmer qu'un terme n'y figure pas. Sans `doc`, reste dans les documents ciblés par le routeur. |
 | `read_page(doc, page, end_page)` | La page entière telle que l'OCR l'a produite, tableau compris — ce qu'un chunk de 1 200 caractères ne montre jamais. `end_page` lit 2 à 3 pages d'un coup pour un tableau à cheval. |
 | `open_doc(doc)` | Le plan du document — PART, ITEM, états financiers consolidés, notes — avec la page de chaque section, et son nombre de pages. Sans `doc`, la liste des documents. Les niveaux d'en-têtes de l'OCR n'étant pas fiables (200 à 550 titres par 10-K), le plan retient les repères structurels par leur intitulé. |
 | `navigate(doc, section)` | La page où commence une section, cherchée dans les **titres** seulement (« consolidated balance sheet », « income taxes ») : là où `grep` renvoie aussi le sommaire et les renvois, `navigate` pointe l'état financier lui-même. |
 
-`open_doc` et `navigate` indiquent où lire sans ramener de passage ; le modèle enchaîne avec `read_page`. Contrairement à Mistral, aucun document n'est « ouvert » entre deux appels : chaque outil reçoit `doc`. Chaque passage ramené par `search` ou `read_page` reçoit un numéro `[n]`, affiché dans le résultat, que la réponse cite comme les autres. Les 10 passages initiaux gardent leurs numéros : les outils ne peuvent qu'**ajouter** après eux. Le rapport de vérification renvoyé avec chaque réponse liste les appels effectués.
+`open_doc` et `navigate` indiquent où lire sans ramener de passage ; le modèle enchaîne avec `read_page`. Aucun document n'est « ouvert » entre deux appels : chaque outil reçoit `doc`. Chaque passage ramené par `search` ou `read_page` reçoit un numéro `[n]`, affiché dans le résultat, que la réponse cite comme les autres. Les 10 passages initiaux gardent leurs numéros : les outils ne peuvent qu'**ajouter** après eux. Le rapport de vérification renvoyé avec chaque réponse liste les appels effectués.
 
 ### Le système inclut un retriever hybride pour maximiser la pertinence
 - **Algo BM25 + Embeddings, côté Qdrant** : chaque chunk porte un vecteur sparse BM25 (précision lexicale) et un vecteur dense (sens contextuel) ; les deux recherches sont fusionnées par RRF dans une seule requête Qdrant. Métrique explicite (`VECTOR_SPACE = "cosine"`).
@@ -179,7 +183,7 @@ qu'un jeton signé qui lie la trace à son espace : en production, définir `DJA
    rejetée et le commentaire en métadonnées. `uv run python backend/evals/feedback/collect.py` rattrape les
    votes manqués (redémarrage du serveur, LangSmith indisponible), sans doublon.
    `FEEDBACK_AUTO_COLLECT=false` coupe le rangement automatique.
-2. **Analyser** : chaque 👎 reçoit une cause d'échec proposée par le juge (Mistral, pas Claude) :
+2. **Analyser** : chaque 👎 reçoit une cause d'échec proposée par le juge (Qwen3 235B, pas Claude) :
    `mauvais_document`, `passage_manquant`, `erreur_lecture`, `erreur_calcul`, `refus_a_tort`,
    `hors_corpus`, `forme` ou `autre`. Elle est aussi posée en feedback `failure_category` sur la trace,
    et `collect.py` affiche la répartition de ce qu'il rattrape. La cause dit où corriger : routage, retrieval, prompt ou outils.
@@ -213,7 +217,9 @@ raisonnement sont sur la trace notée.
 
 **2. Les expériences** — *à la main, avant de merger un changement*
 
-FinanceBench (ci-dessous) : 26 questions, avec et sans outils, ~1,20 $. `--reps 3` rejoue
+FinanceBench (ci-dessous) : le pilote de 20 rapports (65 questions) avec et sans outils, ~6 $ ;
+le corpus de 84 rapports avec outils, ~10 $. `--ids` ne relance que les questions listées.
+`--reps 3` rejoue
 chaque génération 3 fois et ajoute la stabilité : exactitude moyenne, part des questions
 justes à chaque fois (pass^k), stabilité du verdict.
 
@@ -226,95 +232,103 @@ exécution (1 = bonne réponse en un minimum d'appels d'outils, 0 = réponse fau
 
 ## Évaluation FinanceBench (documents financiers difficiles)
 
-L'évaluation, sur [FinanceBench](https://github.com/patronus-ai/financebench) (Patronus AI) —
-le benchmark utilisé par [Mistral pour évaluer Agentic Search](https://mistral.ai/news/agentic-search/) :
-QA sur des filings SEC de 150 à 260 pages, denses en tableaux.
+L'évaluation, sur [FinanceBench](https://github.com/patronus-ai/financebench) (Patronus AI) :
+QA sur des filings SEC denses en tableaux, où chaque chiffre apparaît des dizaines de fois.
 
 ### Récupérer et indexer le jeu d'évaluation (une seule fois)
 
 Rien n'est livré dans le dépôt : ni PDF, ni questions, ni index. Une seule commande refait tout
-à partir des sources publiques de Patronus AI, et range chaque morceau à sa place.
+à partir des sources publiques, et range chaque morceau à sa place.
 
 **1. Prérequis dans le `.env`** — le script les vérifie avant tout appel payant :
 
 | Variable | Sert à |
 |---|---|
 | `LANGSMITH_API_KEY` | écrire le dataset de questions dans LangSmith |
-| `MISTRALAI_API_KEY` | l'OCR des PDF (Mistral OCR) |
+| `MISTRALAI_API_KEY` | l'OCR des documents listés dans `FULL_OCR_DOCS` (Mistral OCR) |
 | `QDRANT_URL`, `QDRANT_API_KEY` | l'index persistant (sans `QDRANT_URL`, Qdrant tourne en mémoire et l'index serait perdu) |
 | AWS (`MODEL_PROVIDER=bedrock`) ou `COHERE_API_KEY` (`direct`) | les embeddings Cohere Embed v4 des chunks |
 
-**2. Lancer la préparation** (~10-20 min) :
+**2. Lancer la préparation** :
 ```bash
-uv run python backend/evals/financebench/prepare.py --clean
+uv run python backend/evals/financebench/prepare.py --docs all     # 84 rapports, 139 questions
+uv run python backend/evals/financebench/prepare.py --docs pilot   # 20 rapports, 65 questions
 ```
 
 **3. Ce qui se passe** :
 
-1. **Téléchargement** des 150 questions open source et des 4 rapports 10-K du protocole (AMD,
-   American Express, Boeing, PepsiCo) depuis le [GitHub de FinanceBench](https://github.com/patronus-ai/financebench).
-2. **Dataset LangSmith** « agentic-search · FinanceBench » : les 26 questions des 4 rapports, avec réponse de
-   référence, pages et passages de preuve. C'est la seule source des questions pour les expériences.
-3. **OCR** page par page (Mistral OCR, ~1 070 pages), puis découpage parent / enfant par page.
+1. **Téléchargement** des 150 questions open source et des rapports depuis le
+   [GitHub de FinanceBench](https://github.com/patronus-ai/financebench).
+2. **Texte page par page** : le markdown OCR du dataset Hugging Face
+   [`shhdwi/financebench-markdown`](https://huggingface.co/datasets/shhdwi/financebench-markdown), recalé sur
+   les pages du PDF (`markdown_corpus.py`). Un document dont les tableaux y sont corrompus est OCRisé en
+   entier par Mistral OCR (`FULL_OCR_DOCS` dans `prepare.py` : aujourd'hui le 10-Q T2 2023 de 3M).
+3. **Dataset LangSmith** (« agentic-search · FinanceBench (84 docs) » ou « (pilot 20) ») : questions,
+   réponses de référence, pages et passages de preuve. Les questions dont la preuve tombe sur une page
+   absente du texte sont retirées (11 sur 150). Deux références FinanceBench fausses, vérifiées dans le
+   document, sont corrigées (`REFERENCE_CORRECTIONS`, Pfizer / Upjohn).
 4. **Indexation Qdrant** dans les collections d'évaluation `eval_chunks` (chunks + embeddings dense
-   et BM25) et `eval_pages` (pages OCR, pour les outils grep / read_page), séparées des documents
-   des utilisateurs (`chunks` / `pages`).
-5. Avec `--clean`, les PDF et le cache local sont supprimés : tout est dans Qdrant et LangSmith.
+   et BM25) et `eval_pages` (pages, pour les outils grep / read_page), séparées des documents des
+   utilisateurs (`chunks` / `pages`).
 
-**Coût, payé une fois** (estimation) : ~4,30 $ d'OCR (1 070 pages à 0,004 $), plus quelques dizaines
-de centimes d'embeddings. Relancer le script ne repaie rien : un rapport déjà présent dans l'index
-Qdrant est sauté (ni téléchargement, ni OCR, ni embeddings). `--force` reconstruit tout.
+Relancer le script ne repaie rien : un rapport déjà présent dans l'index est sauté.
+`--reindex DOC` ré-indexe un document dont le texte a changé ; l'ancienne version est remplacée.
 
-**Variantes** : `--docs extended` prépare le jeu étendu (18 rapports, 70 questions, dataset
-« agentic-search · FinanceBench (extended) », ~2 000 pages d'OCR en plus) ; `--docs AMD_2022_10K,BOEING_2022_10K` un
-sous-ensemble (dataset « agentic-search · FinanceBench (custom) »).
-
-**Lancer l'évaluation (5-10 min)** :
+**Lancer l'évaluation** :
 ```bash
-uv run python backend/evals/experiment.py --mode both
+uv run python backend/evals/experiment.py --mode agentic --dataset "agentic-search · FinanceBench (84 docs)" --time-budget 0
+uv run python backend/evals/experiment.py --mode both --dataset "agentic-search · FinanceBench (pilot 20)" --time-budget 0
 ```
 
-**Résultats** — run du 28 septembre 2026, expérience LangSmith « Claude Sonnet 5 (API Anthropic,
-Chroma) » du dataset FinanceBench (aucun résultat n'est conservé en local).
-Modèle de raisonnement : Claude Sonnet 5. 26 questions, 4 filings, index combiné, juge LLM
-(Mistral Large) au protocole du benchmark, comptages bruts.
-Les deux premières lignes sont l'ablation : même index, même retrieval, mêmes 10 passages
-initiaux, la seule différence est le modèle de réponse avec ou sans outils.
+### Résultats (12 octobre 2026)
 
-| | Correctes | Hallucinations | Refus |
+Modèle de réponse : Claude Sonnet 4.6 sur Bedrock, Claude Haiku 4.5 pour les sous-agents. Juge :
+Qwen3 235B, calibré sur annotation humaine. Tous les rapports d'un jeu sont dans le même index : le
+système doit d'abord trouver le bon rapport. Comptages bruts entre parenthèses.
+
+| | Correctes | Fausses | Refus |
 |---|---|---|---|
-| Ce RAG, **avec** les outils (search / grep / read_page) | **96,2 % (25/26)** | 3,8 % (1/26) | 0 |
-| Ce RAG, **sans** les outils (même retrieval, une seule génération) | 76,9 % (20/26) | 15,4 % (4/26) | 2 |
-| Mistral Agentic Search — repère externe (Medium 3.5, 150 questions) | 86 % | | |
-| Outils RAG juridiques commerciaux (étude Stanford) | 42-65 % | 17-33 % | |
+| **Corpus complet**, avec outils : 84 rapports, 12 000 pages, 135 questions jugées | **88,1 % (119)** | 11,1 % (15) | 0,7 % (1) |
+| **Pilote**, avec outils : 20 rapports, 3 048 pages, 65 questions | **92,3 % (60)** | 7,7 % (5) | 0 |
 | RAG naïf — papier FinanceBench (GPT-4-Turbo 2023, benchmark complet) | ~19 % | 81 % de réponses fausses ou refusées | |
 
-Aucune erreur technique sur ce run : les 26 questions sont jugées dans les deux modes. Le run
-précédent, sur Mistral Large (4 septembre 2026, expérience « Mistral Large (run du 4 sept. 2026) »), donnait
-83,3 % (20/24) avec outils et 65,4 % sans. Le retrieval mesuré diffère aussi entre les deux runs
-(recall@5 : 20 % → 42 %) : l'écart ne mesure donc pas le seul effet du modèle.
+Expériences LangSmith : « eu.anthropic.claude-sonnet-4-6 · agentic · 2026-10-12 14:26 » (84 rapports) et
+« … · 13:46 » (pilote). Sur les 139 questions du corpus complet, 4 n'ont pas abouti, bloquées par le
+quota quotidien de tokens Bedrock : elles ne sont pas comptées. Trois échecs viennent d'un index
+de 84 rapports pas encore mis à jour lors du run (références Pfizer corrigées, 10-Q de 3M ré-OCRisé),
+corrigé depuis par `prepare.py --docs all --reindex 3M_2023Q2_10Q`. L'intervalle de confiance à 95 %
+de l'exactitude va de 82 à 93 %.
 
-Les lignes Mistral, Stanford et papier FinanceBench portent sur des échantillons différents de ce
-RAG : ce sont des repères d'ordre de grandeur, pas un match à armes égales. Avec 26 questions,
-l'intervalle de confiance à 95 % fait une trentaine de points : la comparaison qui tient est celle
-des deux premières lignes, pas l'écart avec Mistral.
+**Ce que les outils de navigation apportent.** Ablation à retrieval identique, même run (« … · 13:16 »),
+pilote de 20 rapports, mêmes 65 questions, même modèle ; la seule différence est le modèle de réponse
+avec ou sans outils :
 
-**Coût.** Le runner compte les tokens facturés de chaque appel (génération, sous-agents, juge LLM)
-et les unités de recherche Cohere, et écrit le total dans `financebench_summary.json` (`cost`).
-Mesuré le 28 septembre 2026 sur un run complet (26 questions, les deux modes, juge LLM compris) :
-
-| Poste | Volume | Coût |
+| | Sans outils | Avec outils |
 |---|---|---|
-| Claude Sonnet 5 (réponse avec et sans outils) | 371 k tokens en entrée, 31 k en sortie | 1,05 $ |
-| Mistral Large (juge) | 144 k tokens en entrée, 5 k en sortie | 0,08 $ |
-| Mistral Small (sous-agents) | 61 k tokens | 0,01 $ |
-| Cohere Rerank 4 Pro | 30 recherches à 0,0025 $ | 0,07 $ |
-| **Un run complet** (10 minutes, 1 worker) | | **≈ 1,21 $ ≈ 1,04 €** |
-| Préparation, une seule fois (OCR de 1 074 pages, embedding de 12 400 chunks) | | 4,4 $ ≈ 3,8 € |
+| Réponses correctes | 53,8 % (35) | 83,1 % (54) |
+| Réponses fausses ou refusées | 30 (15 fausses, 15 refus) | 11 (11 fausses, aucun refus) |
+| Génération par question | 7,0 s | 11,0 s |
+| Tokens lus par question (Sonnet 4.6) | ≈ 3 000 (estimation) | ≈ 18 000 |
 
-Grilles publiques Anthropic (28 septembre 2026), La Plateforme et Cohere (5 septembre 2026), 1 $ = 0,86 €. Autrement dit :
-l'évaluation complète, reproductible, sur quatre 10-K, se relance pour le prix d'un café, et le
-chiffre de précision qu'on annonce à un client est re-mesurable à chaque changement de prompt.
+Soit **+29 points pour +4 secondes**, et **−63 % de réponses fausses ou refusées**. Face à une réponse en
+une seule passe, l'agent lit des pages entières : il consomme plus de tokens, c'est le prix de la précision.
+
+**Ce qui échoue encore** (corpus complet) : des conventions de calcul que les références n'appliquent
+pas toujours de la même façon (quick ratio, fonds de roulement, rotation des stocks), le routage quand la
+question nomme mal l'entreprise parmi 84, quelques erreurs de lecture de tableau, et trois questions à
+référence ambiguë (CVS, Best Buy, Ulta).
+
+**Coût.** Le runner compte les tokens facturés de chaque appel et les unités de recherche Cohere, et
+écrit le total dans le résumé du run (LangSmith, tag `eval`). Runs du 12 octobre 2026, avec outils seul :
+
+| Run | Claude Sonnet 4.6 | Haiku 4.5 + Cohere Rerank | Total |
+|---|---|---|---|
+| Pilote, 65 questions (10 min) | 1,15 M tokens en entrée, 58 k en sortie : 4,33 $ | 0,28 $ | **4,61 $** |
+| Corpus complet, 139 questions (35 min) | 2,46 M tokens en entrée, 102 k en sortie : 8,93 $ | 0,67 $ | **9,60 $** |
+
+Soit ≈ 0,07 $ par question. Le juge Qwen3 et Ministral (answer relevancy) ne sont pas chiffrés par le
+script : quelques dizaines de centimes de plus par run. `--mode both` ajoute la baseline sans outils
+(≈ +1 $ sur le pilote). Grilles Bedrock (3 $ / 15 $ par million de tokens pour Sonnet 4.6), 1 $ = 0,86 €.
 
 
 Détail du protocole, options et notes d'implémentation : [`backend/evals/financebench/README.md`](backend/evals/financebench/README.md).
