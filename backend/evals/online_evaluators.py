@@ -44,7 +44,7 @@ SAMPLING_RATE = 1.0  # toutes les traces : le trafic est faible, ~0,01-0,04 $ pa
 
 TOOL_SELECTION_PROMPT = """Tu évalues une décision d'un agent qui répond à des questions sur des documents.
 À chaque tour, l'agent choisit : appeler un de ses outils de recherche (search, grep, read_page,
-open_document, navigate) pour trouver ce qui manque, ou répondre avec les passages qu'il a déjà.
+open_doc, navigate) pour trouver ce qui manque, ou répondre avec les passages qu'il a déjà.
 Le message système décrit les outils et le budget d'appels.
 
 [DÉBUT DES DONNÉES]

@@ -1,0 +1,82 @@
+[
+ {
+  "id": "financebench_id_00216",
+  "question": "Does Verizon have a reasonably healthy liquidity profile based on its quick ratio for FY 2022? If the quick ratio is not relevant to measure liquidity, please state that and explain why.",
+  "reference": "No. The quick ratio was approximately 0.54 for Verizon. It indicated that Verizon does not have a healthy liquidity profile.",
+  "answer": "**Quick ratio FY 2022 = ~0.54 — below the conventional threshold of 1.0, but this metric has limited relevance for Verizon as explained below.**\n\n**Calculation (formula: (Cash & equivalents + short-term investments + accounts receivable, net) / current liabilities):**\n\n- Cash and cash equivalents: **$2,605M** [11]\n- Short-term investments: **$0** (none listed separately on the balance sheet) [11]\n- Accounts receivable, net: **$24,506M** [11]\n- Total current liabilities: **$50,171M** [11]\n\n→ Quick ratio = ($2,605 + $0 + $24,506) / $50,171 = **$27,111M / $50,171M ≈ 0.54**\n\n---\n\n**Why the quick ratio has limited relevance here:**\n\n1. **Nature of receivables:** Verizon's accounts receivable ($24 […]",
+  "verdict": "INCORRECT",
+  "comment": "Question fermée : il fallait répondre Non (quick ratio 0,54 < 1), puis expliquer. Dire que la métrique est peu pertinente esquive la question."
+ },
+ {
+  "id": "financebench_id_00460",
+  "question": "Was there any change in the number of Best Buy stores between Q2 of FY2024 and FY2023?",
+  "reference": "Yes, there is decline in number stores by 1.32% from 982 stores in Q2 FY 2023 to 969 by the end of Q2 FY2024.",
+  "answer": "Yes, the number of Best Buy stores declined between Q2 FY2023 and Q2 FY2024, both domestically and internationally (Canada).\n\n**Domestic Best Buy stores** [2]:\n- End of Q2 FY2023: **930** (started at 931, +1 opened, −2 closed)\n- End of Q2 FY2024: **907** (started at 908, 0 opened, −1 closed)\n- **Net change: −23 stores**\n\n**International (Canada) Best Buy stores** [1]:\n- End of Q2 FY2023: **127** (started at 128, 0 opened, 0 closed)\n- End of Q2 FY2024: **128** (started at 127, +1 opened, 0 closed)\n- **Net change: +1 store**\n\nOverall, the dominant movement was a meaningful reduction in domestic Best Buy stores (−23), consistent with the company's stated plan to close 20–30 large-format Best Bu […]",
+  "verdict": "INCORRECT",
+  "comment": ""
+ },
+ {
+  "id": "financebench_id_00499",
+  "question": "Is 3M a capital-intensive business based on FY2022 data?",
+  "reference": "No, the company is managing its CAPEX and Fixed Assets pretty efficiently, which is evident from below key metrics:\nCAPEX/Revenue Ratio: 5.1%\nFixed assets/Total Assets: 20%\nReturn on Assets= 12.4%",
+  "answer": "**3M is moderately, but not highly, capital-intensive based on FY2022 data.** Its capex-to-revenue ratio stands at ~5.1% and its net PP&E-to-revenue ratio at ~26.8%, both below typical thresholds for capital-heavy industries (e.g., utilities, oil & gas).\n\n**Key figures from FY2022:**\n\n- **Capital expenditures (Purchases of PP&E):** $1,749M [27]\n- **Net Sales:** $34,229M [19][22]\n- **Capex / Revenue** = $1,749M ÷ $34,229M = **~5.1%** — below the ~8–10% level generally associated with highly capital-intensive businesses\n\n- **Net PP&E:** $9,178M [27][28]\n- **Net PP&E / Revenue** = $9,178M ÷ $34,229M = **~26.8%** — moderate\n\n- **Gross PP&E:** $25,998M (machinery & equipment $16,455M + buildings  […]",
+  "verdict": "INCORRECT",
+  "comment": ""
+ },
+ {
+  "id": "financebench_id_00702",
+  "question": "Were there any potential events that are not in Pfizer's standard business operations that substantially increased net income in 2019?",
+  "reference": "Yes, the gain on completion of Consumer Healthcare JV Transaction",
+  "answer": "Yes — three non-standard, non-recurring events substantially boosted Pfizer's 2019 net income of $16,026 million [29]:\n\n**1. Gain on completion of Consumer Healthcare JV transaction: $8,107 million (pre-tax)**\nPfizer formed a joint venture with GSK for its Consumer Healthcare business in 2019, receiving a 32% equity-method stake in the new company initially valued at $15.7 billion in exchange for net assets contributed of $7.6 billion, generating an $8.3 billion gain net of $146 million cash conveyed [17]. This appears as a separate line item on the income statement [29]. Without it, income from continuing operations before tax would have been only ~$3.2 billion vs. the reported $11,321 mill […]",
+  "verdict": "CORRECT",
+  "comment": ""
+ },
+ {
+  "id": "financebench_id_00724",
+  "question": "For Pfizer, which geographic region had the biggest drop in Q22023 year over year revenues (on a percentage basis)?",
+  "reference": "Developed Rest of the World",
+  "answer": "**International** revenues had the biggest percentage drop in Q2 2023 year-over-year, falling **60%** (from $16,519M to $6,548M) [12].\n\n- **U.S.**: $6,185M vs. $11,222M → **–45%** [12]\n- **International**: $6,548M vs. $16,519M → **–60%** [12]\n- **Emerging markets** (a sub-category of International): –53% (from $6.0B to $2.8B) [1]\n\nThe international decline was driven primarily by worldwide drops in Comirnaty (–$6,230M internationally) and Paxlovid (–$3,512M internationally), plus an unfavorable foreign exchange impact of $283M [4].",
+  "verdict": "CORRECT",
+  "comment": "Élément demandé juste et chiffres bons : International englobe Developed Rest of World, réponse plus précise et concise."
+ },
+ {
+  "id": "financebench_id_00807",
+  "question": "Does 3M have a reasonably healthy liquidity profile based on its quick ratio for Q2 of FY2023? If the quick ratio is not relevant to measure liquidity, please state that and explain why.",
+  "reference": "No. The quick ratio for 3M was 0.96 by Jun'23 close, which needs a bit of an improvement to touch the 1x mark",
+  "answer": "**3M's quick ratio for Q2 FY2023 (June 30, 2023) is approximately 0.85x, which is below the 1.0x threshold typically considered healthy — suggesting a somewhat tight, though not critically distressed, liquidity position.**\n\n**Calculation (formula: Quick Ratio = (Cash & equivalents + Current marketable securities + Net accounts receivable) / Current liabilities):**\n\nFrom the Consolidated Balance Sheet as of June 30, 2023 [19]:\n- Cash and cash equivalents: **$4,258M**\n- Marketable securities — current: **$56M**\n- Accounts receivable — net: **$4,947M**\n- Total current liabilities: **$10,936M**\n\n> Quick Ratio = (4,258 + 56 + 4,947) / 10,936 = **9,261 / 10,936 ≈ 0.85x**\n\n**Assessment:**\n- A quick […]",
+  "verdict": "INCORRECT",
+  "comment": ""
+ },
+ {
+  "id": "financebench_id_00941",
+  "question": "Which debt securities are registered to trade on a national securities exchange under 3M's name as of Q2 of 2023?",
+  "reference": "Following debt securities registered under 3M's name are listed to trade on the New York Stock Exchange:\n-1.500% Notes due 2026 (Trading Symbol: MMM26)\n-1.750% Notes due 2030 (Trading Symbol: MMM30)\n-1.500% Notes due 2031 (Trading Symbol: MMM31)",
+  "answer": "Les trois titres de dette (notes) enregistrés pour négociation sur une bourse nationale au nom de 3M au T2 2023 sont [10] :\n\n- **1.500% Notes due 2026** (symbole : MMM26) — Chicago Stock Exchange, Inc.\n- **1.750% Notes due 2030** (symbole : MMM30) — New York Stock Exchange\n- **1.500% Notes due 2031** (symbole : MMM31) — New York Stock Exchange",
+  "verdict": "CORRECT",
+  "comment": "Les trois titres demandés sont justes avec leurs symboles ; le lieu de cotation est un détail secondaire."
+ },
+ {
+  "id": "financebench_id_01028",
+  "question": "What are the geographies that American Express primarily operates in as of 2022?",
+  "reference": "United States, EMEA, APAC, and LACC",
+  "answer": "As of 2022, American Express primarily operates in the **United States** as its largest market, with significant international presence across approximately **103 countries and territories** [2].\n\nKey geographic details from the documents:\n\n- **United States**: The dominant market, with $129B in individual credit exposure out of $156B total [7][9].\n- **Outside the United States** (individual exposure): $27B, with the largest concentrations in the **United Kingdom, Japan, the European Union, Australia, Canada, and Mexico** [1][7].\n- **Principal office locations** outside the U.S. include: **India** (Gurgaon), **England** (Brighton, London), **Philippines** (Manila), **Japan** (Tokyo), **Malay […]",
+  "verdict": "CORRECT",
+  "comment": ""
+ },
+ {
+  "id": "financebench_id_01290",
+  "question": "Who are the primary customers of Boeing as of FY2022?",
+  "reference": "Boeing's primary customers as of FY2022 are a limited number of commercial airlines and the US government. The US government accounted for 40% of Boeing's total revenues in FY2022.",
+  "answer": "Boeing's primary customers as of FY2022 are **U.S. and non-U.S. governments** (defense/military) and **commercial airlines worldwide**, with non-U.S. customers accounting for approximately **41% of revenues** [10].\n\n- **Commercial customers**: Airlines and lessors globally, with Chinese customers representing \"a key component of our commercial aircraft backlog\" [1][2]. BCA generated $25,867M in revenues in 2022 [3].\n- **Defense/government customers**: U.S. and non-U.S. governments (including via Foreign Military Sales), served by BDS ($23,162M revenues) [3]. Unobligated backlog includes \"U.S. and non-U.S. government definitive contracts\" [1].\n- **Commercial and defense customers** are also s […]",
+  "verdict": "CORRECT",
+  "comment": "Bons clients (compagnies aériennes, gouvernements), chiffres justes ; réponse plus précise que la référence."
+ },
+ {
+  "id": "financebench_id_10420",
+  "question": "Based on the information provided primarily in the statement of financial position and the statement of income, what is AES's FY2022 return on assets (ROA)? ROA is defined as: FY2022 net income / (average total assets between FY2021 and FY2022). Round your answer to two decimal places.",
+  "reference": "-0.02",
+  "answer": "**AES's FY2022 ROA = –1.42%**, based on consolidated net income of $(505)M and average total assets of $35,663M.\n\n**Formula applied:**\n\n> ROA = FY2022 Net Income ÷ [(FY2022 Total Assets + FY2021 Total Assets) / 2]\n\n**Inputs:**\n- FY2022 Net Income (consolidated, including noncontrolling interests): **$(505)M** [11]\n- FY2022 Total Assets (= Total Liabilities and Equity): **$38,363M** [4]\n- FY2021 Total Assets: **$32,963M** [4]\n- Average Total Assets: (38,363 + 32,963) / 2 = **$35,663M**\n\n**Calculation:**\n\n> ROA = –505 / 35,663 = **–0.0142 = –1.42%**",
+  "verdict": "INCORRECT",
+  "comment": ""
+ }
+]

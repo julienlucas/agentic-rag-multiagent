@@ -10,7 +10,7 @@ const tooling = [
   "BM25 + Vecteurs",
   "Django",
   "Amazon Bedrock",
-  "Claude, Cohere et Mistral OCR",
+  "Claude et Cohere",
 ];
 
 export function Hero() {
@@ -26,8 +26,8 @@ export function Hero() {
             <h1 className="display-xl">
               Agentic <span className="accent-italic">Search</span>
               <span className="display-xs mx-auto mt-4 mb-6 block max-w-3xl text-ink">
-                <strong>Discutez avec vos documents</strong>, RAG agentique à ~96 % des réponses
-                correctes, évalué sur un sous-ensemble de FinanceBench
+                <strong>Discutez avec vos documents</strong>, RAG agentique à 88 % de réponses
+                correctes, évalué sur FinanceBench (84 rapports, 12 000 pages indexées ensemble, 135 questions)
               </span>
             </h1>
           </div>

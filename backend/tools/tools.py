@@ -10,13 +10,13 @@ fermés sur le retriever et le PageStore d'une question :
                                     sur 260 pages fonde une réponse négative.
 - read_page(doc, page, end_page)  : une page entière, ou 2-3 pages consécutives pour un tableau
                                     à cheval — ce qu'un chunk de 1 200 caractères ne montre jamais.
-- open_document(doc)              : le plan du document (PART, ITEM, états financiers, notes) et
+- open_doc(doc)              : le plan du document (PART, ITEM, états financiers, notes) et
                                     son nombre de pages ; sans `doc`, la liste des documents.
 - navigate(doc, section)          : une section par son titre — la page où commence le bilan
                                     consolidé, là où grep renverrait aussi sommaire et renvois.
 
 Contrairement à Mistral, aucun document n'est « ouvert » entre deux appels : chaque outil
-reçoit `doc`, open_document sert à découvrir la structure, pas à changer d'état. Seuls search
+reçoit `doc`, open_doc sert à découvrir la structure, pas à changer d'état. Seuls search
 et read_page ramènent des passages citables ; les trois autres indiquent où lire.
 
 
@@ -54,7 +54,7 @@ def build_tools(
     on_documents: Optional[Callable[[List[Document]], List[int]]] = None,
 ):
     """
-    Construit search / grep / read_page / open_document / navigate fermés sur le retriever,
+    Construit search / grep / read_page / open_doc / navigate fermés sur le retriever,
     le PageStore et la trace.
 
     `trace` reçoit : calls (libellés lisibles), search_results (listes de Documents),
@@ -76,6 +76,13 @@ def build_tools(
         if doc:
             return [doc]
         return scope
+
+    def _scope_labels() -> Optional[List[str]]:
+        """Libellés des documents du périmètre routé, ou None (tous les documents)."""
+        if not scope or page_store is None:
+            return None
+        labels = [page_store.resolve(s) for s in scope]
+        return list(dict.fromkeys(l for l in labels if l)) or None
 
     def _numbers(docs: List[Document]) -> List[Optional[int]]:
         if on_documents is None or not docs:
@@ -115,11 +122,13 @@ def build_tools(
     def grep(pattern: str, doc: Optional[str] = None) -> str:
         """Occurrences littérales d'un terme (regex insensible à la casse), page par page.
         Exhaustif : 0 résultat signifie que le terme est absent du document. `doc` :
-        restreindre à un document (optionnel, recommandé)."""
+        restreindre à un document (optionnel, recommandé ; sans lui, les documents visés par
+        la question)."""
         calls.append(f'grep: "{pattern}"' + (f" [{doc}]" if doc else ""))
         if page_store is None:
             return "grep indisponible (pas de pages OCR pour ce corpus)."
-        result = page_store.grep(pattern, doc=doc)
+        # Sans `doc`, le périmètre du routeur, comme search : pas les 20 documents de l'index.
+        result = page_store.grep(pattern, doc=doc) if doc else page_store.grep(pattern, docs=_scope_labels())
         if result.get("error"):
             return f"{result['error']}. Documents : {', '.join(result.get('documents', []))}"
         if not result["hits"]:
@@ -158,13 +167,13 @@ def build_tools(
         return "\n\n".join(parts)
 
     @tool
-    def open_document(doc: Optional[str] = None) -> str:
+    def open_doc(doc: Optional[str] = None) -> str:
         """Ouvre un document : nombre de pages et plan (PART, ITEM, états financiers
         consolidés, notes) avec la page de chaque section. Sans `doc`, liste les documents
         disponibles. Utile pour savoir où se trouve une section avant de la lire."""
-        calls.append("open_document" + (f": {doc}" if doc else ""))
+        calls.append("open_doc" + (f": {doc}" if doc else ""))
         if page_store is None:
-            return "open_document indisponible (pas de pages OCR pour ce corpus)."
+            return "open_doc indisponible (pas de pages OCR pour ce corpus)."
         if not doc:
             return "\n".join(f"- {d} ({page_store.page_count(d)} pages)" for d in page_store.documents())
         result = page_store.outline(doc)
@@ -191,11 +200,11 @@ def build_tools(
             documents = result.get("documents")
             return result["error"] + (f". Documents : {', '.join(documents)}" if documents else "")
         if not result["hits"]:
-            return f"Aucun titre ne contient « {section} » ; essayez open_document, grep ou search."
+            return f"Aucun titre ne contient « {section} » ; essayez open_doc, grep ou search."
         lines = [f"p. {h['page'] + 1} : {h['title']} — {h['excerpt']}" for h in result["hits"]]
         more = result["total"] - len(result["hits"])
         if more > 0:
             lines.append(f"… et {more} autres titres (précisez la section).")
         return "\n".join(lines)
 
-    return [search, grep, read_page, open_document, navigate]
+    return [search, grep, read_page, open_doc, navigate]

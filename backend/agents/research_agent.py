@@ -37,67 +37,92 @@ class ResearchAgent:
         cleaned = self._PREAMBLE.sub("", response_text.strip(), count=1).strip()
         return cleaned or response_text.strip()
 
+    # Principes valables pour tout document. Les conventions propres aux rapports financiers
+    # sont dans FINANCE_RULES, ajoutées seulement quand le contexte en contient un.
     RULES = """**RÈGLES STRICTES:**
-1. Répondez UNIQUEMENT avec des informations EXPLICITEMENT présentes dans le contexte
-2. Ne faites AUCUNE supposition ni extrapolation au-delà du contexte. UNE SEULE exception :
-   si la question demande une métrique qui se CALCULE à partir de chiffres présents dans le
-   contexte (ratio, marge, variation, total), faites le calcul — posez la formule, citez
-   chaque chiffre d'entrée avec son passage [n], donnez le résultat. Ne dites jamais qu'un
-   ratio « n'est pas fourni » quand ses composantes le sont.
-3. Si l'information n'est PAS dans le contexte, répondez: "Cette information n'est pas disponible dans le document."
-   Réservez cette réponse au cas où le document ne dit RIEN du sujet. Une indication
-   qualitative suffit à répondre : « deleverage of store payroll » veut dire que les salaires
-   ont pesé plus lourd en % des ventes, donc qu'ils ont augmenté en % des ventes. Répondez alors
-   Oui / Non en citant cette phrase, et dites qu'aucun chiffre isolé n'est publié.
-4. Citez les chiffres et faits EXACTEMENT comme ils apparaissent, signe et unité compris
-   (une valeur entre parenthèses dans un tableau financier est négative)
-5. N'ajoutez JAMAIS de connaissances externes
-6. Chaque passage du contexte est numéroté. Après CHAQUE affirmation, indiquez entre
-   crochets le ou les numéros des passages qui la soutiennent : [1] ou [2][5].
-   N'utilisez JAMAIS un numéro qui n'apparaît pas dans le contexte, et n'affirmez
-   rien qui ne puisse être rattaché à un passage.
-7. Ratios financiers : si la question donne la formule, appliquez-la exactement et donnez un
-   seul résultat. Sinon, plusieurs conventions usuelles coexistent : donnez le résultat avec
-   chacune, sur une ligne chacune, en nommant la convention :
-   - quick ratio = (trésorerie et équivalents + placements à court terme + créances clients
-     nettes) / passifs courants ; et (actifs courants − stocks) / passifs courants ;
-   - rotation des stocks = coût des ventes / stock moyen (début et fin d'exercice) ; et coût
-     des ventes / stock de fin d'exercice ;
-   - ROA = résultat net / total actif moyen ; et résultat net / total actif de fin d'exercice ;
-   - couverture des intérêts = résultat opérationnel / charges d'intérêts ;
-   - une marge = l'indicateur / le chiffre d'affaires.
-   Écrivez chaque formule, puis son résultat, arrondi comme la question le demande. La
-   conclusion (Oui / Non, amélioration / dégradation) vaut pour toutes les conventions ; si
-   elles divergent, dites-le.
-8. Format : court et précis dès la première phrase.
-   - Question fermée (« Is… ? », « Does… ? », « Has… ? », « Did… ? », « Est-ce que… ? ») : la
-     réponse commence TOUJOURS par « Oui » ou « Non », jamais par une explication.
-   - La PREMIÈRE phrase contient la réponse précise elle-même : le nom, le chiffre, l'élément,
-     avec sa citation [n] — pas une phrase générale (« Oui, plusieurs événements ont… » ne
-     suffit pas : écrivez « Oui : le gain sur la création de la coentreprise Consumer
-     Healthcare (8,1 Md$) [3] »). Répondez au niveau demandé (le total avant le détail).
-   - Toute conclusion s'appuie sur AU MOINS UN CHIFFRE PRÉCIS du document, cité [n] : montant,
-     ratio, pourcentage, nombre, avec son unité et son exercice. Une explication sans chiffre
-     ne suffit pas.
-   - Ensuite, au plus 3 à 5 lignes : les éléments qui justifient la réponse (chiffres d'entrée
-     d'un calcul, formule), en puces courtes. Pas de titres, pas de sections, pas de résumé final.
-   - N'ajoutez pas d'éléments que la question ne demande pas.
-   - Commencez directement par la réponse : pas de phrase sur votre démarche ou vos recherches
-     (« J'ai maintenant toutes les données… »).
-9. Questions d'analyse (« la liquidité est-elle saine ? », « la marge s'améliore-t-elle ? »,
-   « l'entreprise est-elle capitalistique ? », « quel segment a le plus progressé ? ») : ne
-   vous contentez pas d'une appréciation. Calculez vous-même l'indicateur qui tranche (quick
-   ratio, marge, variation en %, capex / chiffre d'affaires, total actif / chiffre
-   d'affaires…), sur chaque exercice comparé, puis concluez par Oui / Non ou par l'élément
-   demandé. Posez le calcul : formule, chiffres d'entrée cités [n], résultat.
-10. Exactitude des chiffres : recopiez les chiffres du document tels quels (sans les arrondir
-   avant un calcul), vérifiez l'exercice et l'unité (millions ou milliards), et refaites chaque
-   opération avant d'écrire le résultat.
-11. Exercices fiscaux : un exercice se désigne souvent par l'année où il se TERMINE (« FY2023 »
-   = l'exercice clos en janvier 2023, que l'entreprise peut appeler « fiscal 2022 »). Si
-   l'exercice demandé n'existe pas sous ce nom dans le document, prenez celui qui se termine
-   dans l'année demandée et dites-le, au lieu de répondre que l'information n'est pas
-   disponible."""
+1. Source : uniquement les passages numérotés du contexte, jamais de connaissance externe.
+   Après chaque affirmation, citez le ou les passages qui la soutiennent : [1] ou [2][5]. Pas de
+   numéro absent du contexte, pas d'affirmation qui ne se rattache à aucun passage.
+2. La réponse d'abord : la première phrase EST la réponse précise (le nom, le chiffre, la liste,
+   avec [n]), au niveau que la question demande : le périmètre qu'elle nomme, le total avant le
+   détail, pas une somme de sous-parties. Dans un tableau, prenez la ligne de total qui porte
+   exactement le périmètre de la question plutôt que d'additionner des lignes vous-même. Une
+   question fermée (« Is… ? », « Does… ? », « Has… ? », « Est-ce que… ? ») commence par « Oui »
+   ou « Non ». Ensuite, 3 à 5 puces courtes qui justifient
+   (chiffres d'entrée, formule). Pas de titres, pas de résumé final, rien que la question ne
+   demande pas, pas de phrase sur votre démarche.
+3. Tranchez : une seule réponse. Ni entre-deux (« modérément », « en partie »), ni plusieurs
+   options côte à côte. Une réserve vient après la conclusion, jamais à sa place. Toute
+   conclusion s'appuie sur au moins un chiffre précis du document, cité [n].
+4. Calculez ce qui se calcule : une métrique dont les composantes sont dans le contexte (ratio,
+   marge, variation, total) se calcule, elle n'est jamais « non fournie ». Si la question donne
+   la formule, appliquez-la exactement. Posez la formule et les chiffres d'entrée [n], refaites
+   l'opération, arrondissez et présentez comme demandé (deux décimales sans « % » demandé = un
+   ratio décimal comme −0,02). Une question d'analyse (« la liquidité est-elle saine ? ») se
+   tranche avec l'indicateur qui la mesure, calculé sur chaque période comparée.
+5. Chiffres exacts : recopiez-les tels quels, signe et unité compris (entre parenthèses dans un
+   tableau = négatif), sans arrondir avant un calcul. Vérifiez la période et l'unité (millions,
+   milliards).
+6. Lisez ce que le document dit lui-même du sujet : la section, la note ou le tableau qui lui
+   est consacré l'emporte sur une mention en passant ou une formule générique. Une indication
+   qualitative suffit à répondre (« deleverage of store payroll » = les salaires ont pesé plus
+   lourd en % des ventes) : citez-la, et dites qu'aucun chiffre isolé n'est publié.
+7. Pertinence d'une métrique : si la question demande de dire quand une métrique n'est pas
+   pertinente, ne le dites que si elle ne s'applique pas à cette activité, et alors sans
+   calculer de substitut. Si elle s'applique, concluez avec elle.
+8. Si le document ne dit RIEN du sujet, et seulement dans ce cas, répondez :
+   « Cette information n'est pas disponible dans le document. »"""
+
+    FINANCE_RULES = """**RAPPORTS FINANCIERS (10-K, 10-Q, résultats trimestriels):**
+- Conventions par défaut, sauf formule donnée par la question (un seul résultat) : ROA = résultat net / total actif de fin
+  d'exercice ; couverture des intérêts = résultat opérationnel / charges d'intérêts ; marge =
+  indicateur / chiffre d'affaires.
+- Deux ratios ont deux conventions courantes : la principale en tête, l'autre entre
+  parenthèses dans la même phrase, puis UNE conclusion.
+  - quick ratio = (actifs courants − stocks) / passifs courants ; entre parenthèses,
+    (trésorerie + placements à court terme + créances clients) / passifs courants ;
+  - rotation des stocks = coût des ventes / stock moyen ; entre parenthèses, sur le stock de fin.
+  « Rotation des stocks FY2022 : 2,7× (2,5× sur le stock de fin) [n] ».
+- Liquidité (« la liquidité est-elle saine ? » d'après le quick ratio ou le current ratio) : sous
+  1, la réponse est « Non », même de peu (0,96) ; « Oui » à partir de 1. La nuance (accès au
+  crédit, notation) vient après, sans changer la réponse.
+- Intensité capitalistique (« capital-intensive ? ») : Oui ou Non, jamais « modérément ». Capex
+  / chiffre d'affaires sous ~10 % et immobilisations nettes sous ~30 % du total actif : Non.
+- « Net income » sans précision = le résultat attribuable aux actionnaires de l'entreprise
+  (« attributable to <entreprise> »), pas le résultat consolidé avec les minoritaires.
+- Couverture des intérêts avec un numérateur négatif : la réponse est 0. La première phrase
+  dit « Couverture des intérêts : 0 (EBIT négatif) » ; le ratio négatif calculé peut suivre,
+  jamais en tête.
+- Banques, cartes de paiement, assureurs : ni stocks ni marge opérationnelle classique ; leur
+  performance se lit à la marge d'intérêts et au résultat avant impôt.
+- Exercices : « FY2023 » = l'exercice qui se TERMINE en 2023, que l'entreprise peut appeler
+  « fiscal 2022 ». Prenez celui qui se termine dans l'année demandée, et dites-le.
+- Litiges matériels : la réponse est dans « Item 3. Legal Proceedings » (10-Q : « Part II,
+  Item 1 »), à lire en premier. « … will not have a material adverse effect » = Non. La liste
+  générique des Risk Factors ne désigne aucun litige matériel.
+- Listes d'acquisitions, de cessions, de segments (« les trois principales acquisitions… ») :
+  prenez celles que présente la note consacrée (« Acquisitions », « Segment information ») pour
+  la période du document. Jamais des opérations anciennes citées en passant, comme l'historique
+  d'une filiale acquise des années plus tôt."""
+
+    # Un rapport financier se reconnaît à son nom (FinanceBench : 3M_2022_10K) ou à ses états.
+    _FINANCIAL_NAME = re.compile(r"10-?K|10-?Q|8-?K|EARNINGS|annual[ _-]?report", re.IGNORECASE)
+    _FINANCIAL_TEXT = re.compile(
+        r"consolidated (?:balance sheets?|statements? of (?:income|operations|cash flows))|form 10-[kq]",
+        re.IGNORECASE)
+
+    @classmethod
+    def is_financial(cls, documents: List[Document]) -> bool:
+        """Le contexte contient-il un rapport financier ? (règles FINANCE_RULES)"""
+        for doc in documents:
+            meta = getattr(doc, "metadata", None) or {}
+            name = str(meta.get("doc_name") or meta.get("source") or "")
+            if cls._FINANCIAL_NAME.search(name) or cls._FINANCIAL_TEXT.search(doc.page_content or ""):
+                return True
+        return False
+
+    def rules_for(self, documents: List[Document]) -> str:
+        return self.RULES + ("\n\n" + self.FINANCE_RULES if self.is_financial(documents) else "")
 
     TOOLS_GUIDE = """**OUTILS:**
 Le contexte ci-dessous est ce que la recherche initiale a trouvé : des extraits, pas des pages.
@@ -110,8 +135,8 @@ Vous disposez de cinq outils pour aller voir le document lui-même :
   tableau qui continue sur la page suivante.
 - `navigate(doc, section)` : la page où commence une section, cherchée dans les titres seulement
   ("consolidated balance sheet", "income taxes") — le chemin le plus court vers un état financier.
-- `open_document(doc)` : le plan du document (PART, ITEM, états financiers, notes) avec les pages.
-`navigate` et `open_document` indiquent où lire, ils ne ramènent pas de passage : enchaînez avec
+- `open_doc(doc)` : le plan du document (PART, ITEM, états financiers, notes) avec les pages.
+`navigate` et `open_doc` indiquent où lire, ils ne ramènent pas de passage : enchaînez avec
 `read_page`.
 Chaque passage ramené par un outil reçoit un numéro [n] affiché dans le résultat : citez-le comme
 les autres.
@@ -136,7 +161,8 @@ Quand les utiliser — dans le doute, vérifiez : un appel d'outil coûte moins 
                     "initial : cherchez avec les outils avant de conclure.",
     }
 
-    def generate_prompt(self, question: str, context: str, note: Optional[str] = None) -> str:
+    def generate_prompt(self, question: str, context: str, note: Optional[str] = None,
+                        rules: Optional[str] = None) -> str:
         """
         Générer un prompt structuré pour le LLM afin de générer une réponse précise et factuelle.
         `note` : conclusion d'un agent de recherche préalable (ce qu'il a trouvé et où) — à
@@ -150,7 +176,7 @@ Quand les utiliser — dans le doute, vérifiez : un appel d'outil coûte moins 
 {note}"""
         prompt = f"""Vous êtes un assistant IA factuel et rigoureux.
 
-{self.RULES}
+{rules or self.RULES}
 
 **Question:** {question}{note_block}
 
@@ -203,13 +229,13 @@ Quand les utiliser — dans le doute, vérifiez : un appel d'outil coûte moins 
         logger.debug(f"ResearchAgent.generate appelé avec question='{question}' et {len(documents)} documents.")
 
         # Numéroter les passages : le modèle doit pouvoir rattacher chaque affirmation
-        # à un extrait précis (règle 6 du prompt), et le frontend afficher la source
+        # à un extrait précis (règle 1 du prompt), et le frontend afficher la source
         # derrière chaque marqueur [n].
         context, citations = self.build_numbered_context(documents)
         logger.debug(f"Longueur du contexte combiné: {len(context)} caractères, {len(citations)} passages numérotés.")
 
         # Créer un prompt pour le LLM
-        prompt = self.generate_prompt(question, context, note=note)
+        prompt = self.generate_prompt(question, context, note=note, rules=self.rules_for(documents))
         logger.debug("Prompt créé pour le LLM.")
 
         # Appeler le LLM pour générer la réponse
@@ -252,7 +278,7 @@ Quand les utiliser — dans le doute, vérifiez : un appel d'outil coûte moins 
         relevance: Optional[str] = None,
     ) -> Dict:
         """
-        Génère la réponse en disposant des outils search / grep / read_page / open_document /
+        Génère la réponse en disposant des outils search / grep / read_page / open_doc /
         navigate — le modèle qui
         cherche est celui qui répond, dans la même conversation.
 
@@ -288,7 +314,7 @@ Quand les utiliser — dans le doute, vérifiez : un appel d'outil coûte moins 
         hint = self.RELEVANCE_HINTS.get(relevance or "", "")
         system = (
             "Vous êtes un assistant IA factuel et rigoureux.\n\n"
-            + self.RULES + "\n\n" + self.TOOLS_GUIDE.format(budget=budget, hint=hint)
+            + self.rules_for(documents) + "\n\n" + self.TOOLS_GUIDE.format(budget=budget, hint=hint)
         )
         user = (
             f"**Question:** {question}\n\n"

@@ -338,7 +338,7 @@ _CANNED_MAX_EXTRA_CHARS = 160
 
 
 FINANCEBENCH_JUDGE_PROMPT = """Tu es un évaluateur expert en analyse financière. Tu compares la réponse d'un système RAG à la réponse de référence annotée par des experts sur le benchmark FinanceBench.
-
+{examples}
 **Question:** {question}
 
 **Réponse de référence (ground truth):** {expected_answer}
@@ -352,9 +352,15 @@ FINANCEBENCH_JUDGE_PROMPT = """Tu es un évaluateur expert en analyse financièr
 
 Rends DEUX jugements.
 
-1) VERDICT — classe la réponse générée:
-- "CORRECT": elle donne la même information que la référence. Tolère les écarts de formulation, d'unité, d'arrondi et de mise en forme ($1,577 = 1577.00 = 1 577 millions). Une réponse plus détaillée que la référence reste CORRECT si elle ne la contredit pas.
-- "INCORRECT": elle contredit la référence, donne un chiffre faux, ou répond à côté.
+1) VERDICT — procède en deux temps.
+Étape 1 : quel est l'élément que la question demande ? (un chiffre, un nom, une liste, ou une conclusion Oui / Non)
+Étape 2 : la réponse générée donne-t-elle cet élément, et les chiffres qu'elle cite sont-ils justes ?
+- "CORRECT": oui. Tolère les écarts de formulation, d'unité, de mise en forme et d'arrondi ($1,577 = 1577.00 = 1 577 millions ; 8,74 Md$ pour 8,70 : écart ≤ 1 % en relatif). Ne pénalise PAS :
+  - une réponse plus précise ou plus détaillée que la référence ;
+  - une autre granularité cohérente avec la référence (des pays au lieu des régions qui les regroupent ; « International » quand la référence nomme une de ses sous-régions) ;
+  - une autre métrique ou une autre méthode qui mène à la même conclusion ;
+  - un détail secondaire inexact qui n'est pas l'objet de la question (le lieu de cotation quand la question demande quels titres sont cotés).
+- "INCORRECT": le chiffre demandé est faux (écart au-delà de l'arrondi) ; la réponse donne un autre élément que celui demandé ; sa conclusion est inverse à la référence ; ou, pour une question fermée (Is… ? Does… ? Has… ?), elle ne répond pas clairement Oui ou Non dans le sens de la référence — rester dans l'entre-deux (« modérément ») ou esquiver (« ce ratio est peu pertinent ») quand la référence tranche est INCORRECT, même avec le bon chiffre.
 - "REFUSAL": elle déclare ne pas pouvoir répondre ou que l'information n'est pas dans le document.
 
 RÈGLE DE DÉPARTAGE (à appliquer AVANT de choisir REFUSAL) : si la réponse de référence dit elle-même que la métrique n'est pas applicable, pas publiée ou pas utilisée pour cette entreprise (ex. "Performance is not measured through gross margin", "There are none"), alors une réponse générée qui constate que le document ne fournit pas cette métrique, qu'elle n'y figure pas ou qu'il n'y en a pas est CORRECT — ce n'est pas un refus, c'est la bonne réponse. REFUSAL est réservé au cas où la référence contient une vraie information que la réponse générée déclare introuvable.
@@ -364,10 +370,93 @@ RÈGLE DE DÉPARTAGE (à appliquer AVANT de choisir REFUSAL) : si la réponse de
 - 2: plusieurs affirmations inventées | 1: hallucinations majeures
 Un refus honnête vaut 5.
 
-Réponds EXACTEMENT dans ce format:
-VERDICT: [CORRECT|INCORRECT|REFUSAL]
+Réponds EXACTEMENT dans ce format. Remplis la grille ligne par ligne AVANT de choisir le verdict : le verdict en découle, il ne se décide pas en comparant la réponse à la référence d'un bloc.
+ÉLÉMENT DEMANDÉ: [ce que la question demande, en quelques mots]
+PRÉSENT DANS LA RÉPONSE: [oui|non] (une autre granularité cohérente ou une réponse plus précise compte comme oui)
+CHIFFRES JUSTES: [oui|non|sans objet] (écart d'arrondi ≤ 1 % toléré ; un détail secondaire inexact ne compte pas)
+QUESTION FERMÉE TRANCHÉE: [oui|non|sans objet] (Oui / Non clair, dans le sens de la référence)
+VERDICT: [CORRECT|INCORRECT|REFUSAL] (CORRECT si toutes les lignes de la grille valent oui ou sans objet)
 FAITHFULNESS: [1-5]
 RAISON: [1-2 phrases]"""
+
+
+# Écrit par `annotation.py examples` à partir d'une file d'annotation LangSmith.
+JUDGE_EXAMPLES_PATH = ROOT_DIR / "backend" / "evals" / "financebench" / "judge_examples.json"
+
+
+def load_judge_examples(path: Path = JUDGE_EXAMPLES_PATH) -> List[Dict]:
+    """Les exemples annotés du juge FinanceBench ; aucun si le fichier n'existe pas."""
+    import json
+    if not path.exists():
+        return []
+    return json.loads(path.read_text())
+
+
+# --- Contrôle numérique ------------------------------------------------------
+
+# Référence faite d'un seul nombre : « 77.78 », « -0.02 », « $8.70 », « 9068.00 », « 24.26 ».
+_NUMERIC_REFERENCE = re.compile(
+    r"^\s*[$€]?\s*[-−–]?\(?\s*[$€]?\s*\d[\d,]*(?:\.\d+)?\s*\)?\s*%?\s*"
+    r"(?:usd|eur|million|millions|billion|billions)?\s*$", re.IGNORECASE)
+# Un nombre dans la réponse : signe, parenthèses comptables, séparateurs de milliers (« , »
+# anglais ou espaces français), décimale « . » ou « , ».
+_NUMBER = re.compile(r"(?<![\w.])([-−–]\s?|\()?\$?\s?(\d{1,3}(?:[ \u00a0\u202f]\d{3})+|\d+)((?:[.,]\d+)*)")
+# Mêmes grandeurs exprimées à une autre échelle : millions / milliards, ratio / pourcentage.
+_SCALES = (1, 1e3, 1e-3, 1e6, 1e-6, 100, 0.01)
+
+
+def _to_float(text: str) -> Optional[float]:
+    t = text.replace("$", "").replace("€", "").replace(",", "").replace("(", "-").replace(")", "")
+    t = t.replace("−", "-").replace("–", "-").replace(" ", "")
+    m = re.search(r"-?\d+(?:\.\d+)?", t)
+    return float(m.group()) if m else None
+
+
+def _answer_numbers(text: str) -> List[float]:
+    """Les nombres d'un texte, avec les deux lectures d'une virgule ambiguë (8,738 = 8738 ou 8,738)."""
+    out = []
+    for m in _NUMBER.finditer(text):
+        # « (1,577) » : négatif en convention comptable, mais un capex s'y écrit aussi ; « - » : négatif.
+        signs = (1, -1) if (m.group(1) or "").startswith("(") else ((-1,) if m.group(1) else (1,))
+        whole = re.sub(r"[ \u00a0\u202f]", "", m.group(2))
+        tail = m.group(3)
+        readings = set()
+        if not tail:
+            readings.add(whole)
+        else:
+            parts = re.split(r"([.,])", tail)[1:]  # [sep, digits, sep, digits…]
+            seps = parts[0::2]
+            groups = parts[1::2]
+            if all(len(g) == 3 for g in groups) and len(groups) >= 1:
+                readings.add(whole + "".join(groups))  # séparateurs de milliers
+            # dernier séparateur = décimale, les précédents = milliers
+            readings.add(whole + "".join(groups[:-1]) + "." + groups[-1])
+        out.extend(sign * float(r) for r in readings for sign in signs)
+    return out
+
+
+def numeric_match(reference: str, answer: str) -> Optional[str]:
+    """
+    Si la référence est un nombre seul et que le début de la réponse (ses deux premières lignes,
+    où le prompt de l'agent place le résultat) contient la même valeur, à l'arrondi de la référence ou à 1 % près,
+    éventuellement à une autre échelle, retourne l'explication ; sinon None.
+    """
+    if not reference or not _NUMERIC_REFERENCE.match(reference):
+        return None
+    ref = _to_float(reference)
+    if not ref:  # « 0 » répond à une question fermée (« s'il n'y en a pas, dites 0 ») : au juge
+        return None
+    if re.search(r"\(\s*[$€]?\s*\d", reference):
+        ref = -abs(ref)
+    decimals = len(reference.split(".")[1].strip().rstrip("%").split()[0]) if "." in reference else 0
+    tolerance = max(0.01 * abs(ref), 0.5 * 10 ** -decimals)
+    lines = [line for line in (answer or "").splitlines() if line.strip()][:2]
+    first = re.sub(r"\[\d+\]", "", " ".join(lines).replace("*", ""))[:300]  # sans citations ni gras
+    for value in _answer_numbers(first):
+        for scale in _SCALES:
+            if abs(value * scale - ref) <= tolerance:
+                return f"{value:g} dans la réponse correspond à la référence {reference.strip()} (écart toléré {tolerance:g})"
+    return None
 
 
 @dataclass
@@ -398,11 +487,35 @@ class FinanceBenchJudge:
 
     VALID_VERDICTS = {"CORRECT", "INCORRECT", "REFUSAL"}
 
-    def __init__(self, llm=None, model: Optional[str] = None, prompt: Optional[str] = None):
+    def __init__(self, llm=None, model: Optional[str] = None, prompt: Optional[str] = None,
+                 examples: Optional[List[Dict]] = None):
         self.llm = llm
         self.model = model or settings.EVAL_JUDGE_MODEL_ID
         # Même protocole avec un autre prompt (mêmes champs) : backend/evals/feedback/replay.py.
         self.prompt = prompt or FINANCEBENCH_JUDGE_PROMPT
+        # Réponses annotées par un humain, montrées au juge pour calibrer son seuil.
+        self.examples = load_judge_examples() if examples is None else examples
+
+    @staticmethod
+    def _same_question(a: str, b: str) -> bool:
+        return " ".join(a.lower().split()) == " ".join(b.lower().split())
+
+    def examples_block(self, question: str) -> str:
+        """
+        Les exemples annotés, sauf celui de la question jugée : sinon le juge recopierait le
+        verdict humain, et l'accord mesuré par annotation.py ne vaudrait plus rien.
+        """
+        shown = [e for e in self.examples if not self._same_question(e["question"], question)]
+        if not shown:
+            return ""
+        parts = ["\n**Exemples notés par un annotateur humain** (d'autres questions : ils montrent où "
+                 "passe la limite entre CORRECT et INCORRECT) :"]
+        for i, e in enumerate(shown, 1):
+            comment = f"\nCommentaire de l'annotateur : {e['comment']}" if e.get("comment") else ""
+            parts.append(f"\n--- Exemple {i} ---\nQuestion : {e['question']}\nRéférence : {e['reference']}\n"
+                         f"Réponse : {e['answer']}\nVerdict humain : {e['verdict']}{comment}")
+        parts.append("\n--- Fin des exemples. Juge maintenant la réponse suivante. ---\n")
+        return "\n".join(parts)
 
     def _get_llm(self):
         if self.llm is None:
@@ -485,6 +598,7 @@ class FinanceBenchJudge:
             context = context[:max_context_len] + "..."
 
         prompt = self.prompt.format(
+            examples=self.examples_block(question),
             question=question,
             expected_answer=expected_answer or "(non fournie)",
             justification=justification or "(non fournie)",
@@ -495,7 +609,7 @@ class FinanceBenchJudge:
             response = self._get_llm().invoke(prompt)
             # .text : les seuls blocs de texte. Un modèle de raisonnement renvoie une liste
             # (raisonnement, puis texte) que _parse ne savait pas lire.
-            return self._parse(response.text)
+            verdict = self._parse(response.text)
         except Exception as e:
             # Un rate limit doit remonter à l'appelant pour être rejoué (backoff) ;
             # l'avaler en verdict ERROR fausserait le dénominateur de l'accuracy.
@@ -503,6 +617,13 @@ class FinanceBenchJudge:
                 raise
             logger.warning(f"FinanceBenchJudge error: {e}")
             return FinanceBenchVerdict("ERROR", 0.0, f"Erreur du juge: {type(e).__name__}: {e}")
+        # Référence purement numérique : le calcul tranche, pas le LLM. Le juge refusait 24,24
+        # pour 24,26 (Activision) malgré la tolérance écrite dans son prompt. Seulement dans ce
+        # sens : un chiffre exprimé autrement (unité, convention) reste à l'appréciation du juge.
+        match = numeric_match(expected_answer, generated_answer)
+        if match and verdict.verdict != "CORRECT":
+            return FinanceBenchVerdict("CORRECT", verdict.faithfulness, f"Contrôle numérique : {match}")
+        return verdict
 
 
 def wilson_interval(successes: int, n: int, z: float = 1.96) -> Optional[List[float]]:

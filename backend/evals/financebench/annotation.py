@@ -6,7 +6,10 @@
 #   queue      : fait juger les réponses d'une expérience par les juges candidats, puis crée une
 #                file d'annotation LangSmith, à l'aveugle (aucun verdict affiché), en mettant en
 #                tête les réponses où les juges divergent ;
-#   agreement  : après annotation (clé « human_correct »), accord de chaque juge avec l'humain.
+#   agreement  : après annotation (clé « human_correct »), accord de chaque juge avec l'humain ;
+#   examples   : exporte les annotations dans judge_examples.json, que le juge reçoit comme
+#                exemples. Chaque question est jugée sans son propre exemple : l'accord mesuré
+#                ensuite ne recopie pas l'annotation.
 #
 # Les extraits de contexte ne sont pas conservés dans LangSmith : les juges ne voient que la
 # question, la référence et la réponse. Seul le verdict est comparé, pas la faithfulness.
@@ -14,6 +17,7 @@
 # Usage:
 #   uv run python backend/evals/financebench/annotation.py queue --experiment "<nom>" --size 30
 #   uv run python backend/evals/financebench/annotation.py agreement --project "<projet d'annotation>"
+#   uv run python backend/evals/financebench/annotation.py examples --project "<projet d'annotation>"
 
 import argparse
 import random
@@ -197,6 +201,39 @@ def agreement(project: str):
             _log(f"  {i['id']} humain={'correct' if i['human'][0] else 'incorrect'} — {i['human'][1][:120]}")
 
 
+def export_examples(project: str, max_answer_chars: int = 700):
+    """
+    Écrit les réponses annotées dans JUDGE_EXAMPLES_PATH : le juge les reçoit comme exemples
+    (few-shot). Toutes, correctes et incorrectes, pour qu'il apprenne le seuil et pas seulement
+    l'indulgence. Le juge écarte l'exemple de la question qu'il note (voir FinanceBenchJudge).
+    """
+    import json
+    from backend.evals.experiment_utils import JUDGE_EXAMPLES_PATH
+    client = get_client()
+    runs = list(client.list_runs(project_name=project, is_root=True))
+    human = {f.run_id: f for f in client.list_feedback(run_ids=[r.id for r in runs], feedback_key=[HUMAN_KEY])}
+    examples = []
+    for r in runs:
+        f = human.get(r.id)
+        if f is None:
+            continue
+        inp, answer = r.inputs or {}, (r.outputs or {}).get("answer", "")
+        examples.append({
+            "id": (r.extra or {}).get("metadata", {}).get("financebench_id") or str(r.id),
+            "question": inp.get("question", ""),
+            "reference": inp.get("reference_answer", ""),
+            "answer": answer if len(answer) <= max_answer_chars else answer[:max_answer_chars] + " […]",
+            "verdict": "CORRECT" if f.score == 1 else "INCORRECT",
+            "comment": f.comment or "",
+        })
+    if not examples:
+        raise SystemExit(f"Aucune annotation « {HUMAN_KEY} » dans « {project} ».")
+    examples.sort(key=lambda e: e["id"])
+    JUDGE_EXAMPLES_PATH.write_text(json.dumps(examples, ensure_ascii=False, indent=1) + "\n")
+    n_ok = sum(e["verdict"] == "CORRECT" for e in examples)
+    _log(f"{len(examples)} exemples ({n_ok} corrects, {len(examples) - n_ok} incorrects) → {JUDGE_EXAMPLES_PATH}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Calibrer le juge FinanceBench sur annotation humaine")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -208,9 +245,13 @@ def main():
                    help="Seulement les réponses où les juges ne sont pas d'accord (annotation courte)")
     a = sub.add_parser("agreement", help="Accord de chaque juge avec l'annotation humaine")
     a.add_argument("--project", required=True, help="Projet d'annotation créé par « queue »")
+    e = sub.add_parser("examples", help="Exporte les annotations comme exemples du juge (few-shot)")
+    e.add_argument("--project", required=True, help="Projet d'annotation créé par « queue »")
     args = parser.parse_args()
     if args.cmd == "queue":
         queue(args.experiment, args.dataset, args.size, only_divergent=args.only_divergent)
+    elif args.cmd == "examples":
+        export_examples(args.project)
     else:
         agreement(args.project)
 

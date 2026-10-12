@@ -1,7 +1,7 @@
 """
 L'agent de recherche séparé, et la boucle d'appels d'outils commune aux deux usages.
 
-Les outils eux-mêmes (search, grep, read_page, open_document, navigate) sont dans
+Les outils eux-mêmes (search, grep, read_page, open_doc, navigate) sont dans
 backend/tools/tools.py. Deux usages :
 
 1. Le modèle de GÉNÉRATION reçoit ces outils directement (ResearchAgent.generate_with_tools) :
@@ -142,7 +142,7 @@ Méthode :
 1. Identifie ce qui manque précisément (un chiffre, une ligne comptable, une section).
 2. `search` pour une recherche sémantique en langage naturel dans le vocabulaire des rapports annuels ("provision for income taxes", "Legal Proceedings", "segment information").
 3. `grep` pour vérifier qu'un terme existe (ou n'existe pas) dans un document, et savoir sur quelle page.
-4. `navigate` pour aller droit à une section dont tu connais le titre (un état financier consolidé, une note) ; `open_document` pour voir le plan d'un document quand tu ne sais pas où chercher.
+4. `navigate` pour aller droit à une section dont tu connais le titre (un état financier consolidé, une note) ; `open_doc` pour voir le plan d'un document quand tu ne sais pas où chercher.
 5. `read_page` pour lire une page entière quand un résultat pointe vers un tableau ou une note : les tableaux sont coupés dans les extraits, jamais dans la page. Si le tableau continue sur la page suivante, lis les deux (`end_page`).
 6. Arrête-toi dès que tu as lu la ou les pages qui portent la preuve — les pages lues seront transmises telles quelles au modèle qui répond. Tu as {budget} appels d'outils au maximum.
 

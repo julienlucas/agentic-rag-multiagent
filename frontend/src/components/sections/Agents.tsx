@@ -16,7 +16,7 @@ const agents = [
     index: "A2",
     title: "Agent de recherche et de réponse",
     model: "claude-sonnet-4-6",
-    text: "Reçoit les 10 meilleurs passages et cinq outils — search (le retrieval hybride + rerank), grep (occurrences page par page, exhaustif), read_page (la page entière, tableau compris, sur 1 à 3 pages), open_document (le plan du rapport) et navigate (une section par son titre). Il répond directement si le contexte suffit ; sinon il cherche, en voyant chaque résultat avant de décider du suivant (5 appels au plus), et répond dans la même conversation. Chaque passage ramené reçoit un numéro qu'il cite.",
+    text: "Reçoit les 10 meilleurs passages et cinq outils — search (le retrieval hybride + rerank), grep (occurrences page par page, exhaustif), read_page (la page entière, tableau compris, sur 1 à 3 pages), open_doc (le plan du rapport) et navigate (une section par son titre). Il répond directement si le contexte suffit ; sinon il cherche, en voyant chaque résultat avant de décider du suivant (5 appels au plus), et répond dans la même conversation. Chaque passage ramené reçoit un numéro qu'il cite.",
   },
   {
     icon: <Sparkles />,
@@ -38,7 +38,7 @@ export function Agents() {
           Trois agents, orchestrés par <span className="accent-italic">LangGraph</span>.
         </>
       }
-      intro="Le retriever remonte les passages ; le grand modèle décide s'il en a assez, cherche davantage s'il le faut, et rédige — dans la même conversation, comme dans l'Agentic Search de Mistral."
+      intro="Le retriever remonte les passages ; le grand modèle décide s'il en a assez, cherche davantage s'il le faut, et rédige — dans la même conversation."
     >
       <div className="grid gap-4 md:grid-cols-3">
         {agents.map((a) => (

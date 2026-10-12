@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { ArrowDownUp, Redo2, ScanText, Search, ShieldCheck, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Vendor = "mistral" | "cohere" | "anthropic";
+type Vendor = "ocr" | "cohere" | "anthropic";
 
 /*
  * Le flow n'est plus un arc-en-ciel d'icônes : les six étapes partagent le même
@@ -16,7 +16,7 @@ const steps: {
   vendor: Vendor;
   accent?: boolean;
 }[] = [
-  { icon: <ScanText />, label: "OCR", model: "Mistral OCR", vendor: "mistral" },
+  { icon: <ScanText />, label: "OCR", model: "OCR page par page", vendor: "ocr" },
   { icon: <Search />, label: "Recherche hybride", model: "Cohere Embed v4", vendor: "cohere" },
   { icon: <ArrowDownUp />, label: "Reranking", model: "Cohere Rerank 3.5", vendor: "cohere" },
   { icon: <ShieldCheck />, label: "Vérification de pertinence", model: "Claude Haiku 4.5", vendor: "anthropic" },

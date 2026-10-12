@@ -21,7 +21,7 @@ def test_read_pages_come_first_then_reranked_search_results_after_protected_head
     out = agent.run("quick ratio d'AMD ?", retriever, head + [make_doc("tail")],
                     page_store=PageStore(PAGES))
 
-    assert llm.tool_names == ["search", "grep", "read_page", "open_document", "navigate"]
+    assert llm.tool_names == ["search", "grep", "read_page", "open_doc", "navigate"]
     assert out["tool_calls"] == 3
     docs = out["documents"]
     # tête intouchable, dans le même ordre
@@ -127,3 +127,19 @@ def test_block_list_content_is_flattened_to_text():
     assert message_text(AIMessage(content="plain")) == "plain"
     assert message_text(AIMessage(content=[{"type": "text", "text": "a "}, {"type": "text", "text": "b"}])) == "a b"
     assert message_text(AIMessage(content=[])) == ""
+
+
+def test_finance_rules_only_for_financial_reports():
+    """Les conventions financières (quick ratio, Item 3…) ne s'ajoutent pas au prompt d'un
+    document quelconque : elles venaient de FinanceBench et s'appliquaient aux documents des
+    utilisateurs."""
+    from langchain_core.documents import Document
+    from backend.agents.research_agent import ResearchAgent
+    tenk = Document(page_content="Revenue grew", metadata={"doc_name": "3M_2022_10K"})
+    statement = Document(page_content="CONSOLIDATED BALANCE SHEETS (in millions)", metadata={"source": "rapport.pdf"})
+    memo = Document(page_content="Compte rendu de réunion du 3 mars", metadata={"source": "cr.pdf"})
+    assert ResearchAgent.is_financial([memo, tenk]) and ResearchAgent.is_financial([statement])
+    assert not ResearchAgent.is_financial([memo])
+    agent = ResearchAgent.__new__(ResearchAgent)
+    assert "Legal Proceedings" in agent.rules_for([tenk])
+    assert "Legal Proceedings" not in agent.rules_for([memo])

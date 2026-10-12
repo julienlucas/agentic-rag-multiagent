@@ -1,4 +1,4 @@
-"""Les outils de l'agent (backend/tools/tools.py) : search, grep, read_page, open_document,
+"""Les outils de l'agent (backend/tools/tools.py) : search, grep, read_page, open_doc,
 navigate, appelés par un LLM factice à travers l'agent de recherche."""
 from backend.agents.search_agent import SearchAgent
 from backend.retriever.page_store import PageStore
@@ -40,15 +40,15 @@ def test_read_page_can_span_pages_and_note_is_returned():
     tool_msg = [m for m in llm.invocations[-1] if m.type == "tool"][0]
     assert "=== AMD_2022_10K, p. 2 ===" in tool_msg.content and "=== AMD_2022_10K, p. 3 ===" in tool_msg.content
 
-def test_open_document_and_navigate_point_to_pages_without_adding_passages():
+def test_open_doc_and_navigate_point_to_pages_without_adding_passages():
     pages = {"AMD_2022_10K": [
         "# PART II\n# ITEM 8. FINANCIAL STATEMENTS",
         "# Consolidated Balance Sheets\nCash 4,835\nCurrent liabilities 6,369",
         "# NOTE 4 – Segment Reporting",
     ]}
     llm = FakeToolLLM([
-        [("open_document", {})],
-        [("open_document", {"doc": "amd"})],
+        [("open_doc", {})],
+        [("open_doc", {"doc": "amd"})],
         [("navigate", {"doc": "AMD_2022_10K", "section": "balance sheet"})],
         [("navigate", {"doc": "AMD_2022_10K", "section": "cash flows"})],
         "Bilan p. 2.",
@@ -63,8 +63,16 @@ def test_open_document_and_navigate_point_to_pages_without_adding_passages():
     assert tool_msgs[2].startswith("p. 2 : Consolidated Balance Sheets — Cash 4,835")
     assert tool_msgs[3].startswith("Aucun titre ne contient « cash flows »")
     assert out["queries"] == [
-        "open_document", "open_document: amd",
+        "open_doc", "open_doc: amd",
         'navigate: "balance sheet" [AMD_2022_10K]', 'navigate: "cash flows" [AMD_2022_10K]',
     ]
     # navigation seulement : aucun passage ajouté après la tête
     assert len(out["documents"]) == 2
+
+def test_grep_without_doc_stays_in_the_routed_scope():
+    store = PageStore({"/x/ULTA_2023.pdf": ["SG&A decreased"], "/x/AMCOR_2023.pdf": ["SG&A decreased"]})
+    llm = FakeToolLLM([[("grep", {"pattern": "SG&A"}), ("grep", {"pattern": "SG&A", "doc": "amcor"})], "ok"])
+    SearchAgent(llm=llm).run("q", FakeRetriever(), [], scope=["/x/ULTA_2023.pdf"], page_store=store)
+    scoped, explicit = [m.content for m in llm.invocations[-1] if m.type == "tool"]
+    assert scoped == "ULTA_2023 p. 1: SG&A decreased"
+    assert explicit == "AMCOR_2023 p. 1: SG&A decreased"  # un document nommé reste accessible

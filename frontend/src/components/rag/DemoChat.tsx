@@ -541,7 +541,7 @@ export function DemoChat({ children }: { children?: ReactNode }) {
                       </p>
                       {doc?.status === "loading" ? (
                         <p className="meta mt-4">
-                          Mistral OCR et indexation en cours… la première question
+                          OCR et indexation en cours… la première question
                           sera possible dans quelques secondes.
                         </p>
                       ) : null}

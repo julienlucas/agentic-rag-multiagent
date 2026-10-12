@@ -209,7 +209,7 @@ def main():
     todo = todo[: args.limit] if args.limit else todo
     _log(f"{len(todo)} exemple(s) avec référence sur {len(examples)} dans « {DATASET} »")
 
-    workflow, judge, store = AgentWorkflow(), FinanceBenchJudge(prompt=JUDGE_PROMPT), get_store()
+    workflow, judge, store = AgentWorkflow(), FinanceBenchJudge(prompt=JUDGE_PROMPT, examples=[]), get_store()
     rows = []
     for i, ex in enumerate(todo, 1):
         row = replay_example(ex, workflow, judge, store)

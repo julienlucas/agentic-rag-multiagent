@@ -1,82 +1,77 @@
 import { Section } from "@/components/site/primitives";
 
 /*
- * Les outils, et pourquoi ils comptent. Chiffres Mistral : https://mistral.ai/news/agentic-search/
- * (20 août 2026), FinanceBench 150 questions, boucle complète (search + open / navigate / read /
- * grep) comparée à une boucle search seule. Chiffres de ce RAG : financebench_summary.json,
- * ablation à retrieval identique (baseline vs agentic).
+ * Les outils de navigation de l'agent (backend/tools/tools.py). Limites : corpus de 84 rapports,
+ * expérience LangSmith « … · agentic · 2026-10-12 14:26 ».
  */
 const tools = [
   {
     verb: "Trouver",
     signature: "search(query, doc)",
-    mistral: "search",
     text: "Relance le retrieval hybride du pipeline (BM25 + vecteurs, routage, rerank Cohere) avec une requête reformulée, sur tout le corpus ou un seul document. 8 extraits, chacun avec son document et sa page.",
   },
   {
     verb: "Ouvrir",
-    signature: "open_document(doc)",
-    mistral: "open",
+    signature: "open_doc(doc)",
     text: "Le plan du rapport — PART, ITEM, états financiers consolidés, notes — avec la page de chaque section. Le modèle sait où chercher avant de chercher.",
   },
   {
     verb: "Naviguer",
     signature: "navigate(doc, section)",
-    mistral: "navigate",
     text: "Une section par son titre : « consolidated balance sheet » mène à la page du bilan, là où grep renverrait aussi le sommaire et chaque renvoi.",
   },
   {
     verb: "Localiser",
     signature: "grep(pattern, doc)",
-    mistral: "grep",
     text: "Toutes les occurrences littérales d'un terme, page par page, sur les 260 pages. Exhaustif : zéro résultat permet d'affirmer qu'une donnée est absente du rapport, au lieu de le supposer.",
   },
   {
     verb: "Lire",
     signature: "read_page(doc, page, end_page)",
-    mistral: "read",
     text: "La page entière telle que l'OCR l'a produite, tableau compris, sur 1 à 3 pages quand il est à cheval. Ce qu'un chunk de 1 200 caractères ne montre jamais.",
   },
 ];
 
+/*
+ * Avec et sans outils de navigation, mêmes 65 questions, même modèle (Claude Sonnet 4.6), même
+ * retrieval : expérience LangSmith « … · 2026-10-12 13:16 », baseline et agentic du même run.
+ * Correctes : 35 → 54 (53,8 → 83,1 %). Fausses ou refusées : 30 (15 + 15) → 11 (11 + 0).
+ * Latence de génération moyenne : 7,0 s → 10,99 s.
+ * Coût : run avec outils seul « … · agentic · 2026-10-12 13:46 », Claude Sonnet 4.6 : 1 151 565 tokens
+ * en entrée + 58 351 en sortie pour 65 questions = 4,33 $ (3 $ / 15 $ par million, Bedrock), soit
+ * 0,067 $ et ~17 700 tokens par question (mesuré, juge non compris). Sans outils : ~3 000 tokens et
+ * ~0,02 $, estimés par différence avec le run des deux modes (13:16).
+ */
 const toolGains = [
   {
-    value: "−24 à −34 %",
-    label: "de tokens consommés",
+    value: "+29 pts pour +4 s",
+    label: "de réponses correctes, pour 4 secondes de plus",
+    detail: "53,8 % → 83,1 % de réponses correctes ; 7,0 s → 11,0 s de génération par question en moyenne",
   },
   {
-    value: "+7 à +9 pts",
-    label: "de réponses correctes",
+    value: "−63 %",
+    label: "de réponses fausses ou refusées",
+    detail: "30 sur 65 sans outils de navigation (15 fausses, 15 refus) → 11 avec (11 fausses, aucun refus)",
   },
   {
-    value: "−40 %",
-    label: "de latence",
-    detail: "au p90 : 255 s → 154 s · en moyenne : 108 s → 71 s",
-  },
-];
-
-const toolsHere = [
-  {
-    value: "76,9 → 96,2 %",
-    label: "de réponses correctes",
-    detail: "même index, même retrieval, mêmes 10 passages initiaux : la seule différence, ce sont les outils",
-  },
-  {
-    value: "15,4 → 3,8 %",
-    label: "d'hallucinations",
-    detail: "4 réponses fausses sur 26 sans outils, 1 sur 26 avec",
-  },
-  {
-    value: "8 sur 26",
-    label: "questions ont appelé un outil",
-    detail: "1,75 appel en moyenne, une page lue dans 7 cas sur 8 ; les 18 autres répondent en une passe, sans un token de plus",
+    value: "≈ 0,07 $",
+    label: "par question, ≈ 18 000 tokens",
+    detail: "Claude Sonnet 4.6 au tarif Bedrock, mesuré · sans outils de navigation : ≈ 3 000 tokens et ≈ 0,02 $ (estimation)",
   },
 ];
 
 const limits = [
   {
     title: "Le recall du retrieval",
-    text: "Sur 6 questions sur 26, la page de preuve annotée n'atteint jamais le modèle, outils compris : il y répond pourtant juste, à partir d'autres pages du 10-K. Quand elle l'atteint, il répond juste dans 19 cas sur 20.",
+    text: "Sur les 84 rapports, la page de preuve est dans les 20 premiers passages pour 70 % des questions seulement. Les outils la font parvenir au modèle dans 89 % des cas : le reste est perdu avant même de répondre.",
+  },
+  {
+    title: "Le routage",
+    text: "Quand la question ne nomme pas clairement l'entreprise, ou la nomme d'une façon que le routeur ne reconnaît pas, il peut viser les mauvais rapports parmi 84 : l'agent répond alors avec les chiffres d'une autre entreprise, ou refuse.",
+  },
+  {
+    title: "Les conventions de calcul",
+    text: "Quick ratio, fonds de roulement, rotation des stocks : les références du benchmark n'appliquent pas toujours la même formule d'une question à l'autre. L'agent donne la convention principale et l'autre entre parenthèses ; le juge ne retient parfois que la première.",
   }
 ];
 
@@ -118,12 +113,10 @@ export function Tools() {
         ))}
       </div>
 
-      {/* moins de tokens, plus de précision */}
       <div className="card-paper border-hairline mt-10 p-8">
-        <p className="display-sm mt-8">Voici les gains avec des outils</p>
+        <p className="display-sm mt-8">Voici les gains avec les outils de navigation</p>
         <p className="meta mt-1">
-          Mistral Agentic Search, modèle Mistral Medium 3.5 · sur FinanceBench, 150 questions, 368 documents, soit 53900
-          pages indéxées ensemble
+          Ce RAG, Claude Sonnet 4.6 · FinanceBench, mêmes 65 questions avec et sans outils de navigation
         </p>
         <div className="mt-6 grid gap-6 sm:grid-cols-3">
           {toolGains.map((g) => (
@@ -132,22 +125,10 @@ export function Tools() {
                 {g.value}
               </div>
               <div className="mt-1 text-sm font-medium">{g.label}</div>
-              <div className="meta mt-1">
-                {g.detail}
-              </div>
+              <div className="meta mt-1">{g.detail}</div>
             </div>
           ))}
         </div>
-        <blockquote className="pt-6">
-          <p className="display-sm text-ink">
-            « Les outils de retrieval ne sont pas un surcoût : ils remplacent
-            des recherches relancées pour rien par une{" "}
-            <span className="accent-italic">navigation précise</span>. »
-          </p>
-          <cite className="meta mt-2 block not-italic">
-            Mistral AI, Introducing Agentic Search
-          </cite>
-        </blockquote>
       </div>
 
       <div className="mt-14">
@@ -168,8 +149,8 @@ export function Tools() {
             ))}
           </ol>
           <p className="mt-4 border-t border-sand pt-3 text-xs leading-relaxed text-muted-foreground">
-            26 questions d'évaluation sur 4 filings : assez pour repérer les
-            modes d'échec, trop peu pour se comparer à un benchmark complet.
+            135 questions jugées sur 84 rapports : l'intervalle de confiance à
+            95 % de l'exactitude va de 82 à 93 %.
           </p>
         </div>
       </div>

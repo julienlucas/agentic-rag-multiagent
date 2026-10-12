@@ -50,3 +50,37 @@ def test_error_markers_only_match_at_the_start():
         "Boeing indique dans son 10-K qu'une erreur est survenue lors du traitement de votre question "
         "n'est pas une phrase du filing ; la réponse attendue est $66,608 millions [3]."
     ) is None
+
+
+def test_judge_reads_cited_passages_first():
+    """3M 2018 : le PP&E net cité [3] venait d'une page lue par un outil, au-delà des 6 000
+    premiers caractères ; le juge le prenait pour une invention."""
+    from types import SimpleNamespace
+    from backend.evals.experiment import judge_context
+    docs = [SimpleNamespace(page_content=t) for t in ("intro", "bruit", "Net PP&E 8,738")]
+    assert judge_context("PP&E net : 8 738 M$ [3], voir aussi [1] et [9].", docs).split("\n\n") == [
+        "Net PP&E 8,738", "intro", "bruit"]
+    assert judge_context("sans citation", docs).split("\n\n") == ["intro", "bruit", "Net PP&E 8,738"]
+
+
+def test_judge_never_sees_the_annotation_of_the_question_it_grades():
+    examples = [{"question": "Q1 ?", "reference": "a", "answer": "b", "verdict": "CORRECT", "comment": "ok"},
+                {"question": "Q2 ?", "reference": "c", "answer": "d", "verdict": "INCORRECT", "comment": ""}]
+    block = FinanceBenchJudge(llm=object(), examples=examples).examples_block("  q1  ?")
+    assert "Q2 ?" in block and "Q1 ?" not in block
+
+
+def test_numeric_match_on_real_answers():
+    from backend.evals.experiment_utils import numeric_match
+    # même valeur à une autre échelle, virgule de milliers, parenthèses comptables
+    assert numeric_match("$8.70", "Le net PP&E de 3M est de **$8,738 millions** [11].")
+    assert numeric_match("$1577.00", "3M's FY2018 capex was **$(1,577) million** [11].")
+    assert numeric_match("16.5%", "**EBITDA % margin FY2022 : 16.5%**")
+    # arrondi de la référence : −0,0153 s'arrondit à −0,02, pas −0,0142
+    assert numeric_match("-0.02", "**Données :**\nROA = −546 / 35 663 = **−0.0153**, soit −0.02")
+    assert not numeric_match("-0.02", "**AES's FY2022 ROA = –1.42%**")
+    assert not numeric_match("24.26", "**FY2019 Fixed Asset Turnover Ratio = 24.00**")
+    assert not numeric_match("70", "Pfizer expects total costs of **$700 million** [1].")
+    # référence non numérique : pas de contrôle
+    assert not numeric_match("Yes, it's spinning off Upjohn.", "Yes")
+    assert not numeric_match("0", "Les coûts de restructuration s'élèvent à $0.3 million [2].")

@@ -340,6 +340,15 @@ def ocr_document(
     return pages
 
 
+# Documents dont le markdown shhdwi a des tableaux corrompus (lignes décalées) : leur texte vient
+# de Mistral OCR en entier, même en source markdown.
+FULL_OCR_DOCS = {
+    # Page de garde : la ligne « MMM / Chicago Stock Exchange » perdue, chaque bourse remontée d'un
+    # cran ; la note 2026 se retrouvait cotée à Chicago (financebench_id_00941).
+    "3M_2023Q2_10Q",
+}
+
+
 def markdown_document(
     doc_name: str,
     pdf_path: Path,
@@ -358,12 +367,24 @@ def markdown_document(
       - « none »     : pages laissées vides.
     """
     cache_path = _pages_cache(doc_name, "markdown")
-    # Le cache n'est repris que s'il a été écrit avec le même remplissage des pages manquantes.
-    same_fill = cache_path.exists() and json.loads(cache_path.read_text(encoding="utf-8")).get("fill") == fill
+    full_ocr = doc_name in FULL_OCR_DOCS
+    # Le cache n'est repris que s'il a été écrit avec le même remplissage des pages manquantes,
+    # et avec la même source (markdown, ou OCR complet).
+    meta = json.loads(cache_path.read_text(encoding="utf-8")) if cache_path.exists() else {}
+    same_fill = meta.get("fill") == fill and bool(meta.get("full_ocr")) == full_ocr
     cached = _load_ocr_cache(cache_path) if same_fill and not force else {}
     if cached:
         _log(f"{doc_name}: {len(cached)} pages depuis le cache markdown")
         return [cached.get(i, "") for i in range(max(cached) + 1)]
+
+    if full_ocr:
+        if ocr_client is None:
+            raise SystemExit(f"{doc_name} est OCRisé en entier (FULL_OCR_DOCS) : MISTRALAI_API_KEY requise")
+        pages = ocr_document(ocr_client, pdf_path, doc_name, force, **ocr_kwargs)
+        _save_ocr_cache(cache_path, dict(enumerate(pages)), len(pages), fill=fill, gaps=[], scanned=[],
+                        full_ocr=True)
+        _log(f"{doc_name}: {len(pages)} pages, Mistral OCR complet (tableaux du markdown corrompus)")
+        return pages
 
     md_path = download(markdown_corpus.MARKDOWN_URL.format(doc_name=doc_name),
                        CACHE_DIR / "markdown" / f"{doc_name}.md", force)
@@ -489,6 +510,33 @@ def _keywords_from_answer(answer: str) -> List[str]:
     return out
 
 
+# Références FinanceBench fausses, vérifiées dans le document : corrigées plutôt que retirées.
+# La référence d'origine reste lisible dans la justification.
+REFERENCE_CORRECTIONS = {
+    "financebench_id_00283": (
+        "70",
+        "Référence corrigée (FinanceBench : « 77.78 », calculé 700/9) : environ 90 % des ~700 M$ "
+        "de coûts de séparation d'Upjohn sont déjà engagés, il reste donc 10 % × 700 = 70 M$.",
+    ),
+    "financebench_id_02419": (
+        "No. The Upjohn business was already spun off on November 16, 2020 (combined with Mylan "
+        "to create Viatris); the Q2 2023 10-Q only reports residual separation costs.",
+        "Référence corrigée (FinanceBench : « Yes, it's spinning off Upjohn ») : le 10-Q du T2 2023 "
+        "indique que l'activité Upjohn a été scindée le 16 novembre 2020.",
+    ),
+}
+
+
+def correct_reference(row: Dict) -> Dict:
+    """Applique REFERENCE_CORRECTIONS à une ligne du dataset (inchangée si non concernée)."""
+    fix = REFERENCE_CORRECTIONS.get(row["id"])
+    if fix is None:
+        return row
+    answer, justification = fix
+    return {**row, "expected_answer": answer, "justification": justification,
+            "answer_keywords": _keywords_from_answer(answer)}
+
+
 def build_dataset(questions: List[Dict], docs: List[str]) -> List[Dict]:
     """Convertit les questions FinanceBench au format dataset du projet."""
     selected = [q for q in questions if q["doc_name"] in set(docs)]
@@ -502,7 +550,7 @@ def build_dataset(questions: List[Dict], docs: List[str]) -> List[Dict]:
             if page is not None and str(page).strip() != "":
                 gold_pages.append([ev_doc, int(page)])
 
-        rows.append({
+        rows.append(correct_reference({
             "id": q["financebench_id"],
             "doc_name": q["doc_name"],
             "company": q.get("company"),
@@ -514,7 +562,7 @@ def build_dataset(questions: List[Dict], docs: List[str]) -> List[Dict]:
             "gold_pages": gold_pages,
             "question_type": q.get("question_type"),
             "question_reasoning": q.get("question_reasoning"),
-        })
+        }))
 
     return sort_rows(rows)  # groupé par type de question, pour la ventilation du résumé
 
@@ -604,6 +652,9 @@ def main():
                              "Avec « none » (défaut), les questions dont une preuve est sur une page manquante "
                              "sont retirées du dataset")
     parser.add_argument("--force", action="store_true", help="Ignore les caches et tout reconstruit")
+    parser.add_argument("--reindex", default="",
+                        help="Documents à ré-indexer même s'ils sont déjà dans Qdrant (texte changé, ex. "
+                             "ajout à FULL_OCR_DOCS), séparés par des virgules ; l'ancienne version est remplacée")
     parser.add_argument("--skip-embeddings", action="store_true",
                         help="S'arrête avant les embeddings, sans indexer dans Qdrant (les expériences exigent l'index)")
     parser.add_argument("--clean", action="store_true",
@@ -613,12 +664,11 @@ def main():
     parser.add_argument("--ocr-delay", type=float, default=2.0,
                         help="Pause en secondes entre deux lots OCR")
     args = parser.parse_args()
-    uses_ocr = args.source == "ocr" or args.fill == "ocr"
+    reindex = {d.strip() for d in args.reindex.split(",") if d.strip()}
 
     # Vérifié AVANT tout appel payant : l'OCR ne doit pas tourner pour rien.
     missing = [name for name, ok in (
         ("LANGSMITH_API_KEY (dataset)", settings.LANGSMITH_API_KEY),
-        ("MISTRALAI_API_KEY (OCR)", settings.MISTRALAI_API_KEY or not uses_ocr),
         ("QDRANT_URL (index persistant)", settings.QDRANT_URL or args.skip_embeddings),
     ) if not ok]
     if missing:
@@ -631,6 +681,10 @@ def main():
 
     preset = args.docs.strip() if args.docs.strip() in PRESETS else ""
     docs = preset_docs(questions, preset) if preset else [d.strip() for d in args.docs.split(",") if d.strip()]
+    uses_ocr = (args.source == "ocr" or args.fill == "ocr"
+                or (args.source == "markdown" and bool(FULL_OCR_DOCS & set(docs))))
+    if uses_ocr and not settings.MISTRALAI_API_KEY:
+        raise SystemExit("Variables manquantes dans le .env : MISTRALAI_API_KEY (OCR)")
     _log(f"Source: {args.source}{' (pages manquantes : ' + args.fill + ')' if args.source == 'markdown' else ''}")
     _log(f"Documents ({len(docs)}): {', '.join(docs)}")
     questions = [q for q in questions if q["doc_name"] in set(docs)]
@@ -642,7 +696,7 @@ def main():
     indexed = set() if (args.force or args.skip_embeddings) else set(already_indexed(docs, args.source))
     if indexed:
         _log(f"Déjà indexés dans Qdrant, sautés : {', '.join(sorted(indexed))}")
-    todo = [d for d in docs if d not in indexed]
+    todo = [d for d in docs if d not in indexed or d in reindex]
 
     # Pages de chaque document. En source markdown, il les faut toutes (même indexées, depuis le
     # cache ou gratuitement) : les pages manquantes décident des questions gardées dans le dataset.

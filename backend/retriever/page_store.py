@@ -87,10 +87,11 @@ class PageStore:
     # --- outils ---------------------------------------------------------------
 
     def grep(self, pattern: str, doc: Optional[str] = None, max_hits: int = 20,
-             context_chars: int = 160) -> Dict:
+             context_chars: int = 160, docs: Optional[List[str]] = None) -> Dict:
         """
         Cherche `pattern` (regex, insensible à la casse ; repli littéral si la regex est
-        invalide) dans un document ou dans tous. Retourne les occurrences page par page.
+        invalide) dans un document, dans `docs` (libellés), ou dans tous. Retourne les
+        occurrences page par page.
         """
         try:
             rx = re.compile(pattern, re.IGNORECASE)
@@ -100,7 +101,7 @@ class PageStore:
         target = self.resolve(doc) if doc else None
         if doc and target is None:
             return {"hits": [], "total": 0, "error": f"document inconnu: {doc}", "documents": self.documents()}
-        docs = [target] if target else self.documents()
+        docs = [target] if target else ([d for d in docs if d in self._pages] if docs else self.documents())
 
         hits, total = [], 0
         for d in docs:

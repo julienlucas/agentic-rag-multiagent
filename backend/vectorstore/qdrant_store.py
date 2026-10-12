@@ -321,6 +321,10 @@ class TenantStore:
                 payload={**r.payload, "tenant_id": self.tenant_id, "created_at": time.time()},
             )], wait=True)
         source = registry[0].payload.get("source") if registry else file_hash
+        # Comme add_document : une version précédente du même fichier est remplacée, pas gardée à côté.
+        for d in self.documents():
+            if d["source"] == source and d["file_hash"] != file_hash:
+                self.delete_document(d["file_hash"])
         logger.info(f"Qdrant [{self.tenant_id}] {source}: {copied} chunks copiés depuis [{other.tenant_id}]")
         return copied
 

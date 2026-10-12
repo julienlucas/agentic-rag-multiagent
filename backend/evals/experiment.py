@@ -17,6 +17,7 @@
 
 import argparse
 import os
+import re
 import sys
 import threading
 import time
@@ -158,6 +159,20 @@ def compute_retrieval_metrics(docs, example: Dict, k_values: List[int], page_tol
 # Évaluation d'une question
 # ---------------------------------------------------------------------------
 
+# Le juge lit les passages cités par la réponse en premier : coupé à 6 000 caractères dans
+# l'ordre de récupération, le contexte perdait les pages lues par les outils, et le juge prenait
+# des chiffres bien présents dans le document (3M 2018, PP&E net 8 738 M$) pour des inventions.
+JUDGE_CONTEXT_CHARS = 16000
+
+
+def judge_context(answer: str, docs: List) -> str:
+    """Passages numérotés [n] cités dans la réponse d'abord, puis les autres, dans l'ordre."""
+    cited = [int(n) for n in dict.fromkeys(re.findall(r"\[(\d+)\]", answer or ""))]
+    cited = [n for n in cited if 1 <= n <= len(docs)]
+    order = cited + [n for n in range(1, len(docs) + 1) if n not in set(cited)]
+    return "\n\n".join(getattr(docs[n - 1], "page_content", "") for n in order)
+
+
 def evaluate_example(
     example: Dict,
     retriever,
@@ -269,7 +284,7 @@ def evaluate_example(
         row["context_hit"] = _context_hits(llm_docs, expected, example.get("answer_keywords"))
         row["answer_f1"] = _f1_score(answer, expected) if expected else 0.0
 
-        context = "\n\n".join(getattr(d, "page_content", "") for d in llm_docs)
+        context = judge_context(answer, llm_docs)
         if judge:
             try:
                 verdict = call_with_backoff(
@@ -279,6 +294,7 @@ def evaluate_example(
                         generated_answer=answer,
                         context=context,
                         justification=example.get("justification", ""),
+                        max_context_len=JUDGE_CONTEXT_CHARS,
                     ),
                     f"le juge ({example.get('id')})", log=_log,
                 )
@@ -558,6 +574,9 @@ def main():
                         help="Index à interroger : texte markdown recalé (défaut) ou Mistral OCR (voir prepare.py)")
     parser.add_argument("--mode", default="both", choices=["baseline", "agentic", "both"])
     parser.add_argument("--max-items", type=int, default=0)
+    parser.add_argument("--ids", default="",
+                        help="Seulement ces questions (financebench_id séparés par des virgules) ; l'index reste "
+                             "celui du corpus entier, distracteurs compris")
     parser.add_argument("--k-values", default="5,10,20")
     parser.add_argument("--workers", type=int, default=2,
                         help="Questions en parallèle. Passer à 1 en cas de rate limits répétés.")
@@ -585,6 +604,9 @@ def main():
     if args.docs:
         wanted = {d.strip() for d in args.docs.split(",") if d.strip()}
         dataset = [ex for ex in dataset if ex.get("doc_name") in wanted]
+    if args.ids:
+        ids = {i.strip() for i in args.ids.split(",") if i.strip()}
+        dataset = [ex for ex in dataset if ex.get("id") in ids]
     if args.max_items:
         dataset = dataset[: args.max_items]
     if not dataset:

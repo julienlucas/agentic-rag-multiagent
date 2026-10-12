@@ -21,7 +21,6 @@ const columns: { title: string; links: FooterLink[] }[] = [
     links: [
       { href: "https://github.com/julienlucas/agentic-rag-with-tools", label: "Code sur GitHub", external: true },
       { href: "https://github.com/patronus-ai/financebench", label: "FinanceBench", external: true },
-      { href: "https://mistral.ai/news/agentic-search/", label: "Agentic Search de Mistral", external: true },
     ],
   },
   {
