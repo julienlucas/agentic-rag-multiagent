@@ -10,6 +10,7 @@ from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharac
 from ..config import constants
 from ..config.settings import settings
 from ..utils.logging import logger
+from . import formats
 from .chunkers import get_chunking_strategy
 from ..retriever.embeddings import get_embeddings
 
@@ -97,8 +98,8 @@ class DocumentProcessor:
         return all_chunks
 
     def _process_file(self, file) -> tuple:
-        """Logique de traitement avec Mistral OCR. Retourne (chunks, pages)."""
-        if not file.name.endswith(('.pdf', '.docx', '.txt', '.md')):
+        """Pages markdown (formats.py : OCR, texte ou tableur) puis chunks. Retourne (chunks, pages)."""
+        if formats.kind_of(file.name) is None:
             logger.warning(f"Ignorer le type de fichier non supporté: {file.name}")
             return [], []
 
@@ -116,7 +117,9 @@ class DocumentProcessor:
 
         # Traiter le document entier d'un coup
         try:
-            all_markdown = self._bundled_ocr(file) or self._ocr(file_content)
+            all_markdown = self._bundled_ocr(file) or formats.extract_pages(
+                file.name, file_content, self._ocr, pdf=getattr(file, "pdf", None),
+            )
             logger.info(f"Document traité avec {len(all_markdown)} pages")
 
             # Assembler le markdown en gardant la trace des frontières de page :
@@ -154,16 +157,19 @@ class DocumentProcessor:
             logger.error(f"Erreur lors du traitement OCR: {str(e)}")
             return [], []
 
-    def _ocr(self, file_content: bytes) -> List[str]:
-        """Mistral OCR du document entier : le markdown de chaque page."""
+    def _ocr(self, file_content: bytes, mime: str = "application/pdf") -> List[str]:
+        """Mistral OCR du document entier (PDF, DOCX, PPTX ou image) : le markdown de chaque page."""
         file_base64 = base64.b64encode(file_content).decode('utf-8')
+        data_url = f"data:{mime};base64,{file_base64}"
+        document = ({"type": "image_url", "image_url": data_url} if mime.startswith("image/")
+                    else {"type": "document_url", "document_url": data_url})
         response = self.client.ocr.process(
             model=settings.MODEL_OCR_ID,
-            document={
-                "type": "document_url",
-                "document_url": f"data:application/pdf;base64,{file_base64}"
-            },
-            include_image_base64=True
+            document=document,
+            # Les images extraites ne servent pas au texte. Mistral refuse un DOCX ou un PPTX avec
+            # include_image_base64=False seul : image_limit=0 les écarte pour tous les formats.
+            include_image_base64=False,
+            image_limit=0,
         )
         return [page.markdown for page in response.pages]
 

@@ -1,35 +1,36 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, ExternalLink, FileText, X } from "lucide-react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
-import workerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-import { api, documentUrl, type Citation } from "@/api";
+import type { Citation } from "@/api";
 import { matchSegments } from "@/lib/passage";
 import { cn } from "@/lib/utils";
+import { loadPdfjs } from "@/lib/pdf";
 
 /*
  * Ouvre le document d'une citation à la page citée (sans surlignage dans le PDF).
  *
- * Source, dans l'ordre : l'original servi par l'URL de la citation (exemple ou dépôt
- * conservé), le fichier encore en mémoire s'il vient d'être déposé, sinon le texte OCR de
- * la page lu dans l'index (documents déposés avant que les originaux soient conservés).
+ * Source, dans l'ordre : l'original servi par `url` (exemple, dépôt de la démo ou document
+ * de l'espace connecté), le fichier encore en mémoire s'il vient d'être déposé, sinon le texte
+ * de la page lu dans l'index par `pageText` (format sans rendu PDF, ou original indisponible).
  */
-
-async function loadPdfjs() {
-  const pdfjs = await import("pdfjs-dist");
-  pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
-  return pdfjs;
-}
 
 export function DocumentViewer({
   citation,
-  sessionId,
+  url,
   file,
+  pageText,
+  subtitle,
   onClose,
 }: {
   citation: Citation;
-  sessionId: string;
+  /** URL complète de l'original (PDF), ou null. */
+  url: string | null;
   /** Fichier déposé pendant la session, s'il correspond au document cité. */
   file?: File;
+  /** Texte d'une page (numérotée à partir de 1), le repli quand le PDF ne peut pas s'afficher. */
+  pageText?: (page: number) => Promise<string>;
+  /** Sous-titre de l'en-tête ; par défaut, le passage cité. */
+  subtitle?: string;
   onClose: () => void;
 }) {
   const cited = citation.page ?? 1;
@@ -43,7 +44,6 @@ export function DocumentViewer({
   const canvas = useRef<HTMLCanvasElement>(null);
   const firstMark = useRef<HTMLElement | null>(null);
   const passage = citation.text || citation.excerpt;
-  const url = citation.pdf_url ? documentUrl(citation.pdf_url, sessionId) : null;
   const pageCount = pdf?.numPages ?? null;
 
   /* Échap ferme le panneau. */
@@ -62,35 +62,36 @@ export function DocumentViewer({
         if (!url && !file) throw new Error("pas d'original");
         const pdfjs = await loadPdfjs();
         const source = url
-          ? { url, disableRange: true, disableStream: true }
+          ? { url, disableRange: true, disableStream: true, withCredentials: true }
           : { data: new Uint8Array(await file!.arrayBuffer()) };
         loaded = await pdfjs.getDocument(source).promise;
         if (cancelled) return;
         setPdf(loaded);
         setMode("pdf");
       } catch {
-        if (!cancelled) setMode(citation.file_hash ? "text" : "error");
+        if (!cancelled) setMode(pageText ? "text" : "error");
       }
     })();
     return () => {
       cancelled = true;
       loaded?.destroy();
     };
-  }, [url, file, citation.file_hash]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [url, file]);
 
   /* Repli : texte OCR de la page affichée. */
   useEffect(() => {
-    if (mode !== "text" || !citation.file_hash) return;
+    if (mode !== "text" || !pageText) return;
     let cancelled = false;
     setText(null);
-    api
-      .pageText(citation.file_hash, page, sessionId)
-      .then((r) => !cancelled && setText(r.text))
+    pageText(page)
+      .then((t) => !cancelled && setText(t))
       .catch(() => !cancelled && setText(""));
     return () => {
       cancelled = true;
     };
-  }, [mode, page, citation.file_hash, sessionId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, page]);
 
   /* Largeur disponible : la page est rendue à la largeur du panneau. */
   useLayoutEffect(() => {
@@ -156,8 +157,8 @@ export function DocumentViewer({
             <p className="truncate text-sm font-medium">{citation.locator}</p>
             <p className="meta">
               {mode === "text"
-                ? "texte OCR de la page (original indisponible)"
-                : `page citée par le passage [${citation.n}]`}
+                ? "texte de la page (aperçu PDF indisponible)"
+                : (subtitle ?? `page citée par le passage [${citation.n}]`)}
             </p>
           </div>
           <div className="flex items-center gap-1">

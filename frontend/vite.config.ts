@@ -6,12 +6,18 @@ import fs from "fs";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: "./",
+  // Chemins absolus : les routes imbriquées (/app/chat…) doivent trouver /assets/… à la racine.
+  base: "/",
   server: {
     host: "::",
     port: 8080,
     proxy: {
       "/api": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
+      // Authentification django-allauth (headless) : même origine que le frontend, cookies compris.
+      "/_allauth": {
         target: "http://localhost:8000",
         changeOrigin: true,
       },

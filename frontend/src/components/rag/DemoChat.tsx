@@ -1,268 +1,30 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import {
-  ArrowRight,
-  ArrowUp,
-  ChevronDown,
-  Clock,
-  RotateCcw,
-  ShieldAlert,
-  Sparkles,
-  ThumbsDown,
-  ThumbsUp,
-} from "lucide-react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { ArrowRight, ArrowUp, Clock, RotateCcw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
-import { api, type Citation } from "@/api";
+import { api, documentUrl, type Citation } from "@/api";
 import { renderMarkdown } from "@/lib/markdown";
 import { parseVerificationReport } from "@/lib/verification";
 import { useElapsed } from "@/hooks/useTimer";
+import {
+  AnswerBlock,
+  AnswerFeedback,
+  CitedSources,
+  CiteMark,
+  CollapsibleAnswer,
+  PipelineProgress,
+  QuestionBubble,
+  usePipelineStages,
+} from "./answer";
 import { CorpusPanel } from "./CorpusPanel";
 import { DocumentViewer } from "./DocumentViewer";
 import { exampleDocs, exampleOutput, type ExampleDoc } from "./examples";
-import { pipelineSteps } from "./pipeline";
 import type { DocState, Turn } from "./types";
 
 const DEFAULT_EXAMPLE = exampleDocs[0];
 const EXAMPLE_SIGNALS = parseVerificationReport(exampleOutput.report);
-const MAX_ANSWER_H = 130;
 
-/** Réponse repliée à 130 px, dépliable par « Voir la suite ». */
-function CollapsibleAnswer({ children }: { children: ReactNode }) {
-  const [open, setOpen] = useState(false);
-  const [overflows, setOverflows] = useState(false);
-  const [fullHeight, setFullHeight] = useState(0);
-  const inner = useRef<HTMLDivElement>(null);
-
-  /* mesure avant peinture : sinon le bloc s'affiche déplié puis se referme */
-  useLayoutEffect(() => {
-    const el = inner.current;
-    if (!el) return;
-    const check = () => {
-      setFullHeight(el.scrollHeight);
-      setOverflows(el.scrollHeight > MAX_ANSWER_H + 8);
-    };
-    check();
-    const ro = new ResizeObserver(check);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [children]);
-
-  const collapsed = !fullHeight || (overflows && !open);
-
-  return (
-    <div>
-      <div
-        className="relative overflow-hidden transition-[max-height] duration-300"
-        style={{ maxHeight: collapsed ? MAX_ANSWER_H : fullHeight }}
-      >
-        <div ref={inner} className="!text-xs !leading-relaxed !text-ink-muted">
-          {children}
-        </div>
-        {overflows && !open ? (
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-bubble-r to-transparent"
-          />
-        ) : null}
-      </div>
-      {overflows ? (
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          className="mono-xs mt-2 inline-flex items-center gap-1 text-brand-deep transition-colors hover:text-brand-strong cursor-pointer"
-        >
-          {open ? "Réduire" : "Voir la suite"}
-          <ChevronDown
-            className={cn("size-3 transition-transform", open && "rotate-180")}
-          />
-        </button>
-      ) : null}
-    </div>
-  );
-}
-
-/** Ouvre le document d'une citation à la page citée ; null si elle ne peut pas l'être. */
-type OpenCitation = ((c: Citation) => void) | null;
-
-/** Marqueur de citation [n] : renvoie au passage transmis au modèle ; un clic ouvre le document. */
-function CiteMark({ n, citation, onOpen }: { n: number; citation?: Citation; onOpen?: OpenCitation }) {
-  const openable = Boolean(citation && onOpen);
-  const mark = (
-    <sup
-      role={openable ? "button" : undefined}
-      tabIndex={openable ? 0 : undefined}
-      onClick={openable ? () => onOpen!(citation!) : undefined}
-      onKeyDown={openable ? (e) => e.key === "Enter" && onOpen!(citation!) : undefined}
-      className={cn(
-        "mono-xs ml-0.5 rounded bg-brand-surface-strong px-1 py-px text-[0.6rem] text-brand-deep",
-        openable ? "cursor-pointer hover:bg-brand hover:text-on-brand" : "cursor-help",
-      )}
-    >
-      {n}
-    </sup>
-  );
-  if (!citation) return mark;
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>{mark}</TooltipTrigger>
-      <TooltipContent className="max-w-sm bg-brand text-on-brand">
-        <span className="mono-xs block text-on-brand/75">{citation.locator}</span>
-        <span className="mt-1 block text-xs leading-relaxed">{citation.excerpt}</span>
-        {openable ? <span className="mono-xs mt-1.5 block text-on-brand/75">cliquer pour ouvrir le passage</span> : null}
-      </TooltipContent>
-    </Tooltip>
-  );
-}
-
-/** Liste des passages réellement cités dans la réponse ; un clic ouvre le document au passage. */
-function CitedSources({
-  answer,
-  citations,
-  onOpen,
-}: {
-  answer: string;
-  citations: Citation[];
-  onOpen?: OpenCitation;
-}) {
-  const used = Array.from(new Set([...answer.matchAll(/\[(\d+)\]/g)].map((m) => Number(m[1]))))
-    .sort((a, b) => a - b)
-    .map((n) => citations.find((c) => c.n === n))
-    .filter((c): c is Citation => Boolean(c));
-  if (!used.length) return null;
-  return (
-    <div className="mt-3 border-t border-hairline pt-3">
-      <span className="eyebrow">Passages cités</span>
-      <ul className="mt-2 space-y-1.5">
-        {used.map((c) => {
-          const body = (
-            <>
-              <span className="mono-xs mt-px inline-grid size-4 shrink-0 place-items-center rounded bg-brand-surface-strong text-[0.6rem] leading-none text-brand-deep">
-                {c.n}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="font-medium text-ink-muted">{c.locator}</span> — {c.excerpt}
-              </span>
-            </>
-          );
-          return (
-            <li key={c.n} className="text-[0.7rem] leading-relaxed text-muted-foreground">
-              {onOpen ? (
-                <button
-                  type="button"
-                  onClick={() => onOpen(c)}
-                  title="Ouvrir le document à ce passage"
-                  className="flex w-full cursor-pointer gap-2 rounded-sm text-left transition-colors hover:bg-brand-surface hover:text-ink"
-                >
-                  {body}
-                </button>
-              ) : (
-                <div className="flex gap-2">{body}</div>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
-}
-
-/**
- * Vote 👍 / 👎 sous une réponse. Le 👎 ouvre un commentaire facultatif avant l'envoi.
- * Un seul vote par réponse : il devient un exemple du jeu de non-régression (evaluation/feedback/).
- */
-function AnswerFeedback({ token, sessionId }: { token: string; sessionId: string }) {
-  const [state, setState] = useState<"idle" | "comment" | "sending" | "done">("idle");
-  const [vote, setVote] = useState<0 | 1 | null>(null);
-  const [comment, setComment] = useState("");
-
-  async function send(score: 0 | 1, text?: string) {
-    setVote(score);
-    setState("sending");
-    try {
-      await api.sendFeedback(token, score, sessionId, text?.trim() || undefined);
-      setState("done");
-    } catch (err) {
-      setState(score === 0 ? "comment" : "idle");
-      if (score === 1) setVote(null);
-      toast.error("Vote non enregistré", {
-        description: err instanceof Error ? err.message : "Erreur de connexion au backend",
-      });
-    }
-  }
-
-  const voteButton = (score: 0 | 1) => {
-    const Icon = score === 1 ? ThumbsUp : ThumbsDown;
-    const label = score === 1 ? "Réponse satisfaisante" : "Réponse pas satisfaisante";
-    return (
-      <button
-        type="button"
-        aria-label={label}
-        title={label}
-        aria-pressed={vote === score}
-        disabled={state === "sending" || state === "done"}
-        onClick={() => (score === 1 ? send(1) : (setVote(0), setState("comment")))}
-        className={cn(
-          "inline-grid size-7 cursor-pointer place-items-center rounded-sm border transition-colors",
-          vote === score
-            ? "border-brand bg-brand-surface text-brand-deep"
-            : "border-transparent text-muted-foreground hover:border-hairline hover:text-brand-deep",
-          state === "done" && vote !== score && "hidden",
-        )}
-      >
-        <Icon className="size-3.5" />
-      </button>
-    );
-  };
-
-  return (
-    <div className="mt-1.5">
-      <div className="flex items-center gap-1">
-        {voteButton(1)}
-        {voteButton(0)}
-        {state === "done" ? (
-          <span className="meta ml-1">merci pour votre retour</span>
-        ) : (
-          <span className="meta ml-1">Notez les réponses, surtout si elles sont insatisfaisantes</span>
-        )}
-      </div>
-      {state === "comment" || (state === "sending" && vote === 0) ? (
-        <div className="rise-in mt-2 rounded-sm border border-hairline-strong bg-paper p-2">
-          <textarea
-            rows={2}
-            autoFocus
-            value={comment}
-            maxLength={2000}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder="Qu'est-ce qui ne va pas ? (facultatif : mauvais chiffre, mauvais document, réponse incomplète…)"
-            className="w-full resize-none bg-transparent px-1 text-xs outline-none placeholder:text-muted-foreground"
-          />
-          <div className="mt-1 flex justify-end gap-1.5">
-            <Button
-              variant="pill"
-              size="pill"
-              disabled={state === "sending"}
-              onClick={() => {
-                setVote(null);
-                setComment("");
-                setState("idle");
-              }}
-            >
-              Annuler
-            </Button>
-            <Button variant="pill" size="pill" disabled={state === "sending"} onClick={() => send(0, comment)}>
-              Envoyer
-            </Button>
-          </div>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-/** Marqueur de tour : Q pour la question, R pour la réponse. */
 function docFromExample(ex: ExampleDoc): DocState {
   return {
     id: ex.id,
@@ -277,38 +39,21 @@ function docFromExample(ex: ExampleDoc): DocState {
   };
 }
 
-function docFromFile(file: File): DocState {
-  return {
-    id: `upload-${Date.now()}`,
-    title: file.name,
-    fileName: file.name,
-    kind: (file.name.split(".").pop() ?? "DOC").toUpperCase(),
-    type: "Document utilisateur",
-    source: "upload",
-    file,
-    status: "loading",
-  };
-}
-
-
+/**
+ * Démo publique, sans compte : deux rapports d'exemple déjà indexés, questions illimitées sur
+ * eux. Déposer ses propres documents demande un compte (20 documents offerts).
+ */
 export function DemoChat({ children }: { children?: ReactNode }) {
   const [sessionId] = useState(() => `session_${Date.now().toString(36)}`);
   const [doc, setDoc] = useState<DocState | null>(null);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState(false);
-  const [stage, setStage] = useState(0);
+  const { stage, start, stop } = usePipelineStages();
   const elapsed = useElapsed(pending);
-  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const viewport = useRef<HTMLDivElement>(null);
   const loadToken = useRef(0);
   const [opened, setOpened] = useState<Citation | null>(null);
-
-  const clearTimers = () => {
-    timers.current.forEach(clearTimeout);
-    timers.current = [];
-  };
-  useEffect(() => clearTimers, []);
 
   useEffect(() => {
     if (turns.length === 0 && !pending) return;
@@ -316,7 +61,7 @@ export function DemoChat({ children }: { children?: ReactNode }) {
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [turns, pending, stage]);
 
-  /* ---------- chargement / indexation d'un document ---------- */
+  /* ---------- chargement d'un exemple ---------- */
 
   const indexDoc = useCallback(
     async (next: DocState) => {
@@ -325,10 +70,7 @@ export function DemoChat({ children }: { children?: ReactNode }) {
       setTurns([]);
       const started = Date.now();
       try {
-        const res =
-          next.source === "upload" && next.file
-            ? await api.uploadFile(next.file, sessionId)
-            : await api.loadFile(next.fileName, sessionId);
+        const res = await api.loadFile(next.fileName, sessionId);
         if (token !== loadToken.current) return;
         setDoc((d) =>
           d && d.id === next.id
@@ -360,10 +102,6 @@ export function DemoChat({ children }: { children?: ReactNode }) {
     if (ex && ex.id !== doc?.id) indexDoc(docFromExample(ex));
   };
 
-  const upload = (file: File) => indexDoc(docFromFile(file));
-
-  const removeUpload = () => indexDoc(docFromExample(DEFAULT_EXAMPLE));
-
   const retry = () => {
     if (doc) indexDoc(doc);
   };
@@ -377,33 +115,21 @@ export function DemoChat({ children }: { children?: ReactNode }) {
     const q = question.trim();
     if (!q || !ready || pending) return;
 
-    clearTimers();
     setDraft("");
     setPending(true);
-    setStage(0);
+    start();
     setTurns((t) => [...t, { id: `u-${Date.now()}`, role: "user", text: q }]);
-
-    // Animation estimée de la trace (le backend ne streame pas).
-    let acc = 0;
-    pipelineSteps.forEach((s, i) => {
-      if (s.ms > 0 && i + 1 < pipelineSteps.length) {
-        acc += s.ms;
-        const nextIndex = pipelineSteps[i + 1].conditional ? i + 2 : i + 1;
-        timers.current.push(setTimeout(() => setStage(nextIndex), acc));
-      }
-    });
 
     const started = Date.now();
     try {
       const res = await api.processQuestion(q, sessionId);
-      const signals = parseVerificationReport(res.verification_report);
       setTurns((t) => [
         ...t,
         {
           id: `a-${Date.now()}`,
           role: "assistant",
           answer: res.draft_answer,
-          signals,
+          signals: parseVerificationReport(res.verification_report),
           elapsed: Math.round((Date.now() - started) / 1000),
           citations: res.citations ?? [],
           feedbackToken: res.feedback_token,
@@ -411,14 +137,13 @@ export function DemoChat({ children }: { children?: ReactNode }) {
       ]);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Erreur de connexion au backend";
-      const signals = parseVerificationReport(`Erreur: ${message}`);
       setTurns((t) => [
         ...t,
         {
           id: `a-${Date.now()}`,
           role: "assistant",
           answer: message,
-          signals,
+          signals: parseVerificationReport(`Erreur: ${message}`),
           elapsed: Math.round((Date.now() - started) / 1000),
           citations: [],
           failed: true,
@@ -426,25 +151,21 @@ export function DemoChat({ children }: { children?: ReactNode }) {
       ]);
       toast.error("Le pipeline a échoué", { description: message });
     } finally {
-      clearTimers();
+      stop();
       setPending(false);
-      setStage(pipelineSteps.length);
     }
   }
 
   const reset = () => {
-    clearTimers();
+    stop();
     setTurns([]);
     setPending(false);
     setDraft("");
   };
 
-  /* Fichier déposé pendant la session, si la citation vient de lui (même nom sans extension). */
-  const sessionFile = (c: Citation) =>
-    doc?.source === "upload" && doc.file && doc.fileName.replace(/\.[^.]+$/, "") === c.source ? doc.file : undefined;
   const openCitation = (c: Citation) => {
-    if (c.pdf_url || c.file_hash || sessionFile(c)) setOpened(c);
-    else toast.info("Ce passage ne peut pas être rouvert", { description: "Déposez à nouveau le document." });
+    if (c.pdf_url || c.file_hash) setOpened(c);
+    else toast.info("Ce passage ne peut pas être rouvert");
   };
 
   const activeExample = doc?.source === "example" ? exampleDocs.find((e) => e.id === doc.id) : undefined;
@@ -455,301 +176,178 @@ export function DemoChat({ children }: { children?: ReactNode }) {
     <div>
       {children}
 
-      {/* Conversation à gauche ; documents (dépôt + exemples) à droite, au-dessus sur mobile. */}
+      {/* Conversation à gauche ; documents (exemples + invitation à s'inscrire) à droite, au-dessus sur mobile. */}
       <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_17rem]">
         <div className="lg:order-last lg:flex lg:flex-col">
-          <CorpusPanel
-            active={doc}
-            onSelectExample={selectExample}
-            onUpload={upload}
-            onRemoveUpload={removeUpload}
-            onRetry={retry}
-            busy={busy}
-          />
+          <CorpusPanel active={doc} onSelectExample={selectExample} onRetry={retry} busy={busy} />
         </div>
 
-        <div className="card-paper min-w-0 border-brand bg-white overflow-hidden">
-          <div>
-            {/* conversation */}
-            {/* hauteur figée à celle du chargement (exemple affiché) : la conversation défile dedans */}
-            <div className="flex h-[53rem] flex-col lg:h-[44.3rem]">
-              <ScrollArea className="min-h-0 flex-1" viewportRef={viewport} data-lenis-prevent>
-                <div className="space-y-5 p-5">
-                  {showExample ? (
-                    <div className="rise-in space-y-5">
-                      {doc?.status === "loading" ? (
+        <div className="card-paper min-w-0 overflow-hidden border-brand bg-paper">
+          {/* hauteur figée à celle du chargement (exemple affiché) : la conversation défile dedans */}
+          <div className="flex h-[53rem] flex-col lg:h-[44.3rem]">
+            <ScrollArea className="min-h-0 flex-1" viewportRef={viewport} data-lenis-prevent>
+              <div className="space-y-5 p-5">
+                {showExample ? (
+                  <div className="rise-in space-y-5">
+                    {doc?.status === "loading" ? <span className="meta">indexation en cours…</span> : null}
+                    <QuestionBubble>{exampleOutput.question}</QuestionBubble>
+                    <div className="max-w-[85%]">
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
                         <span className="meta">
-                          indexation en cours…
+                          confiance reranker{" "}
+                          {EXAMPLE_SIGNALS.rerankScore != null
+                            ? `${Math.round(EXAMPLE_SIGNALS.rerankScore * 100)} %`
+                            : null}
                         </span>
-                      ) : null}
-                      <div className="flex justify-end">
-                        <p className="flex max-w-[85%] gap-2.5 rounded-2xl bg-bubble-q px-4 py-2.5 text-sm leading-relaxed text-on-brand">
-                          <span className="min-w-0 flex-1">
-                            {exampleOutput.question}
-                          </span>
-                        </p>
+                        <span className="meta inline-flex items-center gap-1">
+                          <Clock className="size-3" /> {exampleOutput.elapsed}s
+                        </span>
                       </div>
-                      <div className="max-w-[85%]">
+                      <div className="flex gap-2.5 rounded-2xl bg-bubble-r px-4 py-3.5">
                         <div className="min-w-0 flex-1">
-                          <div className="mb-2 flex flex-wrap items-center gap-2">
-                            <span className="meta">
-                              confiance reranker{" "}
-                              {EXAMPLE_SIGNALS.rerankScore != null ? `${Math.round(EXAMPLE_SIGNALS.rerankScore * 100)}\u00a0%` : null}
-                            </span>
-                            <span className="meta inline-flex items-center gap-1">
-                              <Clock className="size-3" /> {exampleOutput.elapsed}
-                              s
-                            </span>
-                          </div>
-                          <div className="flex gap-2.5 rounded-2xl bg-bubble-r px-4 py-3.5">
-                            <div className="min-w-0 flex-1">
-                              <CollapsibleAnswer>
-                                <div className="prose-rag">
-                                  {renderMarkdown(exampleOutput.answer, (n) => (
-                                    <CiteMark
-                                      n={n}
-                                      citation={exampleOutput.citations.find((c) => c.n === n)}
-                                      onOpen={openCitation}
-                                    />
-                                  ))}
-                                </div>
-                              </CollapsibleAnswer>
-                              <CitedSources
-                                answer={exampleOutput.answer}
-                                citations={exampleOutput.citations}
-                                onOpen={openCitation}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {turns.length === 0 && !pending && !showExample ? (
-                    <div className="rise-in">
-                      <h3 className="display-sm">
-                        {doc
-                          ? `Interrogez « ${doc.title} ».`
-                          : "Chargez un document pour commencer."}
-                      </h3>
-                      <p className="copy mt-2 text-sm">
-                        Le pipeline cible le document, cherche en lexical et en
-                        vectoriel, fusionne, reranke, vérifie la pertinence des
-                        passages, corrige la recherche si besoin — puis répond
-                        uniquement à partir des preuves retenues.
-                      </p>
-                      {doc?.status === "loading" ? (
-                        <p className="meta mt-4">
-                          OCR et indexation en cours… la première question
-                          sera possible dans quelques secondes.
-                        </p>
-                      ) : null}
-                      {suggestions.length ? (
-                        <div className="mt-5 grid gap-2">
-                          {suggestions.map((s) => (
-                            <button
-                              key={s.text}
-                              type="button"
-                              disabled={!ready}
-                              onClick={() => ask(s.text)}
-                              className="group flex items-start gap-3 rounded-md border border-hairline bg-paper px-3.5 py-3 text-left text-sm transition-colors hover:border-brand hover:bg-brand-surface disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              <Sparkles className="mt-0.5 size-3.5 shrink-0 text-brand-deep" />
-                              <span className="min-w-0 flex-1">
-                                <span className="block leading-snug">
-                                  {s.text}
-                                </span>
-                                <span className="meta mt-1 block">
-                                  {s.hint}
-                                </span>
-                              </span>
-                              <ArrowUp className="mt-0.5 size-3.5 shrink-0 rotate-45 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-                            </button>
-                          ))}
-                        </div>
-                      ) : null}
-                    </div>
-                  ) : null}
-
-                  {turns.map((turn) =>
-                    turn.role === "user" ? (
-                      <div key={turn.id} className="flex justify-end">
-                        <p className="rise-in flex max-w-[85%] gap-2.5 rounded-2xl rounded-br-sm bg-bubble-q px-4 py-2.5 text-sm leading-relaxed text-on-brand">
-                          <span className="min-w-0 flex-1">{turn.text}</span>
-                        </p>
-                      </div>
-                    ) : (
-                      <div key={turn.id} className="rise-in max-w-[95%]">
-                        <div className="min-w-0 flex-1">
-                          <div className="mb-2 flex flex-wrap items-center gap-2">
-                            {turn.signals.rerankScore != null ? (
-                              <span className="meta">
-                                confiance reranker{" "}
-                                {Math.round(turn.signals.rerankScore * 100)}&nbsp;%
-                              </span>
-                            ) : null}
-                            <span className="meta inline-flex items-center gap-1">
-                              <Clock className="size-3" /> {turn.elapsed}s
-                            </span>
-                          </div>
-                          <div
-                            className={cn(
-                              "flex gap-2.5 rounded-2xl border px-4 py-3.5",
-                              turn.failed
-                                ? "border-destructive/40 bg-destructive/5"
-                                : "border-transparent bg-bubble-r",
-                            )}
-                          >
-                            <div className="min-w-0 flex-1">
-                              {turn.failed ? (
-                                <p className="flex gap-2 text-sm text-destructive">
-                                  <ShieldAlert className="mt-0.5 size-4 shrink-0" />
-                                  {turn.answer}
-                                </p>
-                              ) : (
-                                <CollapsibleAnswer>
-                                  <div className="prose-rag">
-                                    {renderMarkdown(turn.answer, (n) => (
-                                      <CiteMark
-                                        n={n}
-                                        citation={turn.citations.find((c) => c.n === n)}
-                                        onOpen={openCitation}
-                                      />
-                                    ))}
-                                  </div>
-                                </CollapsibleAnswer>
-                              )}
-                              {!turn.failed ? (
-                                <CitedSources answer={turn.answer} citations={turn.citations} onOpen={openCitation} />
-                              ) : null}
-                              {!turn.failed &&
-                              turn.signals.correctiveRounds > 0 ? (
-                                <p className="mt-3 flex gap-2 border-t border-hairline pt-3 text-xs text-muted-foreground">
-                                  <Sparkles className="mt-0.5 size-3.5 shrink-0 text-brand-deep" />
-                                  Le modèle a jugé le contexte insuffisant et a
-                                  cherché lui-même (search, grep, read_page, navigate…) avant
-                                  de répondre — le détail est dans le rapport.
-                                </p>
-                              ) : null}
-                            </div>
-                          </div>
-                          {!turn.failed && turn.feedbackToken ? (
-                            <AnswerFeedback token={turn.feedbackToken} sessionId={sessionId} />
-                          ) : null}
-                        </div>
-                      </div>
-                    ),
-                  )}
-
-                  {pending ? (
-                    <div className="rise-in space-y-2 rounded-2xl border border-dashed border-brand/50 bg-brand-surface/40 px-4 py-3.5">
-                      {pipelineSteps
-                        .filter((s) => !s.conditional)
-                        .map((s) => {
-                          const i = pipelineSteps.indexOf(s);
-                          const done = stage > i;
-                          const running = stage === i;
-                          return (
-                            <div
-                              key={s.key}
-                              className={cn(
-                                "flex items-center gap-2.5 text-xs transition-opacity",
-                                !done && !running && "opacity-40",
-                              )}
-                            >
-                              {done ? (
-                                <span className="size-3.5 shrink-0 rounded-full bg-success/80" />
-                              ) : (
-                                <span
-                                  className={cn(
-                                    "size-3.5 shrink-0 rounded-full border border-brand",
-                                    running && "signal-dot bg-brand",
-                                  )}
+                          <CollapsibleAnswer>
+                            <div className="prose-rag">
+                              {renderMarkdown(exampleOutput.answer, (n) => (
+                                <CiteMark
+                                  n={n}
+                                  citation={exampleOutput.citations.find((c) => c.n === n)}
+                                  onOpen={openCitation}
                                 />
-                              )}
-                              <span
-                                className={cn(
-                                  "font-medium",
-                                  done && "text-ink-muted",
-                                )}
-                              >
-                                {s.label}
-                              </span>
-                              {running ? (
-                                <span className="meta">
-                                  en cours…
-                                </span>
-                              ) : null}
+                              ))}
                             </div>
-                          );
-                        })}
-                      <p className="meta pt-1">
-                        {elapsed}s · 3 à 5 appels LLM en série, comptez 10 à 40 s
-                      </p>
+                          </CollapsibleAnswer>
+                          <CitedSources
+                            answer={exampleOutput.answer}
+                            citations={exampleOutput.citations}
+                            onOpen={openCitation}
+                          />
+                        </div>
+                      </div>
                     </div>
-                  ) : null}
-                </div>
-              </ScrollArea>
-
-              {/* saisie */}
-              <div className="border-t border-hairline p-3 px-5">
-                <div className="flex items-end gap-2 rounded-sm border border-hairline-strong bg-paper p-2 transition-colors focus-within:border-brand">
-                  <textarea
-                      rows={1}
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        ask(draft);
-                      }
-                    }}
-                    disabled={!ready || pending}
-                    placeholder={
-                      ready
-                        ? "Posez une question sur le document…"
-                        : doc?.status === "loading"
-                          ? "Indexation en cours…"
-                          : "Chargez un document pour poser une question"
-                    }
-                    className="max-h-32 min-h-9 flex-1 resize-none bg-transparent px-2 py-1.5 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed"
-                  />
-                  <Button
-                    variant="brand"
-                    onClick={() => ask(draft)}
-                    disabled={!draft.trim() || !ready || pending}
-                    className="h-9 shrink-0 px-3.5 disabled:opacity-100"
-                  >
-                    Envoyer
-                    <ArrowRight />
-                  </Button>
-                </div>
-                {suggestions.length || turns.length ? (
-                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                    {suggestions.length ? (
-                      <span className="meta mr-1">questions préparées</span>
-                    ) : null}
-                    {turns.length ? (
-                      <Button variant="pill" size="pill" onClick={reset} disabled={pending} className="gap-1 [&_svg]:size-3">
-                        <RotateCcw /> Réinitialiser
-                      </Button>
-                    ) : null}
-                    {suggestions.map((s) => (
-                      <Button
-                        key={s.text}
-                        variant="pill"
-                        size="pill"
-                        disabled={!ready || pending}
-                        onClick={() => ask(s.text)}
-                        title={s.text}
-                      >
-                        <span className="truncate">{s.text.slice(0, 48)}…</span>
-                      </Button>
-                    ))}
                   </div>
                 ) : null}
+
+                {turns.length === 0 && !pending && !showExample ? (
+                  <div className="rise-in">
+                    <h3 className="display-sm">
+                      {doc ? `Interrogez « ${doc.title} ».` : "Chargez un document pour commencer."}
+                    </h3>
+                    <p className="copy mt-2 text-sm">
+                      Le pipeline cible le document, cherche en lexical et en vectoriel, fusionne, reranke,
+                      vérifie la pertinence des passages, corrige la recherche si besoin — puis répond
+                      uniquement à partir des preuves retenues.
+                    </p>
+                    {doc?.status === "loading" ? (
+                      <p className="meta mt-4">
+                        Chargement de l'exemple… la première question sera possible dans quelques secondes.
+                      </p>
+                    ) : null}
+                    {suggestions.length ? (
+                      <div className="mt-5 grid gap-2">
+                        {suggestions.map((s) => (
+                          <button
+                            key={s.text}
+                            type="button"
+                            disabled={!ready}
+                            onClick={() => ask(s.text)}
+                            className="group flex items-start gap-3 rounded-md border border-hairline bg-paper px-3.5 py-3 text-left text-sm transition-colors hover:border-brand hover:bg-brand-surface disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <Sparkles className="mt-0.5 size-3.5 shrink-0 text-brand-deep" />
+                            <span className="min-w-0 flex-1">
+                              <span className="block leading-snug">{s.text}</span>
+                              <span className="meta mt-1 block">{s.hint}</span>
+                            </span>
+                            <ArrowUp className="mt-0.5 size-3.5 shrink-0 rotate-45 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                {turns.map((turn) =>
+                  turn.role === "user" ? (
+                    <QuestionBubble key={turn.id}>{turn.text}</QuestionBubble>
+                  ) : (
+                    <AnswerBlock
+                      key={turn.id}
+                      answer={turn.answer}
+                      citations={turn.citations}
+                      signals={turn.signals}
+                      elapsed={turn.elapsed}
+                      failed={turn.failed}
+                      onOpen={openCitation}
+                      footer={
+                        !turn.failed && turn.feedbackToken ? (
+                          <AnswerFeedback
+                            send={(score, comment) => api.sendFeedback(turn.feedbackToken!, score, sessionId, comment)}
+                          />
+                        ) : null
+                      }
+                    />
+                  ),
+                )}
+
+                {pending ? <PipelineProgress stage={stage} elapsed={elapsed} /> : null}
               </div>
+            </ScrollArea>
+
+            {/* saisie */}
+            <div className="border-t border-hairline p-3 px-5">
+              <div className="flex items-end gap-2 rounded-sm border border-hairline-strong bg-paper p-2 transition-colors focus-within:border-brand">
+                <textarea
+                  rows={1}
+                  value={draft}
+                  aria-label="Votre question"
+                  onChange={(e) => setDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      ask(draft);
+                    }
+                  }}
+                  disabled={!ready || pending}
+                  placeholder={
+                    ready
+                      ? "Posez une question sur le document…"
+                      : doc?.status === "loading"
+                        ? "Chargement en cours…"
+                        : "Choisissez un exemple pour poser une question"
+                  }
+                  className="max-h-32 min-h-9 flex-1 resize-none bg-transparent px-2 py-1.5 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed"
+                />
+                <Button
+                  variant="brand"
+                  onClick={() => ask(draft)}
+                  disabled={!draft.trim() || !ready || pending}
+                  className="h-9 shrink-0 px-3.5 disabled:opacity-100"
+                >
+                  Envoyer
+                  <ArrowRight />
+                </Button>
+              </div>
+              {suggestions.length || turns.length ? (
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  {suggestions.length ? <span className="meta mr-1">questions préparées</span> : null}
+                  {turns.length ? (
+                    <Button variant="pill" size="pill" onClick={reset} disabled={pending} className="gap-1 [&_svg]:size-3">
+                      <RotateCcw /> Réinitialiser
+                    </Button>
+                  ) : null}
+                  {suggestions.map((s) => (
+                    <Button
+                      key={s.text}
+                      variant="pill"
+                      size="pill"
+                      disabled={!ready || pending}
+                      onClick={() => ask(s.text)}
+                      title={s.text}
+                    >
+                      <span className="truncate">{s.text.slice(0, 48)}…</span>
+                    </Button>
+                  ))}
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
@@ -759,8 +357,12 @@ export function DemoChat({ children }: { children?: ReactNode }) {
         <DocumentViewer
           key={`${opened.source}-${opened.n}-${opened.page}`}
           citation={opened}
-          sessionId={sessionId}
-          file={sessionFile(opened)}
+          url={opened.pdf_url ? documentUrl(opened.pdf_url, sessionId) : null}
+          pageText={
+            opened.file_hash
+              ? (page) => api.pageText(opened.file_hash!, page, sessionId).then((r) => r.text)
+              : undefined
+          }
           onClose={() => setOpened(null)}
         />
       ) : null}

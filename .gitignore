@@ -220,3 +220,4 @@ backend/evals/financebench/cache/
 # Build du frontend : reconstruit par le Dockerfile et par Vercel
 frontend/dist/
 
+db.sqlite3

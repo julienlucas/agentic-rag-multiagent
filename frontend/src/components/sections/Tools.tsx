@@ -79,7 +79,7 @@ export function Tools() {
   return (
     <Section
       id="outils"
-      index="03"
+      index="04"
       eyebrow="Le levier déterminant"
       title={
         <>

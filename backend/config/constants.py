@@ -5,4 +5,6 @@ MAX_FILE_SIZE: int = 50 * 1024 * 1024
 MAX_TOTAL_SIZE: int = 200 * 1024 * 1024
 
 # Types de fichiers autorisés pour le téléchargement
-ALLOWED_TYPES: list = [".txt", ".pdf", ".docx", ".md"]
+# Types de fichiers acceptés par la démo publique (exemples seulement, voir endpoints.load_file).
+# L'espace connecté accepte tous les formats de backend/document_processor/formats.py.
+ALLOWED_TYPES: list = [".pdf"]

@@ -223,7 +223,7 @@ class TenantStore:
     # --- écriture -------------------------------------------------------------
 
     def add_document(self, file_hash: str, source: str, chunks: List[Document], pages: List[str],
-                     enforce_quota: bool = True) -> int:
+                     enforce_quota: bool = True, max_documents: int = None, max_chunks: int = None) -> int:
         """
         Indexe un fichier (chunks + pages). Idempotent : un fichier déjà présent (même hash) est
         réécrit à l'identique ; un fichier de même nom mais de contenu différent remplace l'ancien.
@@ -232,11 +232,14 @@ class TenantStore:
         known = self.documents()
         replaced = [d for d in known if d["file_hash"] == file_hash or d["source"] == source]
         if enforce_quota:
-            if len(known) - len(replaced) + 1 > settings.TENANT_MAX_DOCUMENTS:
-                raise QuotaExceeded(f"Quota atteint : {settings.TENANT_MAX_DOCUMENTS} documents par espace.")
+            # Quotas de l'offre du workspace (espace connecté), sinon ceux de la configuration (démo).
+            max_documents = max_documents or settings.TENANT_MAX_DOCUMENTS
+            max_chunks = max_chunks or settings.TENANT_MAX_CHUNKS
+            if len(known) - len(replaced) + 1 > max_documents:
+                raise QuotaExceeded(f"Quota atteint : {max_documents} documents par espace.")
             freed = sum(d.get("chunk_count", 0) for d in replaced)
-            if self.chunk_count() - freed + len(chunks) > settings.TENANT_MAX_CHUNKS:
-                raise QuotaExceeded(f"Quota atteint : {settings.TENANT_MAX_CHUNKS} passages indexés par espace.")
+            if self.chunk_count() - freed + len(chunks) > max_chunks:
+                raise QuotaExceeded(f"Quota atteint : {max_chunks} passages indexés par espace.")
 
         # Purge d'abord : restes d'une indexation interrompue, ou ancienne version du fichier.
         self.delete_document(file_hash)
@@ -282,11 +285,13 @@ class TenantStore:
         logger.info(f"Qdrant [{self.tenant_id}] {source}: {len(chunks)} chunks, {len(pages or [])} pages")
         return len(chunks)
 
-    def copy_document_from(self, other: "TenantStore", file_hash: str) -> int:
+    def copy_document_from(self, other: "TenantStore", file_hash: str, source: str = None) -> int:
         """
         Recopie un fichier indexé dans l'espace `other` : chunks avec leurs vecteurs (dense et BM25),
-        pages et entrée du registre, sans rien ré-embedder. Réservé à l'évaluation, dont plusieurs
-        jeux de documents partagent les mêmes rapports. Retourne le nombre de chunks copiés.
+        pages et entrée du registre, sans rien ré-embedder. Sert à l'évaluation (plusieurs jeux de
+        documents partagent les mêmes rapports) et aux dépôts d'un fichier déjà indexé ailleurs.
+        `source` renomme le document dans cet espace (son lien `pdf_url` est alors retiré : il
+        désignait l'original dans l'autre espace). Retourne le nombre de chunks copiés.
         """
         self.delete_document(file_hash)  # restes d'une copie interrompue
         flt = other._filter(self._eq("file_hash", file_hash))
@@ -302,7 +307,7 @@ class TenantStore:
                     models.PointStruct(
                         id=self._point_id(file_hash, "copy", str(r.id)),
                         vector=r.vector if with_vectors else {},
-                        payload={**r.payload, "tenant_id": self.tenant_id},
+                        payload=self._renamed({**r.payload, "tenant_id": self.tenant_id}, source),
                     )
                     # Le registre (kind=document) est écrit en dernier, comme dans add_document.
                     for r in records if r.payload.get("kind") != "document"
@@ -318,15 +323,26 @@ class TenantStore:
         for r in registry:
             self._client.upsert(self._store.pages, [models.PointStruct(
                 id=self._point_id(file_hash, "document"), vector={},
-                payload={**r.payload, "tenant_id": self.tenant_id, "created_at": time.time()},
+                payload=self._renamed({**r.payload, "tenant_id": self.tenant_id, "created_at": time.time()}, source),
             )], wait=True)
-        source = registry[0].payload.get("source") if registry else file_hash
+        source = source or (registry[0].payload.get("source") if registry else file_hash)
         # Comme add_document : une version précédente du même fichier est remplacée, pas gardée à côté.
         for d in self.documents():
             if d["source"] == source and d["file_hash"] != file_hash:
                 self.delete_document(d["file_hash"])
         logger.info(f"Qdrant [{self.tenant_id}] {source}: {copied} chunks copiés depuis [{other.tenant_id}]")
         return copied
+
+    @staticmethod
+    def _renamed(payload: Dict, source: Optional[str]) -> Dict:
+        if not source:
+            return payload
+        payload["source"] = source
+        if isinstance(payload.get("metadata"), dict):
+            meta = {k: v for k, v in payload["metadata"].items() if k != "pdf_url"}
+            meta["source"] = source
+            payload["metadata"] = meta
+        return payload
 
     def delete_document(self, file_hash: str) -> None:
         flt = self._filter(self._eq("file_hash", file_hash))

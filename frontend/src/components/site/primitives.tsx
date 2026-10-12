@@ -77,7 +77,7 @@ export function Section({
                 </span>
                 <span
                   aria-hidden
-                  className={cn("mt-3 block h-px w-8", onInk ? "bg-gold-300" : "bg-brand")}
+                  className={cn("mt-3 block h-px w-8", onInk ? "bg-orange-300" : "bg-brand")}
                 />
               </div>
             ) : null}

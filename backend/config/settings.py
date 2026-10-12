@@ -200,6 +200,21 @@ class Settings(BaseSettings):
     # Originaux des documents déposés, pour les rouvrir depuis une citation (storage.py).
     # En production : un volume Railway persistant, par exemple /data/documents.
     DOCUMENT_STORAGE_DIR: str = "document_storage"
+    # Ingestion des documents déposés dans l'espace connecté (backend/saas/ingestion.py) : la file
+    # est en base (Document.status), dépilée par une boucle de fond DANS le service web. Pas de
+    # worker séparé : un volume Railway ne s'attache qu'à un service, et l'ingestion lit les
+    # originaux sur ce volume. Nombre de documents traités en parallèle par processus :
+    INGESTION_CONCURRENCY: int = 2
+    # Conversion DOCX / PPTX / ODT / RTF en PDF (citations ouvertes à la page). Sans LibreOffice,
+    # le fichier part tel quel à Mistral OCR et la citation s'ouvre sur le texte de la page.
+    SOFFICE_BIN: str = "soffice"
+
+    # Paiement des packs de crédits (backend/saas/billing.py). Vide = achats désactivés.
+    STRIPE_SECRET_KEY: Optional[str] = None
+    STRIPE_WEBHOOK_SECRET: Optional[str] = None
+    STRIPE_AUTOMATIC_TAX: bool = False  # Stripe Tax : prix TTC, TVA calculée par pays
+    # Adresse publique du frontend (retour de Stripe Checkout). Vide = origine de la requête.
+    FRONTEND_URL: Optional[str] = None
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

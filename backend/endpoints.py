@@ -13,7 +13,6 @@ from .retriever.page_store import PageStore
 from .vectorstore import QuotaExceeded, get_store
 from .agents.workflow import AgentWorkflow
 from .evals.feedback import votes, votes_dataset
-from .config import constants
 from .config.settings import settings
 from .utils.logging import logger
 from langsmith import trace
@@ -26,9 +25,11 @@ if settings.LANGSMITH_API_KEY:
     os.environ["LANGCHAIN_API_KEY"] = settings.LANGSMITH_API_KEY
     os.environ["LANGCHAIN_PROJECT"] = votes.TRACE_PROJECT
 
-# Les documents vivent dans Qdrant, un espace par tenant. En attendant l'authentification,
-# le tenant est le session_id envoyé par le client : ce n'est PAS une isolation réelle
-# (quiconque connaît un session_id lit cet espace). Avec l'auth, le tenant viendra du jeton.
+# Démo publique (sans compte) : les exemples AMD / Boeing, dans un espace par session_id envoyé
+# par le client, préfixé « demo- ». Ce n'est pas une isolation réelle (quiconque connaît un
+# session_id lit cet espace), d'où : pas de dépôt de fichier ici, seulement les exemples. Le
+# préfixe garantit qu'un session_id ne désigne jamais l'espace d'un compte (« ws-… », saas/).
+# L'espace connecté (backend/saas/views.py) tire son tenant de la session authentifiée.
 
 # Pages OCR par (tenant, documents indexés) : évite de relire toutes les pages dans Qdrant
 # à chaque question. La clé change dès qu'un document est ajouté ou supprimé.
@@ -42,7 +43,7 @@ class BadTenant(ValueError):
 
 def _tenant(session_id):
     try:
-        return get_store().for_tenant(session_id)
+        return get_store().for_tenant(f"demo-{session_id}")
     except ValueError as e:
         raise BadTenant(str(e)) from e
 
@@ -95,16 +96,16 @@ def _store_original(f, digest: str):
         return
     try:
         f.file_obj.seek(0)
-        storage.save(digest, f.name, f.file_obj.read())
+        storage.save(digest, os.path.splitext(f.name)[1], f.file_obj.read())
         f.file_obj.seek(0)
     except OSError as e:
         logger.error(f"Original de {f.name} non sauvegardé ({e}) : la citation s'ouvrira sur le texte OCR")
 
 
 def _release_original(file_hash: str):
-    """Efface l'original quand plus aucun espace n'indexe ce document."""
-    if not get_store().tenants_with_document(file_hash):
-        storage.remove(file_hash)
+    """Efface l'original quand plus aucun espace (ni aucun compte) n'indexe ce document."""
+    from .saas.ingestion import release_original
+    release_original(file_hash)
 
 
 def process_files(file_objects, session_id, success_message="Fichiers traités avec succès"):
@@ -160,37 +161,6 @@ def process_files(file_objects, session_id, success_message="Fichiers traités a
 @require_http_methods(["GET"])
 def index(request):
     return render(request, 'frontend/dist/index.html')
-
-@csrf_exempt
-@require_http_methods(["POST"])
-def upload_file(request):
-    """Télécharger et traiter un fichier"""
-
-    file = request.FILES.get('file')
-    session_id = request.POST.get('session_id', 'default')
-
-    if file is None:
-        return JsonResponse({"error": "Aucun fichier reçu (champ 'file')."}, status=400)
-
-    try:
-        # Valider le fichier
-        if not file.name.lower().endswith(tuple(constants.ALLOWED_TYPES)):
-            return JsonResponse({"error": f"Type de fichier non supporté: {file.name}"}, status=400)
-
-        # Créer l'objet fichier pour le processeur
-        class FileObject:
-            def __init__(self, file_obj):
-                self.name = file_obj.name
-                self.file_obj = file_obj
-
-        file_object = FileObject(file)
-        return process_files([file_object], session_id, "Fichier traité avec succès")
-
-    except (BadTenant, QuotaExceeded) as e:
-        return JsonResponse({"error": str(e)}, status=400)
-    except Exception as e:
-        logger.error(f"Erreur lors du traitement du fichier: {str(e)}")
-        return JsonResponse({"error": str(e)}, status=500)
 
 @csrf_exempt
 @require_http_methods(["POST"])

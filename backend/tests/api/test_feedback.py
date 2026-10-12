@@ -8,7 +8,6 @@ import pytest
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
 django.setup()
 
-from django.core.files.uploadedfile import SimpleUploadedFile  # noqa: E402
 
 from backend import endpoints  # noqa: E402
 from backend.evals.feedback import votes as feedback, votes_dataset as feedback_dataset  # noqa: E402
@@ -17,7 +16,7 @@ from backend.evals.feedback.votes_dataset import (  # noqa: E402
     TraceNotReady, add_vote, cited_passages, example_from_vote, parse_classification,
 )
 from backend.evals.feedback.replay import outcome, replayable, summarize  # noqa: E402
-from conftest import post_json  # noqa: E402
+from conftest import load_example, post_json  # noqa: E402
 
 
 # --- jeton -----------------------------------------------------------------
@@ -48,7 +47,7 @@ def voting(api, monkeypatch):
                         lambda run_id, score, comment: sent.append(("dataset", run_id, score)))
     monkeypatch.setattr(endpoints._workflow, "full_pipeline",
                         lambda **k: {"draft_answer": "réponse", "verification_report": "", "citations": []})
-    api.post("/api/upload-file", {"file": SimpleUploadedFile("a.pdf", b"a"), "session_id": "alice"})
+    load_example(api, "a.pdf", b"a", "alice")
     return api, sent
 
 
@@ -62,7 +61,7 @@ def test_vote_reaches_the_traced_run(voting):
     r = post_json(client, "/api/feedback",
                    {"feedback_token": token, "score": 0, "comment": " chiffre faux ", "session_id": "alice"})
     assert r.status_code == 200
-    run_id = feedback.read_token(token, "alice")
+    run_id = feedback.read_token(token, "demo-alice")
     assert sent == [(run_id, 0, "chiffre faux"), ("dataset", run_id, 0)]  # puis rangé en arrière-plan
 
 

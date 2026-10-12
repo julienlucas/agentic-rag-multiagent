@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { ArrowUp, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/site/primitives";
@@ -11,9 +12,11 @@ const columns: { title: string; links: FooterLink[] }[] = [
     title: "Explorer",
     links: [
       { href: "/#demo", label: "Démo" },
+      { href: "/#fonctionnement", label: "Fonctionnement" },
       { href: "/#agents", label: "Les agents" },
       { href: "/#resultats", label: "Résultats" },
       { href: "/#outils", label: "Les outils" },
+      { href: "/tarifs", label: "Tarifs" },
     ],
   },
   {
@@ -52,7 +55,10 @@ export function Footer() {
           </div>
           <div className="flex flex-wrap gap-3">
             <Button asChild variant="brand">
-              <a href="/#demo">Essayer la démo</a>
+              <Link to="/inscription">Commencer gratuitement</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/#demo">Essayer la démo</Link>
             </Button>
             <Button asChild variant="outline">
               <a href={LINKEDIN} target="_blank" rel="noreferrer">
@@ -64,9 +70,9 @@ export function Footer() {
 
         <div className="mt-16 grid gap-10 border-t border-hairline pt-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div>
-            <a href="/" className="text-[1.375rem] font-semibold tracking-[-0.035em] text-ink">
+            <Link to="/" className="text-[1.375rem] font-semibold tracking-[-0.035em] text-ink">
               Agentic <span className="accent-italic">Search</span>
-            </a>
+            </Link>
             <p className="mt-3 max-w-xs text-sm leading-relaxed text-ink-muted">
               RAG agentique à outils de navigation dans les documents, évalué sur FinanceBench.
             </p>
@@ -77,15 +83,16 @@ export function Footer() {
               <ul className="mt-4 space-y-2.5">
                 {col.links.map((l) => (
                   <li key={l.href}>
-                    <a
-                      href={l.href}
-                      target={l.external ? "_blank" : undefined}
-                      rel={l.external ? "noreferrer" : undefined}
-                      className="nav-link text-sm"
-                    >
-                      {l.label}
-                      {l.external ? <span className="text-brand"> ↗</span> : null}
-                    </a>
+                    {l.external ? (
+                      <a href={l.href} target="_blank" rel="noreferrer" className="nav-link text-sm">
+                        {l.label}
+                        <span className="text-brand"> ↗</span>
+                      </a>
+                    ) : (
+                      <Link to={l.href} className="nav-link text-sm">
+                        {l.label}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>

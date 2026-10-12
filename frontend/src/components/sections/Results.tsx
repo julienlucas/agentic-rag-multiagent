@@ -200,7 +200,7 @@ function MetricsTable() {
           {metricGroups.map((g) => (
             <tbody key={g.title}>
               <tr>
-                <th colSpan={2} className="eyebrow pb-1 pt-5 text-left font-normal">
+                <th colSpan={2} className="mono-xs uppercase tracking-[0.09em] text-ink-faint pb-1 pt-5 text-left font-normal">
                   {g.title}
                 </th>
               </tr>
@@ -375,7 +375,7 @@ export function Results() {
   return (
     <Section
       id="resultats"
-      index="02"
+      index="03"
       eyebrow="L'évaluation"
       title={
         <>

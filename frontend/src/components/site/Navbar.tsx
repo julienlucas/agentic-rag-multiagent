@@ -1,21 +1,64 @@
 import { useState } from "react";
-import { Menu, X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ArrowRight, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/site/primitives";
 import { GITHUB_REPO } from "@/components/site/links";
+import { useSession } from "@/lib/session";
 
 const links = [
+  { href: "/tarifs", label: "Tarifs" },
   { href: "/#resultats", label: "Résultats" },
   { href: GITHUB_REPO, label: "GitHub", external: true },
 ];
 
+function NavItem({ href, label, external, className, onClick }: (typeof links)[number] & { className?: string; onClick?: () => void }) {
+  if (external) {
+    return (
+      <a href={href} target="_blank" rel="noreferrer" className={className} onClick={onClick}>
+        {label}
+        <span className="text-brand"> ↗</span>
+      </a>
+    );
+  }
+  return (
+    <Link to={href} className={className} onClick={onClick}>
+      {label}
+    </Link>
+  );
+}
+
 /*
  * Barre de navigation collante : fond papier légèrement translucide, filet en pied de barre.
- * Sous `sm`, les liens passent dans un panneau déroulant.
+ * À droite, l'accès au compte : « Connexion » + « Commencer gratuitement », ou « Ouvrir l'app ».
+ * Sous `md`, les liens passent dans un panneau déroulant.
  */
 export function Navbar() {
   const [open, setOpen] = useState(false);
+  const { status } = useSession();
+  const signedIn = status === "authenticated";
+  const close = () => setOpen(false);
+
+  const account = (mobile: boolean) =>
+    signedIn ? (
+      <Button asChild size="sm" variant="brand" className={mobile ? "self-start" : undefined}>
+        <Link to="/app/chat" onClick={close}>
+          Ouvrir l'app <ArrowRight />
+        </Link>
+      </Button>
+    ) : (
+      <>
+        <Link to="/connexion" onClick={close} className={cn("nav-link font-sans text-sm font-medium", mobile && "py-3")}>
+          Connexion
+        </Link>
+        <Button asChild size="sm" variant="brand" className={mobile ? "self-start" : undefined}>
+          <Link to="/inscription" onClick={close}>
+            Commencer gratuitement
+          </Link>
+        </Button>
+      </>
+    );
 
   return (
     <header
@@ -26,31 +69,21 @@ export function Navbar() {
       )}
     >
       <Container width="full" className="flex h-14 items-center justify-between gap-6">
-        <a href="/" className="text-[1.6275rem] font-semibold tracking-[-0.035em] text-ink" onClick={() => setOpen(false)}>
+        <Link to="/" className="text-[1.6275rem] font-semibold tracking-[-0.035em] text-ink" onClick={close}>
           Agentic <span className="accent-italic">Search</span>
-        </a>
+        </Link>
 
-        <nav aria-label="Navigation principale" className="hidden items-center gap-7 sm:flex">
+        <nav aria-label="Navigation principale" className="hidden items-center gap-7 md:flex">
           {links.map((l) => (
-            <a
-              key={l.href}
-              href={l.href}
-              target={l.external ? "_blank" : undefined}
-              rel={l.external ? "noreferrer" : undefined}
-              className="nav-link font-sans text-sm font-medium"
-            >
-              {l.label}
-              {l.external ? <span className="text-brand"> ↗</span> : null}
-            </a>
+            <NavItem key={l.href} {...l} className="nav-link font-sans text-sm font-medium" />
           ))}
-          <Button asChild size="sm" variant="outline">
-            <a href="/a-propos#contact">Contact</a>
-          </Button>
+          <span aria-hidden className="h-5 w-px bg-hairline" />
+          {account(false)}
         </nav>
 
         <button
           type="button"
-          className="inline-flex size-9 items-center justify-center rounded-sm text-ink sm:hidden"
+          className="inline-flex size-9 items-center justify-center rounded-sm text-ink md:hidden"
           aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
@@ -60,24 +93,12 @@ export function Navbar() {
       </Container>
 
       {open ? (
-        <nav aria-label="Navigation principale" className="border-t border-hairline sm:hidden">
+        <nav aria-label="Navigation principale" className="border-t border-hairline md:hidden">
           <Container width="full" className="flex flex-col py-2">
             {links.map((l) => (
-              <a
-                key={l.href}
-                href={l.href}
-                target={l.external ? "_blank" : undefined}
-                rel={l.external ? "noreferrer" : undefined}
-                className="nav-link font-sans py-3 text-sm font-medium"
-                onClick={() => setOpen(false)}
-              >
-                {l.label}
-                {l.external ? <span className="text-brand"> ↗</span> : null}
-              </a>
+              <NavItem key={l.href} {...l} onClick={close} className="nav-link font-sans py-3 text-sm font-medium" />
             ))}
-            <Button asChild size="sm" variant="outline" className="my-2 self-start">
-              <a href="/a-propos#contact" onClick={() => setOpen(false)}>Contact</a>
-            </Button>
+            <div className="my-2 flex flex-col gap-1 border-t border-hairline pt-2">{account(true)}</div>
           </Container>
         </nav>
       ) : null}

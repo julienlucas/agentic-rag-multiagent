@@ -162,14 +162,17 @@ class FakeBuilder:
 @pytest.fixture
 def store(monkeypatch):
     endpoints = _django()
+    from backend.saas import accounts, ingestion, views
+
     s = make_store()
-    monkeypatch.setattr(endpoints, "get_store", lambda: s)
+    for module in (endpoints, accounts, ingestion, views):
+        monkeypatch.setattr(module, "get_store", lambda: s)
     monkeypatch.setattr(endpoints, "_page_cache", {})
     return s
 
 
 @pytest.fixture
-def api(monkeypatch, tmp_path, store):
+def api(monkeypatch, tmp_path, store, db):
     endpoints = _django()
     from django.test import Client
     from backend.config.settings import settings
@@ -186,6 +189,39 @@ def api(monkeypatch, tmp_path, store):
 
 def post_json(client, url, payload):
     return client.post(url, data=json.dumps(payload), content_type="application/json")
+
+
+def load_example(client, name, content, session="s"):
+    """La démo publique n'indexe que des exemples : on en dépose un dans EXAMPLES_DIR, puis on le charge."""
+    from backend.config.settings import settings
+    (Path(settings.EXAMPLES_DIR) / name).write_bytes(content)
+    return post_json(client, "/api/load-file", {"file_name": name, "session_id": session})
+
+
+# ── Base de données (espace connecté) : base de test SQLite en mémoire, rollback par test ──
+
+@pytest.fixture(scope="session")
+def _test_database():
+    _django()
+    from django.db import connection
+    from django.test.utils import setup_test_environment, teardown_test_environment
+
+    setup_test_environment()
+    old_name = connection.creation.create_test_db(verbosity=0, autoclobber=True)
+    yield
+    connection.creation.destroy_test_db(old_name, verbosity=0)
+    teardown_test_environment()
+
+
+@pytest.fixture
+def db(_test_database):
+    from django.db import transaction
+
+    atomic = transaction.atomic()
+    atomic.__enter__()
+    yield
+    transaction.set_rollback(True)
+    atomic.__exit__(None, None, None)
 
 
 # ── Agent à outils : LLM factice qui émet des appels d'outils ──────────────────

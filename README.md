@@ -48,7 +48,7 @@ Cinq opérations façon système de fichiers, données au modèle de réponse, d
 
 ### Le système inclut un retriever hybride pour maximiser la pertinence
 - **Algo BM25 + Embeddings, côté Qdrant** : chaque chunk porte un vecteur sparse BM25 (précision lexicale) et un vecteur dense (sens contextuel) ; les deux recherches sont fusionnées par RRF dans une seule requête Qdrant. Métrique explicite (`VECTOR_SPACE = "cosine"`).
-- **Un espace par utilisateur** : une collection Qdrant partagée, chaque point porte un `tenant_id` (index `is_tenant`), HNSW désactivé globalement (`m=0`) et construit par tenant (`payload_m`). Toutes les lectures passent par `backend/vectorstore/qdrant_store.py`, qui impose le filtre `tenant_id`. Les documents sont persistés : un fichier déjà indexé n'est ni ré-OCRisé ni ré-embeddé. L'index d'évaluation (FinanceBench) a ses propres collections, `eval_chunks` / `eval_pages` : il ne côtoie jamais les documents des utilisateurs (`chunks` / `pages`).
+- **Un espace par compte** : le tenant Qdrant est le workspace du compte connecté (`ws-<uuid>`), tiré de la session côté serveur, jamais du client ; la démo publique vit sous `demo-<session>`. Une collection Qdrant partagée, chaque point porte un `tenant_id` (index `is_tenant`), HNSW désactivé globalement (`m=0`) et construit par tenant (`payload_m`). Toutes les lectures passent par `backend/vectorstore/qdrant_store.py`, qui impose le filtre `tenant_id`. Les documents sont persistés : un fichier déjà indexé n'est ni ré-OCRisé ni ré-embeddé. L'index d'évaluation (FinanceBench) a ses propres collections, `eval_chunks` / `eval_pages` : il ne côtoie jamais les documents des utilisateurs (`chunks` / `pages`).
 - **Routage par document** : avant de chercher, le système cible le(s) document(s) que la question désigne (nom d'entreprise ou de fichier) — indispensable quand plusieurs documents longs sont indexés ensemble.
 - **Reranking Cohere + parent-child + multi-query** : petits chunks pour matcher, gros chunks pour répondre.
 
@@ -140,9 +140,9 @@ Un clic sur une citation `[n]` ou sur un passage cité ouvre le document à la p
 passage surligné (pdf.js, `frontend/src/components/rag/DocumentViewer.tsx`).
 
 - **Originaux.** Un fichier déposé est gardé dans `DOCUMENT_STORAGE_DIR`, rangé par hash de
-  contenu, et servi par `GET /api/documents/<hash>/file`, seulement à l'espace qui l'indexe.
-  Il est effacé quand plus aucun espace ne l'indexe. Chaque chunk porte `file_hash` et
-  `pdf_url` dans ses métadonnées Qdrant. Les exemples sont servis par le frontend (`/static/`).
+  contenu (plus sa conversion `<hash>.pdf` pour un DOCX, PPTX…), et servi par
+  `GET /api/app/documents/<id>/file`, seulement au compte qui l'a déposé. Il est effacé quand
+  plus aucun espace ne l'indexe. Les exemples de la démo sont servis par le frontend (`/static/`).
 - **Repli.** Sans original (document déposé avant ce stockage), le panneau affiche le texte OCR
   de la page (`GET /api/documents/page`), passage surligné.
 - **Exemples.** AMD et Boeing (10-K 2022, FinanceBench) sont livrés avec leurs pages déjà OCRisées
@@ -151,6 +151,48 @@ passage surligné (pdf.js, `frontend/src/components/rag/DocumentViewer.tsx`).
 - **En production (Railway)** : attacher un volume au service backend (par exemple monté sur
   `/data`), puis définir `DOCUMENT_STORAGE_DIR=/data/documents`. Sans volume, les originaux sont
   perdus à chaque redéploiement et les citations retombent sur le texte OCR.
+
+## Le produit : comptes, documents, crédits
+
+Le RAG est servi en libre-service, payé au crédit (plan : `docs/plan-produit.md`, contrat d'API :
+`docs/api-produit.md`). Code : `backend/saas/` (Django) et `frontend/src/components/{app,auth}`.
+
+- **Comptes** : django-allauth en mode headless (e-mail + mot de passe, code de vérification par
+  e-mail, mot de passe oublié, Google). Session par cookie, CSRF sur toutes les écritures.
+- **Base** : Postgres (`DATABASE_URL`, SQLite en développement) : workspaces, documents,
+  registre des crédits (en ajout seul, le solde en est la somme), conversations, achats.
+- **Formats** (`backend/document_processor/formats.py`) : PDF, DOCX, PPTX, ODT, ODP, RTF, DOC, PPT
+  (convertis en PDF par LibreOffice, pour ouvrir les citations à la page), PNG, JPG, WEBP (OCR),
+  TXT, MD, HTML (lus sans OCR), XLSX, CSV (tableaux markdown de 50 lignes). Le contenu doit
+  confirmer l'extension.
+- **Ingestion** : la file est la table des documents ; une boucle de fond du service web la
+  dépile (`backend/saas/ingestion.py`), et reprend après un redémarrage les documents interrompus.
+- **Crédits** (`backend/saas/pricing.py`, seule source des prix) : 1 crédit = 0,01 €, une question
+  = 20 crédits, une page indexée = 1 crédit. Gratuit : 20 documents, 1 000 pages, indexation
+  offerte, 300 crédits de bienvenue. Packs de 10 à 100 € par Stripe Checkout ; seul le webhook
+  crédite. Une question ou une indexation qui échoue est remboursée.
+
+### Déploiement
+
+**Railway (API).** Un service, construit par le `Dockerfile` (LibreOffice inclus), qui lance
+les migrations puis gunicorn. À ajouter :
+- un **volume** monté sur `/data`, avec `DOCUMENT_STORAGE_DIR=/data/documents`, et
+  `RAILWAY_RUN_UID=0` (le volume appartient à root). Pas de worker séparé : un volume ne
+  s'attache qu'à un service, et l'ingestion lit les originaux ;
+- une base **Postgres** Railway (fournit `DATABASE_URL`) ;
+- `DJANGO_DEBUG=0`, `DJANGO_SECRET_KEY`, `FRONTEND_URL=https://<domaine du frontend>`,
+  `PRODUCT_NAME` ;
+- e-mails : `EMAIL_HOST`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL` (Resend,
+  Amazon SES…) ;
+- Google (facultatif) : `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, URI de redirection
+  `https://<frontend>/accounts/google/login/callback/` ;
+- Stripe : `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (webhook sur
+  `https://<frontend>/api/stripe/webhook`, événements `checkout.session.completed` et
+  `checkout.session.async_payment_succeeded`), `STRIPE_AUTOMATIC_TAX=true` pour la TVA.
+
+**Vercel (frontend).** `vercel.json` relaie `/api`, `/_allauth` et `/accounts` vers Railway :
+remplacer `RAILWAY_API_HOST` par l'hôte du service. Un seul domaine pour le navigateur, donc
+des cookies de première partie.
 
 Pour surveiller votre application avec LangSmith (si vous le souhaitez) :
 
