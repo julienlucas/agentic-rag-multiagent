@@ -6,9 +6,9 @@ import { usePricing } from "@/lib/session";
 export function formatFamilies(formats: string[]) {
   const families: [string, string[]][] = [
     ["PDF", [".pdf"]],
-    ["Bureautique", [".docx", ".pptx", ".odt", ".rtf"]],
-    ["Images", [".png", ".jpg", ".jpeg", ".webp", ".tiff"]],
-    ["Texte", [".txt", ".md", ".html"]],
+    ["Bureautique", [".docx", ".pptx", ".odt", ".odp", ".rtf", ".doc", ".ppt"]],
+    ["Images", [".png", ".jpg", ".jpeg", ".webp"]],
+    ["Texte", [".txt", ".md", ".markdown", ".html", ".htm"]],
     ["Tableurs", [".xlsx", ".csv"]],
   ];
   const known = new Set(families.flatMap(([, exts]) => exts));

@@ -1,114 +1,123 @@
 import { Link } from "react-router-dom";
 import { ArrowUp, ArrowUpRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Container } from "@/components/site/primitives";
-import { LINKEDIN } from "@/components/site/links";
+import { GITHUB_REPO, LINKEDIN } from "@/components/site/links";
 import { scrollToHash } from "@/lib/use-lenis";
+import { useSession } from "@/lib/session";
 
 type FooterLink = { href: string; label: string; external?: boolean };
 
 const columns: { title: string; links: FooterLink[] }[] = [
   {
-    title: "Explorer",
+    title: "Produit",
     links: [
-      { href: "/#demo", label: "Démo" },
-      { href: "/#fonctionnement", label: "Fonctionnement" },
-      { href: "/#agents", label: "Les agents" },
-      { href: "/#resultats", label: "Résultats" },
-      { href: "/#outils", label: "Les outils" },
+      { href: "/inscription", label: "Créer mon espace" },
+      { href: "/demo", label: "Démo" },
+      { href: "/#evaluation", label: "Évaluation" },
       { href: "/tarifs", label: "Tarifs" },
+      { href: "/app", label: "Ouvrir l'app" },
     ],
   },
   {
     title: "Ressources",
     links: [
-      { href: "https://github.com/julienlucas/agentic-rag-with-tools", label: "Code sur GitHub", external: true },
+      { href: GITHUB_REPO, label: "Code sur GitHub", external: true },
       { href: "https://github.com/patronus-ai/financebench", label: "FinanceBench", external: true },
     ],
   },
   {
-    title: "À propos",
+    title: "Société",
     links: [
       { href: "/a-propos", label: "À propos" },
       { href: "/a-propos#contact", label: "Contact" },
+      { href: "/securite", label: "Sécurité" },
       { href: LINKEDIN, label: "LinkedIn", external: true },
+    ],
+  },
+  {
+    title: "Légal",
+    links: [
+      { href: "/conditions", label: "Conditions d'utilisation" },
+      { href: "/confidentialite", label: "Confidentialité" },
+      { href: "/mentions-legales", label: "Mentions légales" },
     ],
   },
 ];
 
+function FooterAnchor({ link }: { link: FooterLink }) {
+  const cls = "inline-flex items-center gap-1 text-[0.9375rem] font-medium text-ink underline-offset-4 decoration-1 hover:underline";
+  if (link.external) {
+    return (
+      <a href={link.href} target="_blank" rel="noreferrer" className={cls}>
+        {link.label}
+        <ArrowUpRight className="size-3.5" aria-hidden />
+      </a>
+    );
+  }
+  return (
+    <Link to={link.href} className={cls}>
+      {link.label}
+    </Link>
+  );
+}
+
 /*
- * Pied de page : une phrase d'accroche et ses deux actions, les colonnes de liens, puis une
- * barre basse (copyright, retour en haut). Sur fond papier, séparé du contenu par un filet.
+ * Pied de page orange, sur le modèle d'agentik.cc : les colonnes de liens, une barre (marque,
+ * copyright, retour en haut), puis la signature en grand. Texte en encre : le blanc ne tient pas
+ * sur l'orange vif.
  */
 export function Footer() {
+  const { status } = useSession();
   return (
-    <footer className="border-t border-hairline bg-paper">
-      <Container width="full" className="py-[var(--section-y)]">
-        <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl">
-            <p className="display-lg font-semibold">
-              Vos documents deviennent des <span className="accent-italic">réponses sourcées</span>.
-            </p>
-            <p className="copy mt-4">
-              Un agent qui lit, cherche et cite la page exacte de vos documents.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <Button asChild variant="brand">
-              <Link to="/inscription">Commencer gratuitement</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link to="/#demo">Essayer la démo</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <a href={LINKEDIN} target="_blank" rel="noreferrer">
-                Me contacter <ArrowUpRight />
-              </a>
-            </Button>
-          </div>
-        </div>
-
-        <div className="mt-16 grid gap-10 border-t border-hairline pt-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
-          <div>
-            <Link to="/" className="text-[1.375rem] font-semibold tracking-[-0.035em] text-ink">
-              Agentic <span className="accent-italic">Search</span>
-            </Link>
-            <p className="mt-3 max-w-xs text-sm leading-relaxed text-ink-muted">
-              RAG agentique à outils de navigation dans les documents, évalué sur FinanceBench.
-            </p>
-          </div>
+    <footer className="surface-orange">
+      <Container width="full" className="pt-16 sm:pt-20">
+        <nav aria-label="Pied de page" className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-4">
           {columns.map((col) => (
-            <nav key={col.title} aria-label={col.title}>
-              <span className="text-sm font-medium text-ink">{col.title}</span>
-              <ul className="mt-4 space-y-2.5">
+            <div key={col.title}>
+              <p className="text-sm text-ink-muted">{col.title}</p>
+              <ul className="mt-4 space-y-3">
                 {col.links.map((l) => (
-                  <li key={l.href}>
-                    {l.external ? (
-                      <a href={l.href} target="_blank" rel="noreferrer" className="nav-link text-sm">
-                        {l.label}
-                        <span className="text-brand"> ↗</span>
-                      </a>
-                    ) : (
-                      <Link to={l.href} className="nav-link text-sm">
-                        {l.label}
-                      </Link>
-                    )}
+                  <li key={l.label}>
+                    <FooterAnchor link={l} />
                   </li>
                 ))}
               </ul>
-            </nav>
+            </div>
           ))}
-        </div>
+        </nav>
 
-        <div className="mt-14 flex flex-wrap items-center justify-between gap-4 border-t border-hairline pt-6 text-sm text-ink-faint">
-          <span>© {new Date().getFullYear()} Julien Lucas · Agentic Search</span>
+        <div className="mt-16 flex flex-col gap-4 border-t border-hairline pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-baseline gap-4">
+            <Link to="/" className="text-2xl font-semibold tracking-[-0.035em] text-ink">
+              Agentic <span className="font-serif italic font-normal">Search</span>
+            </Link>
+            <span className="text-sm text-ink-muted">© {new Date().getFullYear()}</span>
+          </div>
           <button
             type="button"
             onClick={() => scrollToHash("#top")}
-            className="nav-link inline-flex items-center gap-1.5"
+            className="inline-flex items-center gap-1.5 self-start text-sm font-medium text-ink hover:underline sm:self-auto"
           >
-            Retour en haut <ArrowUp className="size-3.5" />
+            Retour en haut <ArrowUp className="size-3.5" aria-hidden />
           </button>
+        </div>
+
+        <div className="py-24 text-center sm:py-32">
+          <p className="mx-auto max-w-5xl font-display text-[clamp(2.5rem,1.5rem+4.5vw,5.25rem)] leading-[0.98] font-semibold tracking-[-0.045em] text-ink">
+            Vos documents ont la réponse.
+            <span className="block font-serif font-normal italic tracking-[-0.02em] text-orange-900">
+              L'agent va la chercher.
+            </span>
+          </p>
+          <p className="mx-auto mt-6 max-w-xl text-ink-muted">
+            Il lit, cherche et cite la page exacte. 88 % de réponses correctes sur FinanceBench.
+          </p>
+          <Link
+            to={status === "authenticated" ? "/app/documents" : "/inscription"}
+            className="mt-10 inline-flex items-center gap-2 rounded-sm bg-ink px-5 py-3 text-sm font-medium text-paper transition-colors hover:bg-ink-soft"
+          >
+            Insérez votre premier document <ArrowUpRight className="size-4" aria-hidden />
+          </Link>
         </div>
       </Container>
     </footer>

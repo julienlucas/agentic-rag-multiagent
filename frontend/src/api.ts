@@ -57,8 +57,9 @@ export const FALLBACK_PRICING: Pricing = {
     { id: "pack_100", price_eur: 100, credits: 11000 },
   ],
   formats: [
-    ".pdf", ".docx", ".pptx", ".odt", ".rtf", ".png", ".jpg", ".jpeg", ".webp", ".tiff",
-    ".txt", ".md", ".html", ".xlsx", ".csv",
+    // Repli si GET /api/pricing échoue : la même liste que backend/document_processor/formats.py.
+    ".pdf", ".docx", ".pptx", ".odt", ".odp", ".rtf", ".doc", ".ppt", ".png", ".jpg", ".jpeg", ".webp",
+    ".txt", ".md", ".markdown", ".html", ".htm", ".xlsx", ".csv",
   ],
 };
 

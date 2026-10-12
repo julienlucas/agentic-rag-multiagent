@@ -3,12 +3,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { Hero } from "@/components/sections/Hero";
-import { HowItWorks } from "@/components/sections/HowItWorks";
-import { Agents } from "@/components/sections/Agents";
-import { Results } from "@/components/sections/Results";
-import { Tools } from "@/components/sections/Tools";
-import { PricingTeaser } from "@/components/sections/PricingTeaser";
-import { Security } from "@/components/sections/Security";
+import { Evaluation } from "@/components/sections/Evaluation";
+import { Pricing } from "@/components/sections/Pricing";
+import { DemoPage, LegalNoticePage, PrivacyPage, SecurityPage, TermsPage } from "@/components/pages/LegalPages";
 import { AboutPage } from "@/components/pages/AboutPage";
 import { PricingPage } from "@/components/pages/PricingPage";
 import { ForgotPasswordPage, LoginPage, SignupPage, VerifyEmailPage } from "@/components/auth/AuthPages";
@@ -23,19 +20,15 @@ function HomePage() {
   return (
     <>
       <Hero />
-      <HowItWorks />
-      <Agents />
-      <Results />
-      <Tools />
-      <PricingTeaser />
-      <Security />
+      <Evaluation />
+      <Pricing />
     </>
   );
 }
 
 /*
  * Routes. Le serveur (Django, Vercel) doit renvoyer index.html sur chacune d'elles :
- * /, /a-propos, /tarifs, /connexion, /inscription, /verifier-email, /mot-de-passe-oublie, /app/*.
+ * /, /a-propos, /tarifs, /demo, /securite, /conditions, /confidentialite, /mentions-legales, /connexion, /inscription, /verifier-email, /mot-de-passe-oublie, /app/*.
  */
 export default function App() {
   return (
@@ -46,6 +39,11 @@ export default function App() {
             <Route index element={<HomePage />} />
             <Route path="a-propos" element={<AboutPage />} />
             <Route path="tarifs" element={<PricingPage />} />
+            <Route path="demo" element={<DemoPage />} />
+            <Route path="securite" element={<SecurityPage />} />
+            <Route path="conditions" element={<TermsPage />} />
+            <Route path="confidentialite" element={<PrivacyPage />} />
+            <Route path="mentions-legales" element={<LegalNoticePage />} />
           </Route>
           <Route element={<SiteLayout footer={false} />}>
             <Route path="connexion" element={<LoginPage />} />

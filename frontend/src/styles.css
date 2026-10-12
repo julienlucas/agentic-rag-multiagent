@@ -701,3 +701,60 @@
 .dark .lever-row .lever-index {
   color: var(--orange-300);
 }
+
+/* ---------- Surface orange (pied de page) ----------
+   Aplat orange vif, texte en encre : le blanc ne tient pas sur l'orange (2,7:1), l'encre si
+   (7:1). Comme pour .surface-ink, on ne redéfinit que les rôles. */
+.surface-orange {
+  background: var(--orange-500);
+  --foreground: var(--ink);
+  --ink-muted: color-mix(in srgb, var(--ink) 78%, var(--orange-500));
+  --ink-faint: color-mix(in srgb, var(--ink) 62%, var(--orange-500));
+  --hairline: color-mix(in srgb, var(--ink) 22%, transparent);
+  --hairline-strong: color-mix(in srgb, var(--ink) 40%, transparent);
+  --border: var(--hairline);
+  --brand-deep: var(--orange-900);
+  color: var(--ink);
+}
+.surface-orange ::selection {
+  background: var(--ink);
+  color: var(--orange-300);
+}
+
+/* ---------- Bandeau défilant (hero) ----------
+   Deux copies identiques côte à côte, translatées de -50 % : la boucle est sans couture.
+   Le mouvement s'arrête au survol, et disparaît avec prefers-reduced-motion (règle globale). */
+@keyframes ticker {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.ticker-track {
+  display: flex;
+  width: max-content;
+  animation: ticker 60s linear infinite;
+}
+.ticker:hover .ticker-track {
+  animation-play-state: paused;
+}
+.ticker {
+  mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+}
+
+/* Trait orange tracé à main levée sous le mot clé du titre (le soulignement d'agentik.cc). */
+@keyframes stroke-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.hand-underline path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: stroke-draw 0.9s var(--ease-out) 0.25s both;
+}

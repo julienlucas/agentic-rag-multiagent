@@ -40,7 +40,7 @@ urlpatterns = [
 
 # Routes du frontend (SPA) : Django sert index.html, le routeur React fait le reste.
 urlpatterns += [
-    re_path(r'^(?:a-propos|tarifs|connexion|inscription|verifier-email|mot-de-passe-oublie|app)(?:/.*)?$', index),
+    re_path(r'^(?:a-propos|tarifs|demo|securite|conditions|confidentialite|mentions-legales|connexion|inscription|verifier-email|mot-de-passe-oublie|app)(?:/.*)?$', index),
 ]
 
 if settings.DEBUG:

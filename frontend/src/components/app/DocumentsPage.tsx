@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
+import { clearPendingUpload, peekPendingUpload } from "@/lib/pending-upload";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Eye, FileText, Loader2, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
@@ -85,6 +86,13 @@ export function DocumentsPage() {
     load();
   }, [load]);
 
+  /* Fichier déposé dans le hero de l'accueil avant l'inscription : prêt à indexer. */
+  useEffect(() => {
+    const files = peekPendingUpload();
+    if (files.length) stage(files);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   /* Indexation en cours : on relit la liste toutes les 3 s, puis le compte quand tout est fini. */
   const inProgress = documents?.some((d) => d.status === "queued" || d.status === "processing") ?? false;
   useEffect(() => {
@@ -154,6 +162,7 @@ export function DocumentsPage() {
       const r = await appApi.upload(staged.map((s) => s.file));
       setBalance(r.balance);
       setStaged([]);
+      clearPendingUpload();
       setDocuments((docs) => {
         const ids = new Set(r.documents.map((d) => d.id));
         return [...r.documents, ...(docs ?? []).filter((d) => !ids.has(d.id))];
@@ -257,7 +266,10 @@ export function DocumentsPage() {
                       type="button"
                       aria-label={`Retirer ${s.file.name}`}
                       disabled={uploading}
-                      onClick={() => setStaged((list) => list.filter((x) => x.id !== s.id))}
+                      onClick={() => {
+                        clearPendingUpload();
+                        setStaged((list) => list.filter((x) => x.id !== s.id));
+                      }}
                       className="inline-grid size-7 cursor-pointer place-items-center rounded-sm text-ink-faint hover:text-destructive"
                     >
                       <X className="size-3.5" />
@@ -283,7 +295,10 @@ export function DocumentsPage() {
                   ) : null}
                 </p>
                 <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" disabled={uploading} onClick={() => setStaged([])}>
+                  <Button variant="ghost" size="sm" disabled={uploading} onClick={() => {
+                    clearPendingUpload();
+                    setStaged([]);
+                  }}>
                     Annuler
                   </Button>
                   <Button variant="brand" size="sm" disabled={uploading || counting || overQuota} onClick={upload}>

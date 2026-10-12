@@ -8,8 +8,9 @@ import { GITHUB_REPO } from "@/components/site/links";
 import { useSession } from "@/lib/session";
 
 const links = [
-  { href: "/tarifs", label: "Tarifs" },
-  { href: "/#resultats", label: "Résultats" },
+  { href: "/#evaluation", label: "Évaluation" },
+  { href: "/#prix", label: "Prix" },
+  { href: "/demo", label: "Démo" },
   { href: GITHUB_REPO, label: "GitHub", external: true },
 ];
 
