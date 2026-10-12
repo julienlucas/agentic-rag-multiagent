@@ -16,7 +16,7 @@ from django.core import signing
 
 from backend.config.settings import settings
 
-TRACE_PROJECT = "agentic-search"
+TRACE_PROJECT = "agentic-rag"
 FEEDBACK_KEY = "user_score"  # 1 = satisfait, 0 = pas satisfait
 COMMENT_MAX_CHARS = 2000
 

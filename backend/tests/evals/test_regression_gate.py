@@ -97,11 +97,11 @@ def test_degradation_watch_flags_silent_rerank_fallback(monkeypatch):
 def test_other_document_sets_never_overwrite_the_published_dataset():
     from backend.evals.financebench.prepare import DEFAULT_DOCS, dataset_name_for, extended_docs
 
-    assert dataset_name_for(list(reversed(DEFAULT_DOCS))) == "agentic-search · FinanceBench"
-    assert dataset_name_for(["AMD_2022_10K"]) == "agentic-search · FinanceBench (custom)"
+    assert dataset_name_for(list(reversed(DEFAULT_DOCS))) == "agentic-rag · FinanceBench"
+    assert dataset_name_for(["AMD_2022_10K"]) == "agentic-rag · FinanceBench (custom)"
     questions = [{"doc_name": d} for d in ["A"] * 3 + ["B"] * 2 + ["C"] * 4]
     assert extended_docs(questions) == ["A", "C"]
-    assert dataset_name_for(["A", "C"], "extended") == "agentic-search · FinanceBench (extended)"
+    assert dataset_name_for(["A", "C"], "extended") == "agentic-rag · FinanceBench (extended)"
 
 
 def test_prepare_skips_documents_already_in_the_eval_index(monkeypatch):

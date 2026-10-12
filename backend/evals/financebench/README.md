@@ -42,7 +42,7 @@ soit **26 questions** :
 Répartition : 17 `domain-relevant` + 7 `novel-generated` + 2 `metrics-generated`, mêlant
 extraction d'information, raisonnement numérique et raisonnement logique.
 
-Les questions vivent **uniquement dans LangSmith** (dataset « agentic-search · FinanceBench » : question, réponse de
+Les questions vivent **uniquement dans LangSmith** (dataset « agentic-rag · FinanceBench » : question, réponse de
 référence, pages et passages de preuve, mots-clés), écrit par `prepare.py` et lu par les expériences.
 
 Les 4 documents sont indexés **dans un seul index** : le système doit retrouver le bon passage
@@ -57,11 +57,11 @@ Les runs antérieurs au 4 septembre 2026 (après-midi) portaient sur les 3 premi
 À 26 questions, l'IC95 de l'accuracy fait ~35 points de large : un écart de 5 points entre deux
 versions n'y est pas mesurable. `--docs extended` prend tous les documents qui portent au moins
 3 questions : **18 documents, 70 questions**. Il s'écrit dans un dataset LangSmith à part,
-« agentic-search · FinanceBench (extended) », jamais dans « agentic-search · FinanceBench » (le protocole publié) :
+« agentic-rag · FinanceBench (extended) », jamais dans « agentic-rag · FinanceBench » (le protocole publié) :
 
 ```bash
 uv run python backend/evals/financebench/prepare.py --docs extended
-uv run python backend/evals/experiment.py --mode both --dataset "agentic-search · FinanceBench (extended)"
+uv run python backend/evals/experiment.py --mode both --dataset "agentic-rag · FinanceBench (extended)"
 ```
 
 La préparation OCRise 14 documents de plus. Coût estimé, pas mesuré : de l'ordre de 2 000 pages,
@@ -75,8 +75,8 @@ Les 150 questions open source portent sur **84 documents** (64 10-K, 8 10-Q, 6 e
 
 | Préréglage | Documents | Questions | Dataset LangSmith |
 |---|---|---|---|
-| `pilot` | les 20 qui portent le plus de questions (dont les 4 du protocole) | 65 sur 74 | « agentic-search · FinanceBench (pilot 20) » |
-| `all` | les 84 | 139 sur 150 | « agentic-search · FinanceBench (84 docs) » |
+| `pilot` | les 20 qui portent le plus de questions (dont les 4 du protocole) | 65 sur 74 | « agentic-rag · FinanceBench (pilot 20) » |
+| `all` | les 84 | 139 sur 150 | « agentic-rag · FinanceBench (84 docs) » |
 
 Les questions retirées ont une preuve sur une page absente du texte indexé (voir ci-dessous).
 
@@ -141,7 +141,7 @@ espace Qdrant : passer la même option `--source` à `experiment.py`.
 ```bash
 uv run python backend/evals/financebench/prepare.py --docs pilot --skip-embeddings  # contrôle, sans embeddings
 uv run python backend/evals/financebench/prepare.py --docs pilot                    # indexation (Cohere Embed v4)
-uv run python backend/evals/experiment.py --mode both --dataset "agentic-search · FinanceBench (pilot 20)"
+uv run python backend/evals/experiment.py --mode both --dataset "agentic-rag · FinanceBench (pilot 20)"
 ```
 
 ## Prérequis
@@ -183,7 +183,7 @@ détail des étapes : README principal, « Récupérer et indexer le jeu d'éval
 
 | Flag | Effet |
 |---|---|
-| `--dataset NOM` | Dataset LangSmith évalué : « agentic-search · FinanceBench (pilot 20) », « … (84 docs) »… |
+| `--dataset NOM` | Dataset LangSmith évalué : « agentic-rag · FinanceBench (pilot 20) », « … (84 docs) »… |
 | `--mode baseline\|agentic\|both` | Défaut `both` (mesure l'apport de la boucle agentique) |
 | `--ids ID1,ID2` | Seulement ces questions (`financebench_id`), sur l'index du corpus entier : relancer les échecs d'un run pour quelques dizaines de centimes |
 | `--workers N` | Questions en parallèle (défaut 3). **Passer à 1 avec une clé Cohere trial** (~10 req/min) |
@@ -373,11 +373,11 @@ raisonnement le système décroche.
 **Uniquement dans LangSmith**, rien en local (le runner refuse de tourner sans `LANGSMITH_API_KEY`) :
 
 
-- **Une expérience par mode** (baseline / agentic) sur le dataset « agentic-search · FinanceBench » : une ligne par
+- **Une expérience par mode** (baseline / agentic) sur le dataset « agentic-rag · FinanceBench » : une ligne par
   question et par répétition (réponse, verdict et raison du juge, F1, faithfulness, recall@k…,
   erreur technique éventuelle en métadonnée `error`), comparables côte à côte dans l'onglet
   « Experiments » ; accuracy, coût et stabilité en métadonnées de l'expérience.
-- **Le résumé du run** (run `run_financebench_eval` du projet `agentic-search`, tag `eval`) : métriques agrégées par
+- **Le résumé du run** (run `run_financebench_eval` du projet `agentic-rag`, tag `eval`) : métriques agrégées par
   mode, deltas, ventilations, et le bloc `cost` : tokens facturés par modèle (callback LangChain sur
   chaque appel, juge compris), unités de recherche Cohere (`billed_units` de chaque réponse
   Rerank), total en dollars et en euros à la grille publique du jour (`cost.py`).

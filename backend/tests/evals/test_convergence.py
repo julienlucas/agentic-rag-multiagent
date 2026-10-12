@@ -51,7 +51,7 @@ def test_example_is_picked_from_the_langsmith_rows():
 
 
 def test_evaluators_are_traced_in_the_app_project_with_a_tag(monkeypatch):
-    """Comme evaluating-ai-agents : pas de projet « evaluators », un tag dans agentic-search.
+    """Comme evaluating-ai-agents : pas de projet « evaluators », un tag dans agentic-rag.
     On contrôle la configuration du traçage, sans rien envoyer à LangSmith."""
     import langsmith
 
@@ -69,6 +69,6 @@ def test_evaluators_are_traced_in_the_app_project_with_a_tag(monkeypatch):
         return {"key": "correct", "score": 1.0}
 
     assert traced_in_project(correct)({"verdict": "CORRECT"}) == {"key": "correct", "score": 1.0}
-    assert seen["project_name"] == "agentic-search"
+    assert seen["project_name"] == "agentic-rag"
     assert seen["tags"] == [EVALUATOR_TAG]
     assert seen["name"] == "correct"

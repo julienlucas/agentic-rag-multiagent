@@ -26,7 +26,7 @@ if str(ROOT) not in sys.path:
 from backend.config.settings import settings  # noqa: E402  (charge aussi le .env)
 
 # Datasets préfixés par le projet LangSmith : le workspace est partagé avec d'autres projets.
-DATASET_PREFIX = "agentic-search · "
+DATASET_PREFIX = "agentic-rag · "
 DEFAULT_DATASET = DATASET_PREFIX + "FinanceBench"  # le protocole publié : 26 questions sur 4 rapports
 DESCRIPTION = "FinanceBench (Patronus AI) : questions sur des rapports 10-K, réponses et preuves de référence."
 

@@ -26,7 +26,7 @@ if str(ROOT) not in sys.path:
 # Question FinanceBench où l'agent cherche (2 appels d'outils au dernier run) et réussit :
 # un calcul sur le bilan, la page de preuve n'est pas toujours dans le retrieval initial.
 QUESTION_ID = "financebench_id_00222"
-DATASET_NAME = "agentic-search · FinanceBench — convergence"
+DATASET_NAME = "agentic-rag · FinanceBench — convergence"
 
 # Même question (quick ratio d'AMD en FY22), formulée différemment
 CONVERGENCE_QUESTIONS = [
@@ -142,7 +142,7 @@ def run_convergence_eval(reps: int = 1) -> int:
         run_agent_and_track_path,
         data=dataset.name,
         evaluators=[traced_in_project(correct)],
-        disable_evaluator_tracing=True,  # tracés dans agentic-search (tag « evaluator »), pas dans « evaluators »
+        disable_evaluator_tracing=True,  # tracés dans agentic-rag (tag « evaluator »), pas dans « evaluators »
         experiment_prefix="Convergence",
         description=f"Convergence sur {QUESTION_ID}, {len(CONVERGENCE_QUESTIONS)} formulations × {reps}",
         num_repetitions=reps,

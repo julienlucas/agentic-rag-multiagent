@@ -1,4 +1,4 @@
-"""Évaluateurs en ligne LangSmith (onglet "Evaluators" du projet agentic-search).
+"""Évaluateurs en ligne LangSmith (onglet "Evaluators" du projet agentic-rag).
 
 Chaque règle note automatiquement les nouvelles traces de production, sans lancer de
 script. Ce script crée les règles, ou les met à jour s'il est relancé (même principe que
@@ -36,8 +36,9 @@ if str(ROOT) not in sys.path:
 from backend.config.settings import settings  # noqa: E402  (charge aussi le .env)
 from backend.evals.feedback.votes import TRACE_PROJECT  # noqa: E402
 
-# Préfixe des règles créées par ce script (pour les retrouver et les mettre à jour)
-RULE_PREFIX = "[auto] "
+# Préfixe des règles créées par ce script : le nom du projet, pour savoir à quel projet
+# appartient chaque évaluateur dans LangSmith (et retrouver les règles pour les mettre à jour)
+RULE_PREFIX = f"{TRACE_PROJECT} · "
 JUDGE_MODEL = "eu.anthropic.claude-sonnet-4-6"  # profil d'inférence « eu. », appelable de Paris
 JUDGE_REGION = "eu-west-3"
 SAMPLING_RATE = 1.0  # toutes les traces : le trafic est faible, ~0,01-0,04 $ par question
@@ -241,7 +242,7 @@ def setup_online_evaluators(enabled: bool = True) -> int:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Évaluateurs en ligne LangSmith (agentic-search)")
+    parser = argparse.ArgumentParser(description="Évaluateurs en ligne LangSmith (agentic-rag)")
     parser.add_argument("--disable", action="store_true", help="crée ou met à jour les règles, coupées")
     args = parser.parse_args()
     return setup_online_evaluators(enabled=not args.disable)

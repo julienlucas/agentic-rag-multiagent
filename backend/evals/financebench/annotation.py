@@ -239,7 +239,7 @@ def main():
     sub = parser.add_subparsers(dest="cmd", required=True)
     q = sub.add_parser("queue", help="Crée la file d'annotation LangSmith")
     q.add_argument("--experiment", required=True, help="Expérience LangSmith (mode agentic) à annoter")
-    q.add_argument("--dataset", default="agentic-search · FinanceBench (pilot 20)")
+    q.add_argument("--dataset", default="agentic-rag · FinanceBench (pilot 20)")
     q.add_argument("--size", type=int, default=30)
     q.add_argument("--only-divergent", action="store_true",
                    help="Seulement les réponses où les juges ne sont pas d'accord (annotation courte)")

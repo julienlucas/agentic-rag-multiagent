@@ -204,7 +204,7 @@ Pour surveiller votre application avec LangSmith (si vous le souhaitez) :
 ```bash
 # Configuration LangSmith pour le monitoring
 LANGSMITH_API_KEY=votre_cle_api_langsmith_ici
-LANGSMITH_PROJECT=agentic-search
+LANGSMITH_PROJECT=agentic-rag
 ```
 
 4. **Lancer l'application** :
@@ -215,12 +215,12 @@ uv run python manage.py runserver
 ## Votes des utilisateurs : de 👎 au test de non-régression
 
 Sous chaque réponse, un 👍 / 👎 (le 👎 ouvre un commentaire facultatif). Actifs seulement avec
-`LANGSMITH_API_KEY` : chaque question est tracée dans le projet `agentic-search` sous un run racine
+`LANGSMITH_API_KEY` : chaque question est tracée dans le projet `agentic-rag` sous un run racine
 `question`, et le vote devient un feedback `user_score` (1 / 0) sur cette trace. Le navigateur ne voit
 qu'un jeton signé qui lie la trace à son espace : en production, définir `DJANGO_SECRET_KEY`.
 
 1. **Récolter** : chaque vote est rangé automatiquement, en arrière-plan, dans le dataset LangSmith
-   « agentic-search · Retours utilisateurs » (`backend/evals/feedback/votes_dataset.py`), quelques secondes après le clic, le temps
+   « agentic-rag · Retours utilisateurs » (`backend/evals/feedback/votes_dataset.py`), quelques secondes après le clic, le temps
    que la trace arrive. Un 👍 y entre avec sa réponse comme référence. Un 👎 y entre avec sa réponse
    rejetée et le commentaire en métadonnées. `uv run python backend/evals/feedback/collect.py` rattrape les
    votes manqués (redémarrage du serveur, LangSmith indisponible), sans doublon.
@@ -252,7 +252,7 @@ posée (`answer_relevance`) ? ~0,01 à 0,04 $ par question. Les règles se crée
 l'agent : choix assumé de tout passer par Bedrock (avant le 11 oct. 2026 : Mistral Large). `backend/evals/judge_calibration.py` mesure ensuite l'accord de ces juges
 avec les 👍/👎 (lecture seule, gratuit).
 
-Un seul projet LangSmith, `agentic-search` : les vraies questions, et tout ce que produisent les
+Un seul projet LangSmith, `agentic-rag` : les vraies questions, et tout ce que produisent les
 évaluations, filtrable par tag (`eval` pour les résumés de runs, `evaluator` pour les évaluateurs
 des expériences). Les juges en ligne ne laissent pas de trace à part : leur verdict et leur
 raisonnement sont sur la trace notée.
@@ -305,7 +305,7 @@ uv run python backend/evals/financebench/prepare.py --docs pilot   # 20 rapports
    [`shhdwi/financebench-markdown`](https://huggingface.co/datasets/shhdwi/financebench-markdown), recalé sur
    les pages du PDF (`markdown_corpus.py`). Un document dont les tableaux y sont corrompus est OCRisé en
    entier par Mistral OCR (`FULL_OCR_DOCS` dans `prepare.py` : aujourd'hui le 10-Q T2 2023 de 3M).
-3. **Dataset LangSmith** (« agentic-search · FinanceBench (84 docs) » ou « (pilot 20) ») : questions,
+3. **Dataset LangSmith** (« agentic-rag · FinanceBench (84 docs) » ou « (pilot 20) ») : questions,
    réponses de référence, pages et passages de preuve. Les questions dont la preuve tombe sur une page
    absente du texte sont retirées (11 sur 150). Deux références FinanceBench fausses, vérifiées dans le
    document, sont corrigées (`REFERENCE_CORRECTIONS`, Pfizer / Upjohn).
@@ -318,8 +318,8 @@ Relancer le script ne repaie rien : un rapport déjà présent dans l'index est 
 
 **Lancer l'évaluation** :
 ```bash
-uv run python backend/evals/experiment.py --mode agentic --dataset "agentic-search · FinanceBench (84 docs)" --time-budget 0
-uv run python backend/evals/experiment.py --mode both --dataset "agentic-search · FinanceBench (pilot 20)" --time-budget 0
+uv run python backend/evals/experiment.py --mode agentic --dataset "agentic-rag · FinanceBench (84 docs)" --time-budget 0
+uv run python backend/evals/experiment.py --mode both --dataset "agentic-rag · FinanceBench (pilot 20)" --time-budget 0
 ```
 
 ### Résultats (12 octobre 2026)

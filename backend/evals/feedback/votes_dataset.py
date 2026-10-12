@@ -26,7 +26,7 @@ from backend.config.settings import settings
 from backend.evals.feedback.votes import TRACE_PROJECT
 from backend.utils.logging import logger
 
-DATASET = "agentic-search · Retours utilisateurs"
+DATASET = "agentic-rag · Retours utilisateurs"
 CATEGORY_KEY = "failure_category"
 
 # Causes d'échec : ce qu'on corrige n'est pas au même endroit selon la cause.
